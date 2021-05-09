@@ -6,6 +6,7 @@ on:
     types: [created]
 
 jobs:
+  environment: s3_environment
   build:
     runs-on: ${{ matrix.os }}
     strategy:
@@ -24,14 +25,14 @@ jobs:
       uses: actions-rs/toolchain@v1.0.6
       with:
         toolchain: stable
-    - name: Build module
+    - name: Package module
       run: |
         npm ci
         npm run package
+        npm test
     - name: Bundle ICU data
       if: startsWith(matrix.os,'windows')
       run: curl -sS https://skia-canvas.s3.us-east-1.amazonaws.com/dependencies/icudtl.dat -o lib/v6/icudtl.dat
-    - name: Package binaries
+    - name: Publish prebuilt binaries
       run: |
-        ls -R lib
-        npm test
+        npm run publish
