@@ -15,19 +15,16 @@ jobs:
 
     steps:
     - uses: actions/checkout@v2
-    - name: Use Node.js ${{ matrix.node-version }}
-      uses: actions/setup-node@v1
-      with:
-        node-version: ${{ matrix.node-version }}
-    - name: Use Rust
-      uses: actions-rs/toolchain@v1.0.6
-      with:
-        toolchain: stable
-    - run: npm ci
-    - run: npm run build
-    - uses: actions/download-artifact@v2
-      with:
-        name: directory-tree
-    - name: Display structure of downloaded files
-      run: ls -R 
-    - run: npm test
+    - run: curl https://skia-canvas.s3.us-east-1.amazonaws.com/dependencies/icudtl.dat -o icudtl.dat
+    - run: ls -R
+#     - name: Use Node.js ${{ matrix.node-version }}
+#       uses: actions/setup-node@v1
+#       with:
+#         node-version: ${{ matrix.node-version }}
+#     - name: Use Rust
+#       uses: actions-rs/toolchain@v1.0.6
+#       with:
+#         toolchain: stable
+#     - run: npm ci
+#     - run: npm run build
+#     - run: npm test
