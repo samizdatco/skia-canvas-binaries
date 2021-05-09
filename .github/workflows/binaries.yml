@@ -25,14 +25,16 @@ jobs:
       uses: actions-rs/toolchain@v1.0.6
       with:
         toolchain: stable
+    - name: Fetch ICU data
+      if: startsWith(matrix.os,'windows')
+      run: |
+        mkdir -p lib/v6
+        curl -sS https://skia-canvas.s3.us-east-1.amazonaws.com/dependencies/icudtl.dat -o lib/v6/icudtl.dat
     - name: Package module
       run: |
         npm ci
         npm run package
         npm test
-    - name: Bundle ICU data
-      if: startsWith(matrix.os,'windows')
-      run: curl -sS https://skia-canvas.s3.us-east-1.amazonaws.com/dependencies/icudtl.dat -o lib/v6/icudtl.dat
     - name: Publish prebuilt binaries
       env:
         AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
