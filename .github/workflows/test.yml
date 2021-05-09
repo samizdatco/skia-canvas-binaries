@@ -11,8 +11,12 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        node: [15]
-        os: [macos-latest, windows-latest, ubuntu-18.04]
+        node: 
+          -15
+        os: 
+#           - macos-latest
+          - windows-latest
+#           - ubuntu-18.04
 
     steps:
     - name: Checkout repository
@@ -28,7 +32,7 @@ jobs:
     - name: Build module
       run: |
         npm ci
-        npm run build
+        npm test
     - name: Download ICU data
       if: startsWith(matrix.os,'windows')
       run: curl -sS https://skia-canvas.s3.us-east-1.amazonaws.com/dependencies/icudtl.dat -o lib/v6/icudtl.dat
