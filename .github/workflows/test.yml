@@ -3,7 +3,8 @@ name: Run Tests
 on:
   workflow_dispatch:
   push:
-
+    branches:
+      - master
 jobs:
   build:
     runs-on: ${{ matrix.os }}
@@ -11,12 +12,10 @@ jobs:
       fail-fast: false
       matrix:
         node: [15]
-#         os: [macos-latest, windows-latest, ubuntu-18.04]
-        os: [windows-latest]
+        os: [macos-latest, windows-latest, ubuntu-18.04]
 
     steps:
     - uses: actions/checkout@v2
-#     - run: ls -R
     - name: Use Node.js ${{ matrix.node-version }}
       uses: actions/setup-node@v1
       with:
