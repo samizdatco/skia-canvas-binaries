@@ -26,9 +26,9 @@ jobs:
       with:
         toolchain: stable
     - name: Build module
-        run: |
-          npm ci
-          npm run build
+        run: 
+          - npm ci
+          - npm run build
     - name: Download ICU data
       if: startsWith(matrix.os,'windows')
       run: curl -sS https://skia-canvas.s3.us-east-1.amazonaws.com/dependencies/icudtl.dat -o lib/v6/icudtl.dat
