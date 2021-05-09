@@ -3,11 +3,11 @@ name: Publish binaries
 on:
   workflow_dispatch:
   release:
-    types: [published]
+    types: [created]
     
 jobs:
-  environment: s3_environment
-  build:
+  publish:
+    environment: s3_environment
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
