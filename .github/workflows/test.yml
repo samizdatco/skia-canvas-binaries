@@ -14,9 +14,9 @@ jobs:
         node: 
           - 15
         os: 
-#           - macos-latest
+          - macos-latest
           - windows-latest
-#           - ubuntu-18.04
+          - ubuntu-18.04
 
     steps:
     - name: Checkout repository
@@ -29,12 +29,14 @@ jobs:
       uses: actions-rs/toolchain@v1.0.6
       with:
         toolchain: stable
+    - name: Download ICU data
+      if: startsWith(matrix.os,'windows')
+      run: |
+        mkdir -p lib/v6
+        curl -sS https://skia-canvas.s3.us-east-1.amazonaws.com/dependencies/icudtl.dat -o lib/v6/icudtl.dat
     - name: Build module
       run: |
         npm ci
-        npm test
-    - name: Download ICU data
-      if: startsWith(matrix.os,'windows')
-      run: curl -sS https://skia-canvas.s3.us-east-1.amazonaws.com/dependencies/icudtl.dat -o lib/v6/icudtl.dat
+        npm run release
     - name: Run tests
       run: npm test
