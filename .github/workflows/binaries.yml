@@ -2,8 +2,6 @@ name: Publish binaries
 
 on:
   workflow_dispatch:
-  release:
-    types: [published]
 
 jobs:
   environment: s3_environment
