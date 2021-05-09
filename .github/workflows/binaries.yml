@@ -3,7 +3,7 @@ name: Compile Binaries
 on:
   workflow_dispatch:
   release:
-    types: [created]
+    types: [prereleased]
 
 jobs:
   environment: s3_environment
