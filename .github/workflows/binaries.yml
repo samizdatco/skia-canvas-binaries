@@ -1,0 +1,38 @@
+name: Run Tests
+
+on:
+  workflow_dispatch:
+  release:
+    types: [created]
+
+jobs:
+  build:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        node: [15]
+        os: [macos-latest, windows-latest, ubuntu-18.04]
+
+    steps:
+    - uses: actions/checkout@v2
+    - name: Use Node.js ${{ matrix.node-version }}
+      uses: actions/setup-node@v1
+      with:
+        node-version: ${{ matrix.node-version }}
+    - name: Use Rust
+      uses: actions-rs/toolchain@v1.0.6
+      with:
+        toolchain: stable
+    - name: Build Module
+      run: |
+        npm ci
+        npm run package
+    - name: Bundle ICU data
+      if: startsWith(matrix.os,'windows')
+      run: curl -sS https://skia-canvas.s3.us-east-1.amazonaws.com/dependencies/icudtl.dat -o lib/v6/icudtl.dat
+    - name: Package binaries
+      run: |
+        npm test
+        npm run package
+        ls -R lib
