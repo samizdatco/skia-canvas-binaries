@@ -3,14 +3,12 @@ name: Run Tests
 on:
   workflow_dispatch:
   push:
-    branches: [ main ]
-  pull_request:
-    branches: [ main ]
 
 jobs:
   build:
     runs-on: ${{ matrix.os }}
     strategy:
+      fail-fast: false
       matrix:
         node: [15]
         os: [macos-latest, windows-latest, ubuntu-18.04]
