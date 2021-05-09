@@ -1,4 +1,4 @@
-name: Compile Binaries
+name: Publish binaries
 
 on:
   workflow_dispatch:
@@ -10,7 +10,6 @@ jobs:
   build:
     runs-on: ${{ matrix.os }}
     strategy:
-      fail-fast: false
       matrix:
         node: [15]
         os: [macos-latest, windows-latest, ubuntu-18.04]
