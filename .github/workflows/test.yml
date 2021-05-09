@@ -15,7 +15,11 @@ jobs:
 
     steps:
     - uses: actions/checkout@v2
-    - run: curl https://skia-canvas.s3.us-east-1.amazonaws.com/dependencies/icudtl.dat -o icudtl.dat
+    - name: Download ICU data
+      if: startsWith(matrix.os,'windows')
+      run: |
+        mkdir -p lib/v6/icudtl.dat
+        curl https://skia-canvas.s3.us-east-1.amazonaws.com/dependencies/icudtl.dat -o lib/v6/icudtl.dat
     - run: ls -R
 #     - name: Use Node.js ${{ matrix.node-version }}
 #       uses: actions/setup-node@v1
