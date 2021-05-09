@@ -1,4 +1,4 @@
-name: Run Tests
+name: Compile Binaries
 
 on:
   workflow_dispatch:
@@ -33,6 +33,5 @@ jobs:
       run: curl -sS https://skia-canvas.s3.us-east-1.amazonaws.com/dependencies/icudtl.dat -o lib/v6/icudtl.dat
     - name: Package binaries
       run: |
-        npm test
-        npm run package
         ls -R lib
+        npm test
