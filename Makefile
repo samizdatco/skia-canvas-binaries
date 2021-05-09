@@ -39,3 +39,4 @@ run: $(LIB)
 preview: run
 	@open -a Preview.app out.png
 	@open -a "Visual Studio Code"
+
