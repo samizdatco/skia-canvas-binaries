@@ -24,7 +24,7 @@ jobs:
       uses: actions-rs/toolchain@v1.0.6
       with:
         toolchain: stable
-    - name: Build Module
+    - name: Build module
       run: |
         npm ci
         npm run package
