@@ -37,6 +37,6 @@ jobs:
     - name: Build module
       run: |
         npm ci
-        npm run release
+        npm run build
     - name: Run tests
       run: npm test
