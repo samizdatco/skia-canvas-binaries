@@ -23,18 +23,15 @@ jobs:
         override: true
         target: aarch64-apple-darwin
 
-    - name: Inspect libraries
+    - name: Inspect xcode paths
       run: |
-        xcodebuild -showsdks
-        echo "SDKROOT"
-        xcrun -sdk macosx11.1 --show-sdk-path
-        echo MACOSX_DEPLOYMENT_TARGET
-        xcrun -sdk macosx11.1 --show-sdk-platform-version
+        echo "SDKROOT=$(xcrun -sdk macosx11.1 --show-sdk-path)" >> $GITHUB_ENV
+        echo "MACOSX_DEPLOYMENT_TARGET=$(xcrun -sdk macosx11.1 --show-sdk-platform-version)" >> $GITHUB_ENV
 
-#     - name: Package module
-#       run: |
-#         npm ci
-#         npm run build -- --release --target aarch64-apple-darwin
+    - name: Package module
+      run: |
+        npm ci
+        npm run build -- --release --target aarch64-apple-darwin
         
 #     - name: Publish prebuilt binaries
 #       env:
