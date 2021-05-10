@@ -1,4 +1,4 @@
-name: Publish binaries
+name: Compile binaries
 
 on:
   workflow_dispatch:
