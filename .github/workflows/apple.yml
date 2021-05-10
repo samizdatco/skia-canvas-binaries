@@ -32,6 +32,8 @@ jobs:
       run: |
         npm install --ignore-scripts
         npm run build -- --target aarch64-apple-darwin
+        npm run package
+        ls -lR lib build
         
 #     - name: Publish prebuilt binaries
 #       env:
