@@ -13,4 +13,6 @@ todo.txt
 build
 target
 lib/v*/*.node
+test/assets/Oswald
+test/assets/Raleway
 check.js
