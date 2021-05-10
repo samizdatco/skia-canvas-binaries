@@ -52,9 +52,13 @@ jobs:
         npm run upload
 
   apple-silicon:
-    runs-on: macos-latest
-    steps:
-    
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: 
+          - macos-latest
+          
+    steps:    
     - name: Checkout repository
       uses: actions/checkout@v2
     
