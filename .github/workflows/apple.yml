@@ -24,7 +24,12 @@ jobs:
         target: aarch64-apple-darwin
 
     - name: Inspect libraries
-      run: xcodebuild -showsdks
+      run: |
+        xcodebuild -showsdks
+        echo "SDKROOT"
+        xcrun -sdk macosx11.1 --show-sdk-path) 
+        echo MACOSX_DEPLOYMENT_TARGET
+        xcrun -sdk macosx11.1 --show-sdk-platform-version
 
 #     - name: Package module
 #       run: |
