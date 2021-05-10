@@ -31,7 +31,7 @@ jobs:
     - name: Package module
       run: |
         npm ci
-        npm run build -- --release --target aarch64-apple-darwin
+        npm run build -- --target aarch64-apple-darwin
         
 #     - name: Publish prebuilt binaries
 #       env:
