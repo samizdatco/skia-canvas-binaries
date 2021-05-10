@@ -10,6 +10,7 @@ jobs:
   compile-binaries:
     runs-on: ${{ matrix.os }}
     strategy:
+      fail-fast: false
       matrix:
         node: 
           - 15
