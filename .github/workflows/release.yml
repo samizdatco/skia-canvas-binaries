@@ -7,7 +7,7 @@ on:
 
 jobs:
   new-release:
-    name: "New Release"
+    name: "New release"
     runs-on: "ubuntu-latest"
 
     steps:
