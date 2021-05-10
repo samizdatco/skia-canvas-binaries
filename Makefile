@@ -37,17 +37,17 @@ distclean:
 release:
 	@if [[ `git status -s package.json` != "" ]]; then printf "Commit changes to package.json first:\n\n"; git --no-pager diff package.json; exit 1; fi
 	@if [[ `git cherry -v` != "" ]]; then printf "Unpushed commits:\n\n"; git --no-pager log --branches --not --remotes; exit 1; fi
-	@if [[ $(GIT_TAG) =~ ^v$(PACKAGE_VERSION) ]]; then printf "Already published $(GIT_TAG)"; exit 1; fi
+	@if [[ $(GIT_TAG) =~ ^v$(PACKAGE_VERSION) ]]; then printf "Already published $(GIT_TAG)\n"; exit 1; fi
 	@echo
-	@echo "Git Tag: $(GIT_TAG)"
-	@echo "NPM Version: $(NPM_VERSION)"
-	@echo "Skia Canvas: $(PACKAGE_VERSION)"
+	@echo "Last NPM Version:  $(NPM_VERSION)"
+	@echo "Package Version:   $(PACKAGE_VERSION)"
+	@echo "Git Tag:          $(GIT_TAG)"
 	@echo
 	@/bin/echo -n "Update release -> v$(PACKAGE_VERSION)? [y/N] "
-	@read line; if [[ $$line = "y" ]]; then echo "Pushing tag to github..."; else exit 1; fi
+	@read line; if [[ $$line = "y" ]]; then printf "\nPushing tag to github..."; else exit 1; fi
 	git tag -a v$(PACKAGE_VERSION) -m v$(PACKAGE_VERSION)
 	git push origin --tags
-	@echo "Next: publish the release on github to submit to npm"
+	@printf "\nNext: publish the release on github to submit to npm\n"
 
 run: build
 	@node check.js
@@ -55,3 +55,5 @@ run: build
 preview: run
 	@open -a Preview.app out.png
 	@open -a "Visual Studio Code"
+
+
