@@ -40,7 +40,7 @@ jobs:
     - name: Package module
       run: |
         npm ci --ignore-scripts
-        npm run build
+        npm run build -- --release
         npm run package
         npm test
     
@@ -78,7 +78,7 @@ jobs:
     - name: Package module
       run: |
         npm ci --ignore-scripts
-        npm run build -- --target aarch64-apple-darwin
+        npm run build -- --release --target aarch64-apple-darwin
         sed -i.bak 's/"package_name":.*/"package_name": "{platform}-aarch64-{node_napi_label}.tar.gz",/' package.json
         npm run package
         
