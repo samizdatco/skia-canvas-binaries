@@ -1,6 +1,6 @@
 {
   "name": "skia-canvas",
-  "version": "0.9.22",
+  "version": "0.9.30",
   "description": "A canvas environment for Node",
   "main": "lib/index.js",
   "browser": "lib/stub.js",
