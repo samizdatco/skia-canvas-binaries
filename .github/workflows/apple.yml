@@ -14,7 +14,7 @@ jobs:
     - name: Use Node.js ${{ matrix.node-version }}
       uses: actions/setup-node@v2
       with:
-        node-version: "15"
+        node-version: 15
     
     - name: Use Rust
       uses: actions-rs/toolchain@v1.0.6
