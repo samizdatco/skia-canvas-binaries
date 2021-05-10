@@ -1,4 +1,4 @@
-name: "New release"
+name: New release
 
 on:
   push:
@@ -7,11 +7,11 @@ on:
 
 jobs:
   new-release:
-    name: "Create Release"
-    runs-on: "ubuntu-latest"
+    name: Create Release
+    runs-on: ubuntu-latest
 
     steps:
-    - name: "Auto-generate release"
+    - name: Auto-generate release
       uses: marvinpinto/action-automatic-releases@v1.2.0
       with:
         repo_token: "${{ secrets.GITHUB_TOKEN }}"
