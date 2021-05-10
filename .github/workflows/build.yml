@@ -7,7 +7,7 @@ on:
       - "v*"
     
 jobs:
-  publish:
+  compile-binaries:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
@@ -44,4 +44,4 @@ jobs:
         AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
         AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
       run: |
-        npm run publish
+        npm run upload
