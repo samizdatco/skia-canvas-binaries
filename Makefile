@@ -9,14 +9,13 @@ PACKAGE_VERSION = $(shell npm run env | grep npm_package_version | cut -d '=' -f
 NPM_VERSION = $(shell npm view skia-canvas version)
 .PHONY: build test visual check clean distclean release run preview
 
-$(NPM):
-	npm install
-
 build: $(NPM)
 	@npm run build
 
+$(NPM):
+	npm install
+
 $(LIB): build
-	@echo compilling
 
 test: $(LIB)
 	@$(JEST) --watch
