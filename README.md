@@ -1,0 +1,1 @@
+![](test/assets/path-logic/none.png)
