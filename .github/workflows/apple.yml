@@ -23,10 +23,13 @@ jobs:
         override: true
         target: aarch64-apple-darwin
 
-    - name: Package module
-      run: |
-        npm ci
-        npm run build -- --release --target aarch64-apple-darwin
+    - name: Inspect libraries
+      run: xcodebuild -showsdks
+
+#     - name: Package module
+#       run: |
+#         npm ci
+#         npm run build -- --release --target aarch64-apple-darwin
         
 #     - name: Publish prebuilt binaries
 #       env:
