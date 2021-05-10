@@ -12,14 +12,14 @@ NPM_VERSION = $(shell npm view skia-canvas version)
 $(NPM):
 	npm install
 
-$(LIB): $(NPM)
-	npm run build
-
-build:
+build: $(NPM)
 	@npm run build
 
+$(LIB): build
+	@echo compilling
+
 test: $(LIB)
-	@$(JEST)
+	@$(JEST) --watch
 
 visual: $(LIB)
 	@$(NODEMON) test/visual -w native/index.node -w test/visual -e js,html
@@ -39,9 +39,9 @@ release:
 	@if [[ `git cherry -v` != "" ]]; then printf "Unpushed commits:\n\n"; git --no-pager log --branches --not --remotes; exit 1; fi
 	@if [[ $(GIT_TAG) =~ ^v$(PACKAGE_VERSION) ]]; then printf "Already published $(GIT_TAG)\n"; exit 1; fi
 	@echo
-	@echo "Last NPM Version:  $(NPM_VERSION)"
+	@echo "Currently on NPM:  $(NPM_VERSION)"
 	@echo "Package Version:   $(PACKAGE_VERSION)"
-	@echo "Git Tag:          $(GIT_TAG)"
+	@echo "Last Git Tag:     $(GIT_TAG)"
 	@echo
 	@/bin/echo -n "Update release -> v$(PACKAGE_VERSION)? [y/N] "
 	@read line; if [[ $$line = "y" ]]; then printf "\nPushing tag to github..."; else exit 1; fi
