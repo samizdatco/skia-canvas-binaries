@@ -30,7 +30,7 @@ jobs:
 
     - name: Package module
       run: |
-        npm ci
+        npm install --only=dev
         npm run build -- --target aarch64-apple-darwin
         
 #     - name: Publish prebuilt binaries
