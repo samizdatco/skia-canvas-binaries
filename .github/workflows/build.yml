@@ -2,9 +2,9 @@ name: Compile binaries
 
 on:
   workflow_dispatch:
-  release:
-    types:
-      - published
+  push:
+    tags:
+      - "v*"
     
 jobs:
   publish:
