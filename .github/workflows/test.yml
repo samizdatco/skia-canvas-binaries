@@ -39,9 +39,7 @@ jobs:
         curl -sS https://skia-canvas.s3.us-east-1.amazonaws.com/dependencies/icudtl.dat -o lib/v6/icudtl.dat
     
     - name: Build module
-      run: |
-        npm ci
-        npm run build
+      run: npm ci
     
     - name: Run tests
       run: npm test
