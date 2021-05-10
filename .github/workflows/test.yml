@@ -7,7 +7,7 @@ on:
       - master
 jobs:
   run-tests:
-    name: "Rebuild & run tests"
+    name: "Rebuild & Test"
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
