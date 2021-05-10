@@ -32,12 +32,12 @@ jobs:
       run: |
         npm install --ignore-scripts
         npm run build -- --target aarch64-apple-darwin
+        sed -i.bak 's/"package_name":.*/"package_name": "{platform}-aarch64-{node_napi_label}.tar.gz",/' package.json
         npm run package
-        ls -lR lib build
         
-#     - name: Publish prebuilt binaries
-#       env:
-#         AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-#         AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-#       run: |
-#         npm run upload
+    - name: Publish prebuilt binaries
+      env:
+        AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      run: |
+        npm run upload
