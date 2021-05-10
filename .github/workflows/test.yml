@@ -7,7 +7,7 @@ on:
       - master
 jobs:
   run-tests:
-    name: "Rebuild & Test"
+    name: Rebuild & Test
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
@@ -35,7 +35,7 @@ jobs:
         toolchain: stable
     
     - name: Download ICU data
-      if: startsWith(matrix.os,'windows')
+      if: startsWith(matrix.os, 'windows')
       run: |
         mkdir -p lib/v6
         curl -sS https://skia-canvas.s3.us-east-1.amazonaws.com/dependencies/icudtl.dat -o lib/v6/icudtl.dat
