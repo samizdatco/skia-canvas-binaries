@@ -1,0 +1,19 @@
+name: Find ICU data
+
+on:
+  workflow_dispatch:
+    
+jobs:
+  apple-silicon:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: 
+          - macos-latest
+          
+    steps:  
+    - name: Use Rust
+      uses: actions-rs/toolchain@v1.0.6
+      with:
+        toolchain: stable
+    - run: which cargo    
