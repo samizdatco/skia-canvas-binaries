@@ -1,1 +1,0 @@
-![](test/assets/path-logic/path-operations@2x.png)
