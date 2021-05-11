@@ -4,16 +4,31 @@ on:
   workflow_dispatch:
     
 jobs:
-  apple-silicon:
+  x86-platform:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
         os: 
-          - macos-latest
-          
-    steps:  
+          - windows-latest 
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v2
+    
+    - name: Use Node.js ${{ matrix.node-version }}
+      uses: actions/setup-node@v2
+      with:
+        node-version: 15
+    
     - name: Use Rust
       uses: actions-rs/toolchain@v1.0.6
       with:
         toolchain: stable
-    - run: which cargo    
+        
+    - name: Package module
+      run: |
+        npm ci --ignore-scripts
+        npm run build 
+        ls -lr target/debug/deps
+        echo '-------------------------------------------'
+        find . -name icudtl.dat
