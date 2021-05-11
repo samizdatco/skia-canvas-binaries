@@ -33,12 +33,6 @@ jobs:
       with:
         toolchain: stable
     
-    - name: Fetch ICU data
-      if: startsWith(matrix.os,'windows')
-      run: |
-        mkdir -p lib/v6
-        curl -sS https://skia-canvas.s3.us-east-1.amazonaws.com/dependencies/icudtl.dat -o lib/v6/icudtl.dat
-    
     - name: Build module
       run: |
         npm ci --ignore-scripts
