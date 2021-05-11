@@ -33,6 +33,7 @@ jobs:
         ICU = $(find . -name icudtl.dat | grep skia-bindings | head -n 1)
         cp $ICU lib/v6
         ls -lR lib
+        npm test
 
 
 #         echo '-------------------------------------------'
