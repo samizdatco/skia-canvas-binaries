@@ -1,5 +1,4 @@
 name: Run tests
-
 on:
   workflow_dispatch:
   push:
@@ -9,6 +8,7 @@ on:
   pull_request:
     branches:
       - main
+      
 jobs:
   run-tests:
     name: Rebuild & Test
