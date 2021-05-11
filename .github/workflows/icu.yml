@@ -30,6 +30,11 @@ jobs:
       run: |
         npm ci --ignore-scripts
         npm run build 
-        find . -name icudtl.dat
-        echo '-------------------------------------------'
-        find /c/Rust/.cargo -name icudtl.dat
+        ICU = $(find . -name icudtl.dat | grep skia-bindings | head -n 1)
+        cp $ICU lib/v6
+        ls -lR lib
+
+
+#         echo '-------------------------------------------'
+#         find . -name icudtl.dat | head -n 1
+#         echo ./target/debug/build/skia-bindings-dae28d141e38f8f2/out/skia/icudtl.dat
