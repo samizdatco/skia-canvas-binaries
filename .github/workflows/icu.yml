@@ -24,23 +24,12 @@ jobs:
       uses: actions-rs/toolchain@v1.0.6
       with:
         toolchain: stable
-        
-    - name: Which rust
+          
+    - name: Package module
       shell: bash
-      run: | 
-        which cargo
-    
-    - name: Cargo contents
-      shell: bash
-      run: find /c/Rust/.cargo -name rust
-#       run: find /c/Rust/.cargo -name icudtl.dat
-  
-#     - name: Package module
-#       run: |
-#         npm ci --ignore-scripts
-#         npm run build 
-#         ls target/debug/deps
-#         echo '-------------------------------------------'
-#         ls -l target/debug/deps
-#         echo '-------------------------------------------'
-#         find . -name icudtl.dat
+      run: |
+        npm ci --ignore-scripts
+        npm run build 
+        find . -name icudtl.dat
+        echo '-------------------------------------------'
+        find /c/Rust/.cargo -name icudtl.dat
