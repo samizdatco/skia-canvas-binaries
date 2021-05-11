@@ -31,4 +31,6 @@ jobs:
         npm run build 
         ls target/debug/deps
         echo '-------------------------------------------'
+        ls -l target/debug/deps
+        echo '-------------------------------------------'
         find . -name icudtl.dat
