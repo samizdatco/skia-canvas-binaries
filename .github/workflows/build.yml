@@ -88,7 +88,7 @@ jobs:
         echo "SDKROOT=$(xcrun -sdk $SDK --show-sdk-path)" >> $GITHUB_ENV
         echo "MACOSX_DEPLOYMENT_TARGET=$(xcrun -sdk $SDK --show-sdk-platform-version)" >> $GITHUB_ENV
         
-    - name: Package module
+    - name: Build & package module
       run: |
         npm ci --ignore-scripts
         npm run build -- --release --target aarch64-apple-darwin
