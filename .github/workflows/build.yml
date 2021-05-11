@@ -1,5 +1,4 @@
 name: Compile binaries
-
 on:
   workflow_dispatch:
   push:
