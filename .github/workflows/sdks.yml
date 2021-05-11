@@ -1,0 +1,19 @@
+name: Check SDK
+
+on:
+  workflow_dispatch:
+    
+jobs:
+  apple-silicon:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: 
+          - macos-latest
+          
+    steps:    
+    - name: Inspect xcode paths
+      run: |
+        xcodebuild -showsdks
+        echo "SDKROOT=$(xcrun -sdk macosx11.1 --show-sdk-path)"
+        echo "MACOSX_DEPLOYMENT_TARGET=$(xcrun -sdk macosx11.1 --show-sdk-platform-version)"
