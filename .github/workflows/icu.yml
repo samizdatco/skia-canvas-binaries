@@ -29,6 +29,6 @@ jobs:
       run: |
         npm ci --ignore-scripts
         npm run build 
-        ls -lr target/debug/deps
+        ls -l target/debug/deps
         echo '-------------------------------------------'
         find . -name icudtl.dat
