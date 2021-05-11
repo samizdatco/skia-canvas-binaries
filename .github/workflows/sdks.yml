@@ -12,8 +12,12 @@ jobs:
           - macos-latest
           
     steps:    
+    - name: Search SDKs
+      run: xcodebuild -showsdks -json
+    
     - name: Inspect xcode paths
       run: |
-        xcodebuild -showsdks
+        which jq
+        xcodebuild -showsdks -json
         echo "SDKROOT=$(xcrun -sdk macosx11.1 --show-sdk-path)"
         echo "MACOSX_DEPLOYMENT_TARGET=$(xcrun -sdk macosx11.1 --show-sdk-platform-version)"
