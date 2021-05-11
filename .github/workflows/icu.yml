@@ -24,13 +24,21 @@ jobs:
       uses: actions-rs/toolchain@v1.0.6
       with:
         toolchain: stable
-        
-    - name: Package module
-      run: |
-        npm ci --ignore-scripts
-        npm run build 
-        ls target/debug/deps
-        echo '-------------------------------------------'
-        ls -l target/debug/deps
-        echo '-------------------------------------------'
-        find . -name icudtl.dat
+    - name: Which rust
+      shell: bash
+      run: | 
+        which cargo
+        ls -lr
+    
+    
+#     Get-ChildItem -Recurse -Filter
+  
+#     - name: Package module
+#       run: |
+#         npm ci --ignore-scripts
+#         npm run build 
+#         ls target/debug/deps
+#         echo '-------------------------------------------'
+#         ls -l target/debug/deps
+#         echo '-------------------------------------------'
+#         find . -name icudtl.dat
