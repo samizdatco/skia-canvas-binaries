@@ -9,7 +9,10 @@ jobs:
 
   x86-server:
     runs-on: ubuntu-latest
-    container: node:14
+    container:
+      image: node:14
+      env:
+        HOME: /github/home
 
     steps:
     - name: Checkout repository
