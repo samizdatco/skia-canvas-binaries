@@ -18,10 +18,10 @@ jobs:
     - name: Checkout repository
       uses: actions/checkout@v2
 
-    - name: Use Rust
-      uses: actions-rs/toolchain@v1.0.6
-      with:
-        toolchain: stable
+    # - name: Use Rust
+    #   uses: actions-rs/toolchain@v1.0.6
+    #   with:
+    #     toolchain: stable
 
     - name: Build module
       run: |
