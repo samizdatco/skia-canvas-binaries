@@ -28,6 +28,7 @@ jobs:
 
     - name: Build module
       run: |
+        source /root/.cargo/env
         npm ci --ignore-scripts
         npm run build -- --release
 
