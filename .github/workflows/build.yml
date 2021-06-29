@@ -11,17 +11,10 @@ jobs:
     runs-on: ubuntu-latest
     container:
       image: node:14
-      env:
-        HOME: /github/home
 
     steps:
     - name: Checkout repository
       uses: actions/checkout@v2
-
-    # - name: Use Rust
-    #   uses: actions-rs/toolchain@v1.0.6
-    #   with:
-    #     toolchain: stable
 
     - name: Install rust
       run: |
