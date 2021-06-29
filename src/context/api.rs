@@ -12,7 +12,7 @@ use skia_safe::textlayout::{TextDirection};
 use skia_safe::PaintStyle::{Fill, Stroke};
 
 use super::{Context2D, BoxedContext2D, Dye};
-use crate::canvas::{BoxedCanvas};
+use crate::canvas::{Canvas, BoxedCanvas};
 use crate::path::{Path2D, BoxedPath2D};
 use crate::image::{Image, BoxedImage};
 use crate::typography::*;
@@ -23,30 +23,20 @@ use crate::utils::*;
 //
 
 pub fn new(mut cx: FunctionContext) -> JsResult<BoxedContext2D> {
-  let dims = float_args(&mut cx, 1..3)?;
+  let this = RefCell::new(Context2D::new());
+  let parent = cx.argument::<BoxedCanvas>(1)?;
+  let parent = parent.borrow();
 
-  let bounds = Rect::from_wh(dims[0], dims[1]);
-  let this = RefCell::new(Context2D::new(bounds));
+  this.borrow_mut().resize((parent.width, parent.height));
   Ok(cx.boxed(this))
 }
 
-pub fn resetWidth(mut cx: FunctionContext) -> JsResult<JsUndefined> {
+pub fn resetSize(mut cx: FunctionContext) -> JsResult<JsUndefined> {
   let this = cx.argument::<BoxedContext2D>(0)?;
-  let mut this = this.borrow_mut();
+  let parent = cx.argument::<BoxedCanvas>(1)?;
+  let parent = parent.borrow();
 
-  let new_width = float_arg(&mut cx, 1, "width")?;
-  let old_height = this.bounds.size().height;
-  this.resize((new_width, old_height));
-  Ok(cx.undefined())
-}
-
-pub fn resetHeight(mut cx: FunctionContext) -> JsResult<JsUndefined> {
-  let this = cx.argument::<BoxedContext2D>(0)?;
-  let mut this = this.borrow_mut();
-
-  let new_height = float_arg(&mut cx, 1, "height")?;
-  let old_width = this.bounds.size().width;
-  this.resize((old_width, new_height));
+  this.borrow_mut().resize((parent.width, parent.height));
   Ok(cx.undefined())
 }
 
@@ -134,7 +124,7 @@ pub fn set_currentTransform(mut cx: FunctionContext) -> JsResult<JsUndefined> {
   let this = cx.argument::<BoxedContext2D>(0)?;
   let mut this = this.borrow_mut();
 
-  if let Ok(matrix) = matrix_arg(&mut cx, 1){
+  if let Some(matrix) = opt_matrix_arg(&mut cx, 1){
     this.with_matrix(|ctm| ctm.reset().pre_concat(&matrix) );
   }
   Ok(cx.undefined())
@@ -394,7 +384,7 @@ pub fn get_fillStyle(mut cx: FunctionContext) -> JsResult<JsValue> {
   let this = cx.argument::<BoxedContext2D>(0)?;
   let this = this.borrow();
   let dye = this.state.fill_style.clone();
-  dye.value(&mut cx, Fill)
+  dye.value(&mut cx)
 }
 
 pub fn set_fillStyle(mut cx: FunctionContext) -> JsResult<JsUndefined> {
@@ -402,10 +392,8 @@ pub fn set_fillStyle(mut cx: FunctionContext) -> JsResult<JsUndefined> {
   let mut this = this.borrow_mut();
   let arg = cx.argument::<JsValue>(1)?;
 
-  if let Some(dye) = Dye::new(&mut cx, arg, Fill) {
+  if let Some(dye) = Dye::new(&mut cx, arg) {
     this.state.fill_style = dye;
-  }else{
-    eprintln!("Warning: Invalid fill style (expected a css color string, CanvasGradient, or CanvasPattern)");
   }
   Ok(cx.undefined())
 }
@@ -414,7 +402,7 @@ pub fn get_strokeStyle(mut cx: FunctionContext) -> JsResult<JsValue> {
   let this = cx.argument::<BoxedContext2D>(0)?;
   let this = this.borrow();
   let dye = this.state.stroke_style.clone();
-  dye.value(&mut cx, Stroke)
+  dye.value(&mut cx)
 }
 
 pub fn set_strokeStyle(mut cx: FunctionContext) -> JsResult<JsUndefined> {
@@ -422,10 +410,8 @@ pub fn set_strokeStyle(mut cx: FunctionContext) -> JsResult<JsUndefined> {
   let mut this = this.borrow_mut();
   let arg = cx.argument::<JsValue>(1)?;
 
-  if let Some(dye) = Dye::new(&mut cx, arg, Stroke) {
+  if let Some(dye) = Dye::new(&mut cx, arg) {
     this.state.stroke_style = dye;
-  }else{
-    eprintln!("Warning: Invalid stroke style (expected a css color string, CanvasGradient, or CanvasPattern)");
   }
   Ok(cx.undefined())
 }
@@ -611,18 +597,21 @@ pub fn drawRaster(mut cx: FunctionContext) -> JsResult<JsUndefined> {
 
 pub fn drawCanvas(mut cx: FunctionContext) -> JsResult<JsUndefined> {
   let this = cx.argument::<BoxedContext2D>(0)?;
-  let canvas = cx.argument::<BoxedCanvas>(1)?;
-  let context = cx.argument::<BoxedContext2D>(2)?;
+  let context = cx.argument::<BoxedContext2D>(1)?;
 
-  let canvas = canvas.borrow();
-  let (width, height) = (canvas.width as f32, canvas.height as f32);
+  let (width, height) = {
+    let bounds = context.borrow().bounds;
+    (bounds.width(), bounds.height())
+  };
 
   let argc = cx.len() as usize;
-  let nums = float_args(&mut cx, 3..argc)?;
+  let nums = float_args(&mut cx, 2..argc)?;
   match _layout_rects(width, height, &nums){
     Some((src, dst)) => {
-      let mut ctx = context.borrow_mut();
-      let pict = ctx.get_picture(None);
+      let pict = {
+        let mut ctx = context.borrow_mut();
+        ctx.get_picture(None)
+      };
 
       let mut this = this.borrow_mut();
       this.draw_picture(&pict, &src, &dst);
@@ -691,9 +680,9 @@ pub fn get_imageSmoothingEnabled(mut cx: FunctionContext) -> JsResult<JsBoolean>
 pub fn set_imageSmoothingEnabled(mut cx: FunctionContext) -> JsResult<JsUndefined> {
   let this = cx.argument::<BoxedContext2D>(0)?;
   let mut this = this.borrow_mut();
-  if let Ok(flag) = bool_arg(&mut cx, 1, "imageSmoothingEnabled"){
-    this.state.image_smoothing_enabled = flag;
-  }
+  let flag = bool_arg(&mut cx, 1, "imageSmoothingEnabled")?;
+
+  this.state.image_smoothing_enabled = flag;
   Ok(cx.undefined())
 }
 

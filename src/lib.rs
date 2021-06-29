@@ -79,17 +79,21 @@ fn main(mut cx: ModuleContext) -> NeonResult<()> {
 
   cx.export_function("Canvas_new", canvas::new)?;
   cx.export_function("Canvas_get_width", canvas::get_width)?;
-  cx.export_function("Canvas_get_height", canvas::get_height)?;
   cx.export_function("Canvas_set_width", canvas::set_width)?;
+  cx.export_function("Canvas_get_height", canvas::get_height)?;
   cx.export_function("Canvas_set_height", canvas::set_height)?;
-  cx.export_function("Canvas_saveAs", canvas::saveAs)?;
+
+  cx.export_function("Canvas_get_async", canvas::get_async)?;
+  cx.export_function("Canvas_set_async", canvas::set_async)?;
+  cx.export_function("Canvas_save", canvas::save)?;
+  cx.export_function("Canvas_saveSync", canvas::saveSync)?;
   cx.export_function("Canvas_toBuffer", canvas::toBuffer)?;
+  cx.export_function("Canvas_toBufferSync", canvas::toBufferSync)?;
 
   // -- Context -----------------------------------------------------------------------------------
 
   cx.export_function("CanvasRenderingContext2D_new", ctx::new)?;
-  cx.export_function("CanvasRenderingContext2D_resetWidth", ctx::resetWidth)?;
-  cx.export_function("CanvasRenderingContext2D_resetHeight", ctx::resetHeight)?;
+  cx.export_function("CanvasRenderingContext2D_resetSize", ctx::resetSize)?;
 
   // grid state
   cx.export_function("CanvasRenderingContext2D_save", ctx::save)?;

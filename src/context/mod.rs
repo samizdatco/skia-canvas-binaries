@@ -2,31 +2,27 @@
 #![allow(unused_imports)]
 #![allow(unused_variables)]
 #![allow(dead_code)]
-use std::rc::Rc;
-use std::ops::Range;
 use std::cell::RefCell;
 use std::sync::{Arc, Mutex};
 use neon::prelude::*;
-use neon::object::This;
-use neon::result::Throw;
 use skia_safe::{Canvas as SkCanvas, Surface, Paint, Path, PathOp, Image, ImageInfo,
                 Matrix, Rect, Point, IPoint, Size, ISize, Color, Color4f, ColorType,
                 PaintStyle, BlendMode, AlphaType, TileMode, ClipOp, Data,
                 PictureRecorder, Picture, Drawable, FilterQuality, SamplingOptions,
                 image_filters, color_filters, table_color_filter, dash_path_effect};
-use skia_safe::textlayout::{Paragraph, ParagraphBuilder, ParagraphStyle, TextStyle, TextShadow, RectHeightStyle, RectWidthStyle};
+use skia_safe::textlayout::{ParagraphStyle, TextStyle};
 use skia_safe::canvas::SrcRectConstraint::Strict;
 use skia_safe::path::FillType;
 
 use crate::FONT_LIBRARY;
 use crate::utils::*;
 use crate::typography::*;
+use crate::canvas::Page;
 use crate::gradient::{CanvasGradient, BoxedCanvasGradient};
 use crate::pattern::{CanvasPattern, BoxedCanvasPattern};
 
 const BLACK:Color = Color::BLACK;
 const TRANSPARENT:Color = Color::TRANSPARENT;
-const GALLEY:f32 = 100_000.0;
 
 pub mod api;
 pub type BoxedContext2D = JsBox<RefCell<Context2D>>;
@@ -122,14 +118,25 @@ impl Default for State {
   }
 }
 
+impl State{
+  pub fn typography(&self) -> (TextStyle, ParagraphStyle, Baseline, bool) {
+    (
+      self.char_style.clone(),
+      self.graf_style.clone(),
+      self.text_baseline,
+      self.text_wrap
+    )
+  }
+}
+
 impl Context2D{
-  pub fn new(bounds: Rect) -> Self {
+  pub fn new() -> Self {
     let mut recorder = PictureRecorder::new();
+    let bounds = Rect::from_wh(300.0, 150.0);
     recorder.begin_recording(bounds, None);
     if let Some(canvas) = recorder.recording_canvas() {
       canvas.save(); // start at depth 2
     }
-
 
     Context2D{
       bounds,
@@ -458,6 +465,15 @@ impl Context2D{
     drobble
   }
 
+  pub fn get_page(&self) -> Page {
+    Page{
+      recorder: Arc::clone(&self.recorder),
+      bounds: self.bounds,
+      clip: self.state.clip.clone(),
+      matrix: self.state.matrix,
+    }
+  }
+
   pub fn get_picture(&mut self, cull: Option<&Rect>) -> Option<Picture> {
     // stop the recorder to take a snapshot then restart it again
     let recorder = Arc::clone(&self.recorder);
@@ -503,7 +519,7 @@ impl Context2D{
       self.push();
       self.reset_canvas();
       self.with_canvas(|canvas| {
-        let mut paint = Paint::default();
+        let paint = Paint::default();
         let mut eraser = Paint::default();
         eraser.set_blend_mode(BlendMode::Clear);
         canvas.draw_image_rect(&bitmap, Some((src_rect, Strict)), dst_rect, &eraser);
@@ -529,107 +545,18 @@ impl Context2D{
     self.state.char_style = new_style;
   }
 
-  pub fn typeset(&mut self, text: &str, width:f32, paint: Paint) -> Paragraph {
-    let mut char_style = self.state.char_style.clone();
-    char_style.set_foreground_color(Some(paint));
-
-    let mut graf_style = self.state.graf_style.clone();
-    let text = match self.state.text_wrap{
-      true => text.to_string(),
-      false => {
-        graf_style.set_max_lines(1);
-        text.replace("\n", " ")
-      }
-    };
-
-    let mut library = FONT_LIBRARY.lock().unwrap();
-    let collection = library.collect_fonts(&char_style);
-    let mut paragraph_builder = ParagraphBuilder::new(&graf_style, collection);
-    paragraph_builder.push_style(&char_style);
-    paragraph_builder.add_text(&text);
-
-    let mut paragraph = paragraph_builder.build();
-    paragraph.layout(width);
-    paragraph
-  }
 
   pub fn draw_text(&mut self, text: &str, x: f32, y: f32, width: Option<f32>, paint: Paint){
-    let width = width.unwrap_or(GALLEY);
-
-    let mut text_paint = paint.clone();
-    text_paint.set_blend_mode(BlendMode::SrcOver);
-
-    let mut paragraph = self.typeset(&text, width, text_paint);
-    let mut point = Point::new(x, y);
-    let metrics = self.state.char_style.font_metrics();
-    let offset = get_baseline_offset(&metrics, self.state.text_baseline);
-    point.y += offset - paragraph.alphabetic_baseline();
-    point.x += width * get_alignment_factor(&self.state.graf_style);
-
-    let mut bounds = paragraph.get_rects_for_range(0..text.len(), RectHeightStyle::IncludeLineSpacingBottom, RectWidthStyle::Tight)
-      .iter().map(|textbox| textbox.rect)
-      .fold(Rect::new_empty(), Rect::join2);
-    bounds.outset((paint.stroke_width(), paint.stroke_width()));
-
-    // render the text once into a picture we can use for the shadow as well
-    let mut recorder = PictureRecorder::new();
-    recorder.begin_recording(bounds, None);
-    if let Some(canvas) = recorder.recording_canvas() {
-      paragraph.paint(canvas, (0.0,0.0));
-
-      if let Some(pict) = recorder.finish_recording_as_picture(Some(&bounds)){
-        let position = Matrix::translate(point);
-        self.render_to_canvas(&paint, |canvas, paint| {
-          canvas.draw_picture(&pict, Some(&position), Some(&paint));
-        });
-      }
-    }
-
+    let typesetter = Typesetter::new(&self.state, text, width);
+    self.render_to_canvas(&paint, |canvas, paint| {
+      let point = Point::new(x, y);
+      let (paragraph, offset) = typesetter.layout(&paint);
+      paragraph.paint(canvas, point + offset);
+    });
   }
 
   pub fn measure_text(&mut self, text: &str, width:Option<f32>) -> Vec<Vec<f32>>{
-    let paint = self.paint_for_fill();
-    let mut paragraph = self.typeset(&text, width.unwrap_or(GALLEY), paint);
-
-    let font_metrics = self.state.char_style.font_metrics();
-    let offset = get_baseline_offset(&font_metrics, self.state.text_baseline);
-    let hang = get_baseline_offset(&font_metrics, Baseline::Hanging) - offset;
-    let norm = get_baseline_offset(&font_metrics, Baseline::Alphabetic) - offset;
-    let ideo = get_baseline_offset(&font_metrics, Baseline::Ideographic) - offset;
-    let ascent = norm - font_metrics.ascent;
-    let descent = font_metrics.descent - norm;
-    let alignment = get_alignment_factor(&self.state.graf_style);
-
-    if paragraph.line_number() == 0 {
-      return vec![vec![0.0, 0.0, 0.0, 0.0, 0.0, ascent, descent, ascent, descent, hang, norm, ideo]]
-    }
-
-    // find the bounds and text-range for each individual line
-    let origin = paragraph.get_line_metrics()[0].baseline;
-    let line_rects:Vec<(Rect, Range<usize>, f32)> = paragraph.get_line_metrics().iter().map(|line|{
-      let baseline = line.baseline - origin;
-      let rect = Rect::new(line.left as f32, (baseline - line.ascent) as f32,
-                          (line.width - line.left) as f32, (baseline + line.descent) as f32);
-      let range = string_idx_range(text, line.start_index, line.end_excluding_whitespaces);
-      (rect.with_offset((alignment*rect.width(), offset)), range, baseline as f32)
-    }).collect();
-
-    // take their union to find the bounds for the whole text run
-    let (bounds, chars) = line_rects.iter().fold((Rect::new_empty(), 0), |(union, indices), (rect, range, _)|
-      (Rect::join2(union, rect), range.end)
-    );
-
-    // return a list-of-lists whose first entry is the whole-run font metrics and subsequent entries are
-    // line-rect/range values (with the js side responsible for restructuring the whole bundle)
-    let mut results = vec![vec![
-      bounds.width(), bounds.left, bounds.right, -bounds.top, bounds.bottom,
-      ascent, descent, ascent, descent, hang, norm, ideo
-    ]];
-    line_rects.iter().for_each(|(rect, range, baseline)|{
-      results.push(vec![rect.left, rect.top, rect.width(), rect.height(),
-                        *baseline, range.start as f32, range.end as f32])
-    });
-    results
+    Typesetter::new(&self.state, text, width).metrics()
   }
 
   pub fn set_filter(&mut self, filter_text:&str, specs:&[FilterSpec]){
@@ -799,7 +726,7 @@ pub enum Dye{
 }
 
 impl Dye{
-  pub fn new<'a, T: This>(cx: &mut CallContext<'a, T>, value: Handle<'a, JsValue>, style: PaintStyle) -> Option<Self> {
+  pub fn new<'a>(cx: &mut FunctionContext<'a>, value: Handle<'a, JsValue>) -> Option<Self> {
     if let Ok(gradient) = value.downcast::<BoxedCanvasGradient, _>(cx){
       Some(Dye::Gradient(gradient.borrow().clone()) )
     }else if let Ok(pattern) = value.downcast::<BoxedCanvasPattern, _>(cx){
@@ -811,7 +738,7 @@ impl Dye{
     }
   }
 
-  pub fn value<'a, T: This>(&self, cx: &mut CallContext<'a, T>, style: PaintStyle) -> JsResult<'a, JsValue> {
+  pub fn value<'a>(&self, cx: &mut FunctionContext<'a>) -> JsResult<'a, JsValue> {
     match self{
       Dye::Color(color) => color_to_css(cx, &color),
       _ => Ok(cx.null().upcast()) // flag to the js context that it should use its cached pattern/gradient ref

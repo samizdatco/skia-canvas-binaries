@@ -110,14 +110,20 @@ pub fn from_svg(mut cx: FunctionContext) -> JsResult<BoxedPath2D> {
 pub fn addPath(mut cx: FunctionContext) -> JsResult<JsUndefined> {
   let this = cx.argument::<BoxedPath2D>(0)?;
   let other = cx.argument::<BoxedPath2D>(1)?;
-  let matrix = match matrix_arg(&mut cx, 2){
-    Ok(matrix) => matrix,
-    Err(_e) => Matrix::new_identity()
-  };
+  let matrix = opt_matrix_arg(&mut cx, 2).unwrap_or_else(
+    Matrix::new_identity
+  );
 
-  let mut this = this.borrow_mut();
-  let other = other.borrow();
-  this.path.add_path_matrix(&other.path, &matrix, AddPathMode::Append);
+  // make a copy if adding a path to itself, otherwise use a ref
+  if this.strict_equals(&mut cx, other){
+    let src = other.borrow().path.clone();
+    let mut dst = &mut this.borrow_mut().path;
+    dst.add_path_matrix(&src, &matrix, AddPathMode::Append);
+  }else{
+    let src = &other.borrow().path;
+    let mut dst = &mut this.borrow_mut().path;
+    dst.add_path_matrix(src, &matrix, AddPathMode::Append);
+  };
 
   Ok(cx.undefined())
 }
@@ -213,7 +219,7 @@ pub fn ellipse(mut cx: FunctionContext) -> JsResult<JsUndefined> {
   let this = cx.argument::<BoxedPath2D>(0)?;
   let mut this = this.borrow_mut();
   let nums = float_args(&mut cx, 1..8)?;
-  let ccw = bool_arg(&mut cx, 8, "isCCW")?;
+  let ccw = bool_arg_or(&mut cx, 8, false);
 
   if let [x, y, x_radius, y_radius, rotation, start_angle, end_angle] = nums.as_slice(){
     if *x_radius < 0.0 || *y_radius < 0.0 {
@@ -230,7 +236,7 @@ pub fn ellipse(mut cx: FunctionContext) -> JsResult<JsUndefined> {
 pub fn rect(mut cx: FunctionContext) -> JsResult<JsUndefined> {
   let this = cx.argument::<BoxedPath2D>(0)?;
   let mut this = this.borrow_mut();
-  let nums = float_args(&mut cx, 0..4)?;
+  let nums = float_args(&mut cx, 1..5)?;
 
   if let [x, y, w, h] = nums.as_slice(){
     let rect = Rect::from_xywh(*x, *y, *w, *h);
