@@ -41,37 +41,44 @@ jobs:
     runs-on: macos-latest
 
     steps:
-    - name: Checkout repository
-      uses: actions/checkout@v2
+      - name: Inspect xcode paths
+        run: |
+          SDK=$(xcodebuild -showsdks -json | jq -r '.[] | .canonicalName' | grep '^macosx' | tail -n 1)
+          xcrun -sdk $SDK --show-sdk-path
+          xcrun -sdk $SDK --show-sdk-platform-version
 
-    - name: Use Node.js
-      uses: actions/setup-node@v2
-      with:
-        node-version: 16
 
-    - name: Use Rust
-      uses: actions-rs/toolchain@v1.0.6
-      with:
-        toolchain: stable
+    # - name: Checkout repository
+    #   uses: actions/checkout@v2
 
-    - name: Build module
-      env:
-        MACOSX_DEPLOYMENT_TARGET: 10.12
-      run: |
-        npm ci --ignore-scripts
-        npm run build -- --release
+    # - name: Use Node.js
+    #   uses: actions/setup-node@v2
+    #   with:
+    #     node-version: 16
 
-    - name: Package module
-      run: |
-        npm test
-        npm run package
+    # - name: Use Rust
+    #   uses: actions-rs/toolchain@v1.0.6
+    #   with:
+    #     toolchain: stable
 
-    - name: Upload to S3
-      env:
-        AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-        AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-      run: |
-        npm run upload
+    # - name: Build module
+    #   env:
+    #     MACOSX_DEPLOYMENT_TARGET: 10.12
+    #   run: |
+    #     npm ci --ignore-scripts
+    #     npm run build -- --release
+
+    # - name: Package module
+    #   run: |
+    #     npm test
+    #     npm run package
+
+    # - name: Upload to S3
+    #   env:
+    #     AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+    #     AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+    #   run: |
+    #     npm run upload
 
 
   # mac-arm64:
