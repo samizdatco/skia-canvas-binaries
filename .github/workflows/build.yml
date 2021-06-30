@@ -55,7 +55,37 @@ jobs:
       run: |
         npm run upload
 
-  apple-silicon:
+  x86-linux:
+    runs-on: ubuntu-latest
+    container: node:14
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v2
+
+    - name: Install rust
+      run: |
+        curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
+        echo "$HOME/.cargo/bin" >> $GITHUB_PATH
+
+    - name: Build module
+      run: |
+        npm ci --ignore-scripts
+        npm run build -- --release
+
+    - name: Package module
+      run: |
+        npm test
+        npm run package
+
+    - name: Upload to S3
+      env:
+        AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      run: |
+        npm run upload
+
+  arm64-mac:
     runs-on: macos-latest
 
     steps:
@@ -93,34 +123,3 @@ jobs:
         AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
       run: |
         npm run upload
-
-  docker-container:
-    runs-on: ubuntu-latest
-    container: node:14
-
-    steps:
-    - name: Checkout repository
-      uses: actions/checkout@v2
-
-    - name: Install rust
-      run: |
-        curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
-        echo "$HOME/.cargo/bin" >> $GITHUB_PATH
-
-    - name: Build module
-      run: |
-        npm ci --ignore-scripts
-        npm run build -- --release
-
-    - name: Package module
-      run: |
-        npm test
-        npm run package
-
-    - name: Upload to S3
-      env:
-        AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-        AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-      run: |
-        npm run upload
-
