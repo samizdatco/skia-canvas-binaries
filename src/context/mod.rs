@@ -7,7 +7,7 @@ use std::sync::{Arc, Mutex};
 use neon::prelude::*;
 use skia_safe::{Canvas as SkCanvas, Surface, Paint, Path, PathOp, Image, ImageInfo,
                 Matrix, Rect, Point, IPoint, Size, ISize, Color, Color4f, ColorType,
-                PaintStyle, BlendMode, AlphaType, TileMode, ClipOp, Data,
+                PaintStyle, BlendMode, AlphaType, TileMode, ClipOp, Data, Font,
                 PictureRecorder, Picture, Drawable, FilterQuality, SamplingOptions,
                 image_filters, color_filters, table_color_filter, dash_path_effect};
 use skia_safe::textlayout::{ParagraphStyle, TextStyle};
@@ -297,10 +297,19 @@ impl Context2D{
     }
   }
 
-  pub fn draw_path(&mut self, paint: &Paint){
-    // the current path has already incorporated its transform state
-    let inverse = self.state.matrix.invert().unwrap();
-    let path = self.path.with_transform(&inverse);
+  pub fn draw_path(&mut self, path:Option<Path>, paint: &Paint, rule:Option<FillType>){
+    let mut path = match path {
+      Some(path) => path,
+      None => {
+        // the current path has already incorporated its transform state
+        let inverse = self.state.matrix.invert().unwrap();
+        self.path.with_transform(&inverse)
+      }
+    };
+
+    if let Some(rule) = rule{
+      path.set_fill_type(rule);
+    }
 
     self.render_to_canvas(&paint, |canvas, paint| {
       canvas.draw_path(&path, &paint);
@@ -557,6 +566,10 @@ impl Context2D{
 
   pub fn measure_text(&mut self, text: &str, width:Option<f32>) -> Vec<Vec<f32>>{
     Typesetter::new(&self.state, text, width).metrics()
+  }
+
+  pub fn outline_text(&self, text:&str) -> Option<Path>{
+    Typesetter::new(&self.state, text, None).path()
   }
 
   pub fn set_filter(&mut self, filter_text:&str, specs:&[FilterSpec]){

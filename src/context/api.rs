@@ -256,6 +256,19 @@ pub fn quadraticCurveTo(mut cx: FunctionContext) -> JsResult<JsUndefined> {
   Ok(cx.undefined())
 }
 
+
+pub fn conicCurveTo(mut cx: FunctionContext) -> JsResult<JsUndefined> {
+  let this = cx.argument::<BoxedContext2D>(0)?;
+  let mut this = this.borrow_mut();
+  let nums = float_args(&mut cx, 1..6)?;
+  if let [p1x, p1y, p2x, p2y, weight] = nums.as_slice(){
+    if this.path.is_empty(){ this.path.move_to((*p1x, *p1y)); }
+    this.path.conic_to((*p1x, *p1y), (*p2x, *p2y), *weight);
+  }
+
+  Ok(cx.undefined())
+}
+
 pub fn closePath(mut cx: FunctionContext) -> JsResult<JsUndefined> {
   let this = cx.argument::<BoxedContext2D>(0)?;
   let mut this = this.borrow_mut();
@@ -316,29 +329,23 @@ pub fn clip(mut cx: FunctionContext) -> JsResult<JsUndefined> {
 
 pub fn fill(mut cx: FunctionContext) -> JsResult<JsUndefined> {
   let this = cx.argument::<BoxedContext2D>(0)?;
-  let mut this = this.borrow_mut();
-  let mut shift = 1;
-  if let Some(path) = path2d_arg_opt(&mut cx, shift){
-    this.path = path.with_transform(&this.state.matrix);
-    shift += 1;
-  }
-  let rule = fill_rule_arg_or(&mut cx, shift, "nonzero")?;
+  let path = path2d_arg_opt(&mut cx, 1);
+  let rule_idx = if path.is_some(){ 2 }else{ 1 };
+  let rule = fill_rule_arg_or(&mut cx, rule_idx, "nonzero")?;
 
+  let mut this = this.borrow_mut();
   let paint = this.paint_for_fill();
-  this.path.set_fill_type(rule);
-  this.draw_path(&paint);
+  this.draw_path(path, &paint, Some(rule));
   Ok(cx.undefined())
 }
 
 pub fn stroke(mut cx: FunctionContext) -> JsResult<JsUndefined> {
   let this = cx.argument::<BoxedContext2D>(0)?;
-  let mut this = this.borrow_mut();
-  if let Some(path) = path2d_arg_opt(&mut cx, 1){
-    this.path = path.with_transform(&this.state.matrix)
-  }
+  let path = path2d_arg_opt(&mut cx, 1);
 
+  let mut this = this.borrow_mut();
   let paint = this.paint_for_stroke();
-  this.draw_path(&paint);
+  this.draw_path(path, &paint, None);
   Ok(cx.undefined())
 }
 
@@ -752,6 +759,17 @@ pub fn measureText(mut cx: FunctionContext) -> JsResult<JsArray> {
     results.set(&mut cx, i as u32, line)?;
   }
   Ok(results)
+}
+
+pub fn outlineText(mut cx: FunctionContext) -> JsResult<JsValue> {
+  let this = cx.argument::<BoxedContext2D>(0)?;
+  let text = string_arg(&mut cx, 1, "text")?;
+  let mut this = this.borrow_mut();
+  if let Some(path) = this.outline_text(&text){
+    Ok(cx.boxed(RefCell::new(Path2D{path})).upcast())
+  }else{
+    Ok(cx.undefined().upcast())
+  }
 }
 
 // -- type properties ---------------------------------------------------------------

@@ -218,6 +218,10 @@ describe("Context2D", ()=>{
       })
 
       test("from Canvas", () => {
+        let blank = new Canvas()
+        ctx.fillStyle = ctx.createPattern(blank, 'repeat');
+        ctx.fillRect(0,0, 20,20);
+
         let checkers = new Canvas(2, 2),
             patCtx = checkers.getContext("2d");
         patCtx.fillStyle = 'white';
@@ -241,7 +245,6 @@ describe("Context2D", ()=>{
       })
 
       test("with local transform", () => {
-
         // call func with an ImageData-offset and pixel color value appropriate for a 4-quadrant pattern within
         // the width and height that's white in the upper-left & lower-right and black in the other corners
         function eachPixel(bmp, func){
@@ -349,6 +352,13 @@ describe("Context2D", ()=>{
   })
 
   describe("supports", () => {
+    test("filter", () => {
+      // make sure chains of filters compose correctly <https://codepen.io/sosuke/pen/Pjoqqp>
+      ctx.filter = 'blur(5px) invert(56%) sepia(63%) saturate(4837%) hue-rotate(163deg) brightness(96%) contrast(101%)'
+      ctx.fillRect(0,0,20,20)
+      expect(pixel(10, 10)).toEqual([0, 162, 213, 245])
+    })
+
     test("clip()", () => {
       ctx.fillStyle = 'white'
       ctx.fillRect(0, 0, 2, 2)
