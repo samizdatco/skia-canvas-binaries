@@ -20,26 +20,35 @@ jobs:
       with:
         node-version: 15
     
-    - name: Use Rust
-      uses: actions-rs/toolchain@v1.0.6
-      with:
-        toolchain: stable
-          
-    - name: Package module
+    - name: test icu
       shell: bash
       run: |
         npm install
-        ICU=$(find . -name icudtl.dat | grep skia-bindings | head -n 1)
-        cp $ICU lib/v6
         ls -lR lib
-        npm test
         which node
         ls $(dirname `which node`)
+        npm test
 
 
-#        npm ci --ignore-scripts
-#        npm run build
+#     - name: Use Rust
+#       uses: actions-rs/toolchain@v1.0.6
+#       with:
+#         toolchain: stable
+          
+#     - name: Package module
+#       shell: bash
+#       run: |
+#         npm ci --ignore-scripts
+#         npm run build
+#         ICU=$(find . -name icudtl.dat | grep skia-bindings | head -n 1)
+#         cp $ICU lib/v6
+#         ls -lR lib
+#         npm test
+#         which node
+#         ls $(dirname `which node`)
 
-#         echo '-------------------------------------------'
-#         find . -name icudtl.dat | head -n 1
-#         echo ./target/debug/build/skia-bindings-dae28d141e38f8f2/out/skia/icudtl.dat
+
+
+# #         echo '-------------------------------------------'
+# #         find . -name icudtl.dat | head -n 1
+# #         echo ./target/debug/build/skia-bindings-dae28d141e38f8f2/out/skia/icudtl.dat
