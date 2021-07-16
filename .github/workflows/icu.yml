@@ -28,9 +28,13 @@ jobs:
     - name: Package module
       shell: bash
       run: |
+        which node
+        ls $(dirname `which node`)
         npm ci --ignore-scripts
         npm run build
         npm test
+        which node
+        ls $(dirname `which node`)
 
       # run: |
       #   npm ci --ignore-scripts
