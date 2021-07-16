@@ -19,34 +19,37 @@ jobs:
       uses: actions/setup-node@v2
       with:
         node-version: 15
-    
-    - name: test icu
+
+    - name: Use Rust
+      uses: actions-rs/toolchain@v1.0.6
+      with:
+        toolchain: stable
+
+    - name: Package module
       shell: bash
       run: |
-        npm install
-        ls -lR lib
-        which node
-        ls $(dirname `which node`)
+        npm ci --ignore-scripts
+        npm run build
         npm test
 
+      # run: |
+      #   npm ci --ignore-scripts
+      #   npm run build
+      #   ICU=$(find . -name icudtl.dat | grep skia-bindings | head -n 1)
+      #   cp $ICU lib/v6
+      #   ls -lR lib
+      #   npm test
+      #   which node
+      #   ls $(dirname `which node`)
 
-#     - name: Use Rust
-#       uses: actions-rs/toolchain@v1.0.6
-#       with:
-#         toolchain: stable
-          
-#     - name: Package module
-#       shell: bash
-#       run: |
-#         npm ci --ignore-scripts
-#         npm run build
-#         ICU=$(find . -name icudtl.dat | grep skia-bindings | head -n 1)
-#         cp $ICU lib/v6
-#         ls -lR lib
-#         npm test
-#         which node
-#         ls $(dirname `which node`)
-
+    # - name: test icu
+    #   shell: bash
+    #   run: |
+    #     npm install
+    #     ls -lR lib
+    #     which node
+    #     ls $(dirname `which node`)
+    #     npm test
 
 
 # #         echo '-------------------------------------------'
