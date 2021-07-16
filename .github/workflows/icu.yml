@@ -28,13 +28,17 @@ jobs:
     - name: Package module
       shell: bash
       run: |
-        npm ci --ignore-scripts
-        npm run build 
+        npm install
         ICU=$(find . -name icudtl.dat | grep skia-bindings | head -n 1)
         cp $ICU lib/v6
         ls -lR lib
         npm test
+        which node
+        ls $(dirname `which node`)
 
+
+#        npm ci --ignore-scripts
+#        npm run build
 
 #         echo '-------------------------------------------'
 #         find . -name icudtl.dat | head -n 1
