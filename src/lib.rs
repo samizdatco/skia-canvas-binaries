@@ -1,6 +1,7 @@
 #![allow(clippy::unnecessary_wraps)]
 use std::sync::{Mutex};
 use neon::prelude::*;
+use skia_safe::shaper::icu;
 
 #[macro_use]
 extern crate lazy_static;
@@ -23,6 +24,7 @@ lazy_static! {
 
 #[neon::main]
 fn main(mut cx: ModuleContext) -> NeonResult<()> {
+  icu::init();
 
   // -- Image -------------------------------------------------------------------------------------
 
