@@ -1,4 +1,4 @@
-name: Find ICU data
+name: Test Windows ICU
 
 on:
   workflow_dispatch:
