@@ -19,24 +19,23 @@ jobs:
     - name: Use Node.js ${{ matrix.node-version }}
       uses: actions/setup-node@v2
       with:
-        node-version: 12
+        node-version: 15
 
-    # - name: Use Rust
-    #   uses: actions-rs/toolchain@v1.0.6
-    #   with:
-    #     toolchain: stable
+    - name: Use Rust
+      uses: actions-rs/toolchain@v1.0.6
+      with:
+        toolchain: stable
 
-    # - name: Package module
-    #   shell: bash
-    #   run: |
-    #     npm ci --ignore-scripts
-    #     npm run build
-    #     npm test
+    - name: Package module
+      shell: bash
+      run: |
+        npm ci --ignore-scripts
+        npm run build
+        npm test
 
     - name: Test Canvas
       shell: bash
       run: |
-        npm install
         node testtext.js
 
     - uses: actions/upload-artifact@v2
