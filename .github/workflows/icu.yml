@@ -9,7 +9,8 @@ jobs:
     strategy:
       matrix:
         os: 
-          - windows-latest 
+          # - windows-latest
+          - ubuntu-latest
 
     steps:
     - name: Checkout repository
@@ -20,21 +21,29 @@ jobs:
       with:
         node-version: 15
 
-    - name: Use Rust
-      uses: actions-rs/toolchain@v1.0.6
-      with:
-        toolchain: stable
+    # - name: Use Rust
+    #   uses: actions-rs/toolchain@v1.0.6
+    #   with:
+    #     toolchain: stable
 
-    - name: Package module
+    # - name: Package module
+    #   shell: bash
+    #   run: |
+    #     npm ci --ignore-scripts
+    #     npm run build
+    #     npm test
+
+    - name: Test Canvas
       shell: bash
       run: |
-        which node
-        ls $(dirname `which node`)
-        npm ci --ignore-scripts
-        npm run build
-        npm test
-        which node
-        ls $(dirname `which node`)
+        npm install
+        node testtext.js
+
+    - uses: actions/upload-artifact@v2
+      with:
+        name: text-rendering-test
+        path: abc.png
+
 
       # run: |
       #   npm ci --ignore-scripts
