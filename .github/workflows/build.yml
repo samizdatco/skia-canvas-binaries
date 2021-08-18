@@ -65,7 +65,7 @@ jobs:
     - name: Use Node.js
       uses: actions/setup-node@v2
       with:
-        node-version: 14
+        node-version: 16
 
     - name: Use Rust
       uses: actions-rs/toolchain@v1.0.6
@@ -102,7 +102,7 @@ jobs:
     - name: Use Node.js
       uses: actions/setup-node@v2
       with:
-        node-version: 14
+        node-version: 16
 
     - name: Use Rust
       uses: actions-rs/toolchain@v1.0.6
