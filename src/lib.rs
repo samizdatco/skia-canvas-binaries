@@ -1,7 +1,6 @@
 #![allow(clippy::unnecessary_wraps)]
 use std::sync::{Mutex};
 use neon::prelude::*;
-use skia_safe::shaper::icu;
 
 #[macro_use]
 extern crate lazy_static;
@@ -12,6 +11,7 @@ mod path;
 mod image;
 mod gradient;
 mod pattern;
+mod texture;
 mod typography;
 mod utils;
 
@@ -24,7 +24,9 @@ lazy_static! {
 
 #[neon::main]
 fn main(mut cx: ModuleContext) -> NeonResult<()> {
-  icu::init();
+
+  use skia_safe::shaper::icu;
+  icu::init(); // needed until https://github.com/rust-skia/rust-skia/pull/486 is merged...
 
   // -- Image -------------------------------------------------------------------------------------
 
@@ -55,6 +57,7 @@ fn main(mut cx: ModuleContext) -> NeonResult<()> {
   cx.export_function("Path2D_op", path::op)?;
   cx.export_function("Path2D_interpolate", path::interpolate)?;
   cx.export_function("Path2D_simplify", path::simplify)?;
+  cx.export_function("Path2D_unwind", path::unwind)?;
   cx.export_function("Path2D_round", path::round)?;
   cx.export_function("Path2D_trim", path::trim)?;
   cx.export_function("Path2D_jitter", path::jitter)?;
@@ -63,6 +66,8 @@ fn main(mut cx: ModuleContext) -> NeonResult<()> {
   cx.export_function("Path2D_bounds", path::bounds)?;
   cx.export_function("Path2D_contains", path::contains)?;
   cx.export_function("Path2D_edges", path::edges)?;
+  cx.export_function("Path2D_get_d", path::get_d)?;
+  cx.export_function("Path2D_set_d", path::set_d)?;
 
   // -- CanvasGradient ----------------------------------------------------------------------------
 
@@ -78,6 +83,11 @@ fn main(mut cx: ModuleContext) -> NeonResult<()> {
   cx.export_function("CanvasPattern_from_canvas", pattern::from_canvas)?;
   cx.export_function("CanvasPattern_setTransform", pattern::setTransform)?;
   cx.export_function("CanvasPattern_repr", pattern::repr)?;
+
+  // -- CanvasTexture -----------------------------------------------------------------------------
+
+  cx.export_function("CanvasTexture_new", texture::new)?;
+  cx.export_function("CanvasTexture_repr", texture::repr)?;
 
   // -- FontLibrary -------------------------------------------------------------------------------
 
@@ -149,6 +159,10 @@ fn main(mut cx: ModuleContext) -> NeonResult<()> {
   cx.export_function("CanvasRenderingContext2D_setLineDash", ctx::setLineDash)?;
   cx.export_function("CanvasRenderingContext2D_get_lineCap", ctx::get_lineCap)?;
   cx.export_function("CanvasRenderingContext2D_set_lineCap", ctx::set_lineCap)?;
+  cx.export_function("CanvasRenderingContext2D_get_lineDashFit", ctx::get_lineDashFit)?;
+  cx.export_function("CanvasRenderingContext2D_set_lineDashFit", ctx::set_lineDashFit)?;
+  cx.export_function("CanvasRenderingContext2D_get_lineDashMarker", ctx::get_lineDashMarker)?;
+  cx.export_function("CanvasRenderingContext2D_set_lineDashMarker", ctx::set_lineDashMarker)?;
   cx.export_function("CanvasRenderingContext2D_get_lineDashOffset", ctx::get_lineDashOffset)?;
   cx.export_function("CanvasRenderingContext2D_set_lineDashOffset", ctx::set_lineDashOffset)?;
   cx.export_function("CanvasRenderingContext2D_get_lineJoin", ctx::get_lineJoin)?;
