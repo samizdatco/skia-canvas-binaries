@@ -20,23 +20,23 @@ jobs:
       with:
         node-version: 15
 
-    # - name: Use Rust
-    #   uses: actions-rs/toolchain@v1.0.6
-    #   with:
-    #     toolchain: stable
+    - name: Use Rust
+      uses: actions-rs/toolchain@v1.0.6
+      with:
+        toolchain: stable
 
-    # - name: Rebuild module
-    #   shell: bash
-    #   run: |
-    #     npm ci --ignore-scripts
-    #     npm run build
-    #     npm test
-
-    - name: Use NPM version
+    - name: Rebuild module
       shell: bash
       run: |
-        npm ci
+        npm ci --ignore-scripts
+        npm run build
         npm test
+
+    # - name: Use NPM version
+    #   shell: bash
+    #   run: |
+    #     npm ci
+    #     npm test
 
     - name: Test Canvas
       shell: bash
