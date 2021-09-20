@@ -18,6 +18,9 @@ $(NPM):
 $(LIB): build
 
 test: $(LIB)
+	@$(JEST) --verbose
+
+debug: $(LIB)
 	@$(JEST) --watch
 
 visual: $(LIB)
@@ -28,6 +31,8 @@ check:
 
 clean:
 	rm -rf $(LIBDIR)
+	rm -rf $(CURDIR)/target/debug
+	rm -rf $(CURDIR)/target/release
 
 distclean: clean
 	rm -rf $(NPM)

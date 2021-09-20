@@ -1,6 +1,6 @@
 [package]
 name = "skia-canvas"
-version = "0.9.23"
+version = "0.9.25"
 description = "A canvas environment for Node"
 authors = ["Christian Swinehart <drafting@samizdat.co>"]
 license = "MIT"
@@ -17,10 +17,10 @@ lazy_static = "1.4.0"
 rayon = "1.5.1"
 
 [dependencies.neon]
-version = "0.8.3"
+version = "0.9.1"
 default-features = false
-features = ["napi-6", "event-queue-api"]
+features = ["napi-6", "channel-api"]
 
 [dependencies.skia-safe]
-version = "0.41.0"
+version = "0.42.0"
 features = ["textlayout"]

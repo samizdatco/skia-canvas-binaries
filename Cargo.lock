@@ -456,9 +456,9 @@ dependencies = [
 
 [[package]]
 name = "neon"
-version = "0.8.3"
+version = "0.9.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "05c562b89fa7f9707f02056abe25a37ec290ca4a4f1596edbd7aa1aa7b87af1d"
+checksum = "5e85820b585bf3360bf158ac87a75764c48e361c91bbeb69873e6613cc78c023"
 dependencies = [
  "cslice",
  "neon-build",
@@ -470,15 +470,15 @@ dependencies = [
 
 [[package]]
 name = "neon-build"
-version = "0.8.3"
+version = "0.9.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f9c55f6d310757b9fe6cd96a376609548a252da31828f935a7f59106533a89e9"
+checksum = "ad9febc63f515156d4311a0c43899d3ace46352ecdd591c21b98ca3974f2a0d0"
 
 [[package]]
 name = "neon-macros"
-version = "0.8.3"
+version = "0.9.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "47065bc93b16f41fcfe29cad7d4d2a3e299b4389a3c9b429ba7a55f69a057fff"
+checksum = "987f12c91eb6ce0b67819f7c5fb4d391de64cf411c605ed027f03507a33943b2"
 dependencies = [
  "quote",
  "syn",
@@ -486,9 +486,9 @@ dependencies = [
 
 [[package]]
 name = "neon-runtime"
-version = "0.8.3"
+version = "0.9.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "be313e6cf11f469653ee1b137b9203f5d604f2b496d423e96c5e251b51eead03"
+checksum = "02662cd2e62b131937bdef85d0918b05bc3c204daf4c64af62845403eccb60f3"
 dependencies = [
  "cfg-if 1.0.0",
  "libloading",
@@ -721,9 +721,9 @@ checksum = "42a568c8f2cd051a4d283bd6eb0343ac214c1b0f1ac19f93e1175b2dee38c73d"
 
 [[package]]
 name = "skia-bindings"
-version = "0.41.0"
+version = "0.42.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a727ba3341bac89592fc6ad05669fd80425bacef0d655baf8e45640fee86f2d2"
+checksum = "82ff3765885c6f7c77047da54540953b0e4548e4bb93807cb297dfd1a1070431"
 dependencies = [
  "bindgen",
  "cc",
@@ -739,7 +739,7 @@ dependencies = [
 
 [[package]]
 name = "skia-canvas"
-version = "0.9.23"
+version = "0.9.25"
 dependencies = [
  "crc",
  "css-color",
@@ -751,9 +751,9 @@ dependencies = [
 
 [[package]]
 name = "skia-safe"
-version = "0.41.0"
+version = "0.42.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0585e0a01da97be7f63dbcd81d6880f6aad3392039ef5d420741d1acf238c742"
+checksum = "51a3975bed8d0832bb6de1f170077898f77a6c40b7702ab8944ee3527f7ec847"
 dependencies = [
  "bitflags",
  "lazy_static",
