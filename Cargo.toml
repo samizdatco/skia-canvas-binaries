@@ -1,25 +1,12 @@
 [package]
-name = "skia-canvas"
-version = "0.9.25"
-description = "A canvas environment for Node"
+name = "test-icu"
+version = "0.1.0"
 authors = ["Christian Swinehart <drafting@samizdat.co>"]
-license = "MIT"
 edition = "2018"
-exclude = ["index.node"]
 
-[lib]
-crate-type = ["cdylib"]
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-crc = "1.8.1"
-css-color = "0.1.1"
-lazy_static = "1.4.0"
-rayon = "1.5.1"
-
-[dependencies.neon]
-version = "0.9.1"
-default-features = false
-features = ["napi-6", "channel-api"]
 
 [dependencies.skia-safe]
 version = "0.42.0"

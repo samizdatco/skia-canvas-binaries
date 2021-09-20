@@ -1,0 +1,33 @@
+name: Rust ICU Test
+
+on:
+  workflow_dispatch:
+
+jobs:
+  x86-platform:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os:
+          - windows-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v2
+
+    - name: Use Rust
+      uses: actions-rs/toolchain@v1.0.6
+      with:
+        toolchain: stable
+
+    - name: Test Canvas
+      shell: bash
+      run: |
+        cargo build
+        cargo run
+
+    - uses: actions/upload-artifact@v2
+      with:
+        name: text-rendering-test
+        path: lorem-ipsum.png
+        retention-days: 5
