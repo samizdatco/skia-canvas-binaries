@@ -30,8 +30,8 @@ jobs:
       run: |
         npm ci --ignore-scripts
         npm run build
-        npm test
-
+    #    npm test
+    #
     # - name: Use NPM version
     #   shell: bash
     #   run: |
