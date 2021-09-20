@@ -1,4 +1,4 @@
-const {Canvas, FontLibrary} = require('./lib')
+const {Canvas, FontLibrary} = require('skia-canvas')
 let WIDTH = 512, HEIGHT = 128,
     canvas = new Canvas(WIDTH, HEIGHT),
     ctx = canvas.getContext("2d");
