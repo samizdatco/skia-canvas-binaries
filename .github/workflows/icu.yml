@@ -20,18 +20,18 @@ jobs:
       with:
         node-version: 15
 
-    - name: Use Rust
-      uses: actions-rs/toolchain@v1.0.6
-      with:
-        toolchain: stable
+    # - name: Use Rust
+    #   uses: actions-rs/toolchain@v1.0.6
+    #   with:
+    #     toolchain: stable
 
-    - name: Rebuild module
-      shell: bash
-      run: |
-        npm ci --ignore-scripts
-        npm run build
-    #   npm test
-    #
+    # - name: Rebuild module
+    #   shell: bash
+    #   run: |
+    #     npm ci --ignore-scripts
+    #     npm run build
+    #     npm test
+
     # - name: Use NPM version
     #   shell: bash
     #   run: |
@@ -41,6 +41,7 @@ jobs:
     - name: Test Canvas
       shell: bash
       run: |
+        npm i skia-canvas
         node testtext.js
 
     - uses: actions/upload-artifact@v2
