@@ -41,7 +41,9 @@ jobs:
     - name: Test Canvas
       shell: bash
       run: |
-        npm i skia-canvas@0.9.24
+        rm package.json package-lock.json
+        npm init -y
+        npm i skia-canvas@0.9.23
         node testtext.js
 
     - uses: actions/upload-artifact@v2
