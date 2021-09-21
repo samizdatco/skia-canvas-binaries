@@ -10,13 +10,18 @@ fn main() {
     let width = 256;
     let height = 64;
 
+    //
+    // typeset directly to a surface-backed canvas
+    //
     let mut surface = Surface::new_raster_n32_premul((width * 2, height * 2)).unwrap();
     let mut canvas = surface.canvas();
     canvas.scale((2.0, 2.0));
     draw_lorem_ipsum(&mut canvas);
     save_as(&mut surface, "immediate.png");
 
-
+    //
+    // typeset to a picture recorder first, then draw the recording to a canvas
+    //
     let mut layer_recorder = PictureRecorder::new();
     let bounds = Rect::from_xywh(0.0, 0.0, width as f32, height as f32);
     layer_recorder.begin_recording(bounds, None);
