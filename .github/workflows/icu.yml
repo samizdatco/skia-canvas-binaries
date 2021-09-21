@@ -30,15 +30,14 @@ jobs:
       run: |
         npm ci --ignore-scripts
         npm run build
-    #    npm test
-    #
+
     # - name: Use NPM version
     #   shell: bash
     #   run: |
     #     npm ci
     #     npm test
 
-    - name: Test Canvas
+    - name: Test Output
       shell: bash
       run: |
         node testtext.js
@@ -56,3 +55,8 @@ jobs:
         name: text-rendering-test
         path: abc.png
         retention-days: 5
+
+    - name: Run Tests
+      shell: bash
+      run: |
+        npm test
