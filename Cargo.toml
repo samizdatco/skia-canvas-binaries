@@ -22,5 +22,5 @@ default-features = false
 features = ["napi-6", "channel-api"]
 
 [dependencies.skia-safe]
-version = "0.42.0"
-features = ["textlayout", "embed-icudtl"]
+version = "0.41.0"
+features = ["textlayout"]
