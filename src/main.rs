@@ -19,7 +19,7 @@ fn main() {
 
     let image = surface.image_snapshot();
     let data = image.encode_to_data(EncodedImageFormat::PNG).unwrap();
-    let file_path = Path::new("lorem-ispum.png");
+    let file_path = Path::new("lorem-ipsum.png");
     let mut file = fs::File::create(file_path).expect("failed to create file");
     file.write_all(data.as_bytes()).expect("failed to write to file");
 }
