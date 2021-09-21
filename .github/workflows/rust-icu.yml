@@ -23,11 +23,10 @@ jobs:
     - name: Test Canvas
       shell: bash
       run: |
-        cargo build
         cargo run
 
     - uses: actions/upload-artifact@v2
       with:
         name: text-rendering-test
-        path: lorem-ipsum.png
+        path: ./*.png
         retention-days: 5
