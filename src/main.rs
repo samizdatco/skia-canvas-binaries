@@ -1,43 +1,22 @@
+use std::env;
 use std::fs;
 use std::io::Write;
 use std::path::Path;
 use skia_safe::textlayout::{FontCollection, ParagraphBuilder, ParagraphStyle, TextStyle};
-use skia_safe::{icu, Rect, Surface, Canvas, FontMgr, Paint, Point, EncodedImageFormat, PictureRecorder};
+use skia_safe::{icu, Surface, Canvas, FontMgr, Paint, Point, EncodedImageFormat};
 
 static LOREM_IPSUM: &str = "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Curabitur at leo at nulla tincidunt placerat. Proin eget purus augue. Quisque et est ullamcorper, pellentesque felis nec, pulvinar massa. Aliquam imperdiet, nulla ut dictum euismod, purus dui pulvinar risus, eu suscipit elit neque ac est. Nullam eleifend justo quis placerat ultricies. Vestibulum ut elementum velit. Praesent et dolor sit amet purus bibendum mattis. Aliquam erat volutpat.";
 
 fn main() {
+    let filename = format!("lorem-ipsum-{}.png", env::consts::OS);
     let width = 256;
     let height = 64;
-
-    //
-    // typeset directly to a surface-backed canvas
-    //
     let mut surface = Surface::new_raster_n32_premul((width * 2, height * 2)).unwrap();
     let mut canvas = surface.canvas();
     canvas.scale((2.0, 2.0));
     draw_lorem_ipsum(&mut canvas);
-    save_as(&mut surface, "immediate.png");
-
-    //
-    // typeset to a picture recorder first, then draw the recording to a canvas
-    //
-    let mut layer_recorder = PictureRecorder::new();
-    let bounds = Rect::from_xywh(0.0, 0.0, width as f32, height as f32);
-    layer_recorder.begin_recording(bounds, None);
-    if let Some(mut layer) = layer_recorder.recording_canvas() {
-        draw_lorem_ipsum(&mut layer);
-    }
-
-    let mut surface = Surface::new_raster_n32_premul((width * 2, height * 2)).unwrap();
-    let canvas = surface.canvas();
-    canvas.scale((2.0, 2.0));
-    if let Some(pict) = layer_recorder.finish_recording_as_picture(Some(&bounds)){
-        canvas.draw_picture(&pict, None, None);
-    }
-    save_as(&mut surface, "recorded.png");
+    save_as(&mut surface, &filename);
 }
-
 
 fn draw_lorem_ipsum(canvas: &mut Canvas) {
     icu::init();
