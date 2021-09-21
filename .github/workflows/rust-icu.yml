@@ -11,7 +11,7 @@ jobs:
         os:
           - windows-latest
           - ubuntu-latest
-          - macos-latest
+          - macos-11
 
     steps:
     - name: Checkout repository
@@ -31,4 +31,4 @@ jobs:
       with:
         name: text-rendering-test
         path: ./*.png
-        retention-days: 5
+        retention-days: 90
