@@ -21,6 +21,7 @@ jobs:
       run: |
         curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
         echo "$HOME/.cargo/bin" >> $GITHUB_PATH
+        source $HOME/.cargo/env
         cargo install toml-cli
         echo SKIA_VERSION=$(toml get skia-canvas/Cargo.toml dependencies.skia-safe.version) >> $GITHUB_ENV
 
