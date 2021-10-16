@@ -133,10 +133,15 @@ pub fn strings_to_array<'a>(cx: &mut FunctionContext<'a>, strings: &[String]) ->
 }
 
 /// Convert from byte-indices to char-indices for a given UTF-8 string
-pub fn string_idx_range(text: &str, begin: usize, end: usize) -> Range<usize>{
-  let start = text[0..begin].chars().count();
-  let end = start + text[begin..end].chars().count();
-  Range{ start, end }
+pub fn string_idx_range(text: &str, start_idx: usize, end_idx: usize) -> Range<usize> {
+  let mut indices = text.char_indices();
+  let obtain_index = |(index, _char)| index;
+  let str_len = text.len();
+
+  Range{
+    start: indices.nth(start_idx).map_or(str_len, &obtain_index),
+    end: indices.nth(end_idx - start_idx - 1).map_or(str_len, &obtain_index),
+  }
 }
 
 //
@@ -466,7 +471,11 @@ pub fn to_repeat_mode(repeat:&str) -> Option<(TileMode, TileMode)> {
 }
 
 
-use skia_safe::{FilterQuality};
+#[derive(Copy, Clone)]
+pub enum FilterQuality{
+  None, Low, Medium, High
+}
+
 pub fn to_filter_quality(mode_name:&str) -> Option<FilterQuality>{
   let mode = match mode_name.to_lowercase().as_str(){
     "low" => FilterQuality::Low,
@@ -484,6 +493,25 @@ pub fn from_filter_quality(mode:FilterQuality) -> String{
     FilterQuality::High => "high",
     _ => "low"
   }.to_string()
+}
+
+use skia_safe::{FilterMode, MipmapMode, SamplingOptions, CubicResampler};
+
+pub fn to_sampling_opts(mode:FilterQuality) -> SamplingOptions {
+  match mode {
+    FilterQuality::None => SamplingOptions {
+      use_cubic:false, cubic:CubicResampler{b:0.0, c:0.0}, filter:FilterMode::Nearest, mipmap:MipmapMode::None
+    },
+    FilterQuality::Low => SamplingOptions {
+      use_cubic:false, cubic:CubicResampler{b:0.0, c:0.0}, filter:FilterMode::Linear, mipmap:MipmapMode::Nearest
+    },
+    FilterQuality::Medium => SamplingOptions {
+      use_cubic:true, cubic:CubicResampler::mitchell(), filter:FilterMode::Nearest, mipmap:MipmapMode::Nearest
+    },
+    FilterQuality::High => SamplingOptions {
+      use_cubic:true, cubic:CubicResampler::catmull_rom(), filter:FilterMode::Nearest, mipmap:MipmapMode::Linear
+    }
+  }
 }
 
 use skia_safe::{PaintCap};

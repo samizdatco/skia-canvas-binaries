@@ -1,6 +1,6 @@
 [package]
 name = "skia-canvas"
-version = "0.9.25"
+version = "0.9.26"
 description = "A canvas environment for Node"
 authors = ["Christian Swinehart <drafting@samizdat.co>"]
 license = "MIT"
@@ -9,6 +9,11 @@ exclude = ["index.node"]
 
 [lib]
 crate-type = ["cdylib"]
+
+[profile.release]
+opt-level = 2
+lto = "fat"
+codegen-units = 1
 
 [dependencies]
 crc = "1.8.1"
@@ -22,5 +27,5 @@ default-features = false
 features = ["napi-6", "channel-api"]
 
 [dependencies.skia-safe]
-version = "0.42.1"
+version = "0.43.0"
 features = ["textlayout"]
