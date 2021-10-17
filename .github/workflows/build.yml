@@ -48,8 +48,7 @@ jobs:
     - name: Patch build files
       run: |
         perl -0777 -pi.bak -e 's/(\[dependencies.skia-safe\]\n)version.*/$1path = "..\/rust-skia\/skia-safe"/m' skia-canvas/Cargo.toml
-        perl -pi.bak -e 's/(let mut args: Vec<\(&str, String\)> = vec!\[)/$1\n("skia_use_freetype2", yes()),\n("skia_use_system_freetype2", no()),\n/' rust-skia/skia-bindings/build_support/skia/config.rs
-
+        perl -pi.bak -e 's/(let mut args: Vec<\(&str, String\)> = vec!\[)/$1("skia_use_system_freetype2", no()),/' rust-skia/skia-bindings/build_support/skia/config.rs
 
     - name: Build module
       run: |
@@ -60,8 +59,7 @@ jobs:
     - name: Package module
       run: |
         cd skia-canvas
-        npm test
-        npm run package
+        npm test && npm run package
 
     - name: Upload to S3
       env:
@@ -70,9 +68,6 @@ jobs:
       run: |
         cd skia-canvas
         npm run upload
-
-
-
 
 
 
@@ -100,8 +95,7 @@ jobs:
 
     - name: Package module
       run: |
-        npm test
-        npm run package
+        npm test && npm run package
 
     - name: Upload to S3
       env:
