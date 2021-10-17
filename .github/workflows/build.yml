@@ -22,12 +22,6 @@ jobs:
         curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
         echo "$HOME/.cargo/bin" >> $GITHUB_PATH
 
-    - name: Determine current upstream version
-      id: rust-skia
-      run: |
-        export TAG=$(awk '/skia-safe/{getline; print}' Cargo.toml | egrep -o '[0-9\.]+')
-        echo '::set-output name=VERSION::$TAG'
-
     - name: Install system dependencies
       run: |
         apt-get update && apt-get install -y -q software-properties-common
@@ -42,6 +36,12 @@ jobs:
         ln -s /usr/bin/clang-cpp-5.0 /usr/bin/clang-cpp
         ln -s /usr/bin/ld.lld-5.0    /usr/bin/ld.lld
         ln -s /usr/bin/lld-5.0       /usr/bin/lld
+
+    - name: Determine current upstream version
+      id: rust-skia
+      run: |
+        export TAG=$(awk '/skia-safe/{getline; print}' skia-canvas/Cargo.toml | egrep -o '[0-9\.]+')
+        echo '::set-output name=VERSION::$TAG'
 
     - name: Checkout rust-skia
       uses: actions/checkout@v2
