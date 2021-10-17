@@ -27,7 +27,6 @@ jobs:
         apt-get update && apt-get install -y -q software-properties-common
         add-apt-repository "deb http://deb.debian.org/debian stretch-backports main"
         apt-get update
-        apt-get upgrade git
         apt-get install -y \
           build-essential lsb-release wget python2.7  \
           libssl-dev libfontconfig-dev clang-5.0 lld-5.0
