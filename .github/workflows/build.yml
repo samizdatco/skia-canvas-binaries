@@ -23,8 +23,10 @@ jobs:
         echo "$HOME/.cargo/bin" >> $GITHUB_PATH
 
     - name: Determine current upstream version
+      id: rust-skia
       run: |
-        echo SKIA_VERSION=$(grep dependencies.skia-safe skia-canvas/Cargo.toml -A 1 | egrep -o '[0-9\.]{5,}') >> $GITHUB_ENV
+        export TAG=$(awk '/skia-safe/{getline; print}' Cargo.toml | egrep -o '[0-9\.]+')
+        echo '::set-output name=VERSION::$TAG'
 
     - name: Install system dependencies
       run: |
@@ -46,7 +48,7 @@ jobs:
       with:
         repository: rust-skia/rust-skia
         path: rust-skia
-        ref: $SKIA_VERSION
+        ref: ${{ steps.rust-skia.outputs.VERSION }}
 
     - name: Fetch rust-skia submodules
       run: |
