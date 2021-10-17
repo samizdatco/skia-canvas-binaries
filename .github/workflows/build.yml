@@ -28,6 +28,7 @@ jobs:
 
     - name: Install system dependencies
       run: |
+        apt-get update && apt-get install -y -q software-properties-common
         add-apt-repository "deb http://deb.debian.org/debian stretch-backports main"
         apt-get update
         apt-get install -y \
