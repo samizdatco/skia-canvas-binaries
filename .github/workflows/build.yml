@@ -144,6 +144,26 @@ jobs:
       with:
         path: skia-canvas
 
+    - name: Install rust
+      run: |
+        curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
+        echo "$HOME/.cargo/bin" >> $GITHUB_PATH
+
+    # - name: Install system dependencies
+    #   run: |
+    #     apt-get update && apt-get install -y -q software-properties-common
+    #     add-apt-repository "deb http://deb.debian.org/debian stretch-backports main"
+    #     apt-get update
+    #     apt-get install -y \
+    #       build-essential lsb-release wget python2.7  \
+    #       libssl-dev libfontconfig-dev clang-5.0 lld-5.0
+    #     ln -s /usr/bin/clang++-5.0   /usr/bin/clang++
+    #     ln -s /usr/bin/clang-5.0     /usr/bin/clang
+    #     ln -s /usr/bin/clang-cpp-5.0 /usr/bin/clang-cpp
+    #     ln -s /usr/bin/ld.lld-5.0    /usr/bin/ld.lld
+    #     ln -s /usr/bin/lld-5.0       /usr/bin/lld
+
+
     - name: Checkout rust-skia
       id: rust-skia
       run: |
