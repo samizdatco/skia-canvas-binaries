@@ -91,7 +91,8 @@ jobs:
     - name: Build module
       run: |
         npm ci --ignore-scripts
-        npm run build
+        npm run build -- --release
+    #    npm run build
 
     - name: Package module
       run: |
