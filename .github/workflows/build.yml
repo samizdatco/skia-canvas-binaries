@@ -12,6 +12,13 @@ jobs:
     container: arm32v7/debian:buster
 
     steps:
+    - name: Install system dependencies
+      run: |
+        apt-get update
+        apt-get install -y \
+          curl build-essential lsb-release wget software-properties-common \
+          python2 libssl-dev libfontconfig-dev git clang lldb lld ninja-build
+
     - name: Checkout repository
       uses: actions/checkout@v2
       with:
@@ -27,14 +34,15 @@ jobs:
       with:
         toolchain: stable
 
-    - name: Install system dependencies
-      run: |
-        apt-get update
-        apt-get install -y \
-          build-essential lsb-release wget software-properties-common \
-          python2 libssl-dev libfontconfig-dev git clang lldb lld ninja-build
+    - name: Cache gn binary
+      id: cache-gn
+      uses: actions/cache@v1
+      with:
+        path: /usr/local/bin/gn
+        key: gn-arm23v7
 
     - name: Build gn binary
+      if: steps.cache-gn.outputs.cache-hit != 'true'
       run: |
         git clone https://gn.googlesource.com/gn
         cd gn
@@ -42,26 +50,37 @@ jobs:
         ninja -C out
         cp out/gn /usr/local/bin/gn
 
-    # - name: Checkout rust-skia
-    #   id: rust-skia
-    #   run: |
-    #     export TAG=$(awk '/skia-safe/{getline; print}' skia-canvas/Cargo.toml | egrep -o '[0-9\.]+')
-    #     git clone --depth 1 --branch $TAG https://github.com/rust-skia/rust-skia.git
-    #     cd rust-skia
-    #     git submodule update --init --depth 1 skia-bindings/skia
-    #     git submodule update --init --depth 1 skia-bindings/depot_tools
+    - name: Checkout rust-skia
+      run: |
+        export TAG=$(awk '/skia-safe/{getline; print}' skia-canvas/Cargo.toml | egrep -o '[0-9\.]+')
+        git clone --depth 1 --branch $TAG https://github.com/rust-skia/rust-skia.git
+        cd rust-skia
+        git submodule update --init --depth 1 skia-bindings/skia
+        git submodule update --init --depth 1 skia-bindings/depot_tools
 
+    - name: Patch sources
+      run: |
+        echo "#!/bin/true" > rust-skia/skia-bindings/skia/bin/fetch-gn
+        perl -0777 -pi.bak -e 's/(\[dependencies.skia-safe\]\n)version.*/$1path = "\/code\/rust-skia\/skia-safe"/m' skia-canvas/Cargo.toml
 
+    - name: Build module
+      run: |
+        cd skia-canvas
+        npm ci --ignore-scripts
+        npm run build -- --release
 
+    - name: Package module
+      run: |
+        cd skia-canvas
+        npm test && npm run package
 
-
-
-
-
-
-
-
-
+    - name: Upload to S3
+      env:
+        AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      run: |
+        cd skia-canvas
+        npm run upload
 
   # linux-x86:
   #   runs-on: ubuntu-latest
