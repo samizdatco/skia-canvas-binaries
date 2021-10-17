@@ -25,9 +25,6 @@ lazy_static! {
 #[neon::main]
 fn main(mut cx: ModuleContext) -> NeonResult<()> {
 
-  use skia_safe::shaper::icu;
-  icu::init();
-
   // -- Image -------------------------------------------------------------------------------------
 
   cx.export_function("Image_new", image::new)?;
