@@ -9,7 +9,12 @@ jobs:
 
   linux-arm64:
     runs-on: [self-hosted, linux, ARM64]
-    container: ghcr.io/samizdatco/skia-canvas-arm64-env:v1
+    container:
+          image: ghcr.io/samizdatco/skia-canvas-arm64-env:v1
+          credentials:
+            username: ${{ github.actor }}
+            password: ${{ secrets.CR_PAT }}
+
 
     steps:
     - name: Use Node.js
