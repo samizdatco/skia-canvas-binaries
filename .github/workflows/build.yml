@@ -24,7 +24,7 @@ jobs:
 
     - name: Determine current upstream version
       run: |
-        echo SKIA_VERSION=$(grep dependencies.skia-safe Cargo.toml -A 1 | egrep -o '[0-9\.]{5,}') >> $GITHUB_ENV
+        echo SKIA_VERSION=$(grep dependencies.skia-safe skia-canvas/Cargo.toml -A 1 | egrep -o '[0-9\.]{5,}') >> $GITHUB_ENV
 
     - name: Install system dependencies
       run: |
