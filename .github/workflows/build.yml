@@ -47,14 +47,15 @@ jobs:
       uses: actions/checkout@v2
       with:
         repository: rust-skia/rust-skia
+        submodules: true
         path: rust-skia
         ref: ${{ steps.rust-skia.outputs.VERSION }}
 
-    - name: Fetch rust-skia submodules
-      run: |
-        cd rust-skia
-        git submodule update --init --depth 1 skia-bindings/skia
-        git submodule update --init --depth 1 skia-bindings/depot_tools
+    # - name: Fetch rust-skia submodules
+    #   run: |
+    #     cd rust-skia
+    #     git submodule update --init --depth 1 skia-bindings/skia
+    #     git submodule update --init --depth 1 skia-bindings/depot_tools
 
     - name: Patch build files
       run: |
