@@ -41,7 +41,7 @@ jobs:
       id: rust-skia
       run: |
         export TAG=$(awk '/skia-safe/{getline; print}' skia-canvas/Cargo.toml | egrep -o '[0-9\.]+')
-        echo '::set-output name=VERSION::$TAG'
+        echo "::set-output name=VERSION::$TAG"
 
     - name: Checkout rust-skia
       uses: actions/checkout@v2
