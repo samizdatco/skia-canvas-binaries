@@ -24,8 +24,7 @@ jobs:
 
     - name: Determine current upstream version
       run: |
-        cargo install toml-cli
-        echo SKIA_VERSION=$(toml get skia-canvas/Cargo.toml dependencies.skia-safe.version) >> $GITHUB_ENV
+        echo SKIA_VERSION=$(grep dependencies.skia-safe Cargo.toml -A 1 | egrep -o '[0-9\.]{5,}') >> $GITHUB_ENV
 
     - name: Install system dependencies
       run: |
