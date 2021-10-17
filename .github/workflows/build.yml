@@ -43,13 +43,18 @@ jobs:
         export TAG=$(awk '/skia-safe/{getline; print}' skia-canvas/Cargo.toml | egrep -o '[0-9\.]+')
         echo "::set-output name=VERSION::$TAG"
 
-    - name: Checkout rust-skia
-      uses: actions/checkout@v2
-      with:
-        repository: rust-skia/rust-skia
-        submodules: true
-        path: rust-skia
-        ref: ${{ steps.rust-skia.outputs.VERSION }}
+        git clone --depth 1 --branch $TAG https://github.com/rust-skia/rust-skia.git
+        cd rust-skia
+        git submodule update --init --depth 1 skia-bindings/skia
+        git submodule update --init --depth 1 skia-bindings/depot_tools
+
+    # - name: Checkout rust-skia
+    #   uses: actions/checkout@v2
+    #   with:
+    #     repository: rust-skia/rust-skia
+    #     submodules: true
+    #     path: rust-skia
+    #     ref: ${{ steps.rust-skia.outputs.VERSION }}
 
     # - name: Fetch rust-skia submodules
     #   run: |
