@@ -65,62 +65,62 @@ jobs:
 
 
 
-  linux-arm:
-    runs-on: [self-hosted, linux, ARM]
-    container:
-      image: ghcr.io/samizdatco/skia-canvas-arm-env:v1
-      credentials:
-        username: ${{ github.actor }}
-        password: ${{ secrets.CR_PAT }}
+  # linux-arm:
+  #   runs-on: [self-hosted, linux, ARM]
+  #   container:
+  #     image: ghcr.io/samizdatco/skia-canvas-arm-env:v1
+  #     credentials:
+  #       username: ${{ github.actor }}
+  #       password: ${{ secrets.CR_PAT }}
 
-    steps:
-    - name: Use Node.js
-      uses: actions/setup-node@v2
-      with:
-        node-version: 14
+  #   steps:
+  #   - name: Use Node.js
+  #     uses: actions/setup-node@v2
+  #     with:
+  #       node-version: 14
 
-    - name: Checkout repository
-      uses: actions/checkout@v2
-      with:
-        path: skia-canvas
+  #   - name: Checkout repository
+  #     uses: actions/checkout@v2
+  #     with:
+  #       path: skia-canvas
 
-    - name: Determine current upstream version
-      id: rust-skia
-      run: |
-        export TAG=$(awk '/skia-safe/{getline; print}' skia-canvas/Cargo.toml | egrep -o '[0-9\.]+')
-        echo "::set-output name=VERSION::$TAG"
+  #   - name: Determine current upstream version
+  #     id: rust-skia
+  #     run: |
+  #       export TAG=$(awk '/skia-safe/{getline; print}' skia-canvas/Cargo.toml | egrep -o '[0-9\.]+')
+  #       echo "::set-output name=VERSION::$TAG"
 
-    - name: Checkout rust-skia
-      uses: actions/checkout@v2
-      with:
-        repository: rust-skia/rust-skia
-        ref: ${{ steps.rust-skia.outputs.VERSION }}
-        submodules: true
-        path: rust-skia
+  #   - name: Checkout rust-skia
+  #     uses: actions/checkout@v2
+  #     with:
+  #       repository: rust-skia/rust-skia
+  #       ref: ${{ steps.rust-skia.outputs.VERSION }}
+  #       submodules: true
+  #       path: rust-skia
 
-    - name: Patch sources
-      run: |
-        echo "#!/bin/true" > rust-skia/skia-bindings/skia/bin/fetch-gn
-        perl -0777 -pi.bak -e 's/(\[dependencies.skia-safe\]\n)version.*/$1path = "..\/rust-skia\/skia-safe"/m' skia-canvas/Cargo.toml
+  #   - name: Patch sources
+  #     run: |
+  #       echo "#!/bin/true" > rust-skia/skia-bindings/skia/bin/fetch-gn
+  #       perl -0777 -pi.bak -e 's/(\[dependencies.skia-safe\]\n)version.*/$1path = "..\/rust-skia\/skia-safe"/m' skia-canvas/Cargo.toml
 
-    - name: Build module
-      run: |
-        cd skia-canvas
-        npm ci --ignore-scripts
-        npm run build -- --release
+  #   - name: Build module
+  #     run: |
+  #       cd skia-canvas
+  #       npm ci --ignore-scripts
+  #       npm run build -- --release
 
-    - name: Package module
-      run: |
-        cd skia-canvas
-        npm test && npm run package
+  #   - name: Package module
+  #     run: |
+  #       cd skia-canvas
+  #       npm test && npm run package
 
-    - name: Upload to S3
-      env:
-        AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-        AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-      run: |
-        cd skia-canvas
-        npm run upload
+  #   - name: Upload to S3
+  #     env:
+  #       AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+  #       AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+  #     run: |
+  #       cd skia-canvas
+  #       npm run upload
 
 
 
