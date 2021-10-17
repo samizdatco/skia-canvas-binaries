@@ -25,8 +25,7 @@ jobs:
     - name: Install system dependencies
       run: |
         apt-get update && apt-get install -y -q software-properties-common
-        add-apt-repository ppa:git-core/ppa -y
-        add-apt-repository "deb http://deb.debian.org/debian stretch-backports main" -y
+        add-apt-repository "deb http://deb.debian.org/debian stretch-backports main"
         apt-get update
         apt-get install -y \
           build-essential lsb-release wget python2.7  \
@@ -37,30 +36,14 @@ jobs:
         ln -s /usr/bin/ld.lld-5.0    /usr/bin/ld.lld
         ln -s /usr/bin/lld-5.0       /usr/bin/lld
 
-    - name: Determine current upstream version
+    - name: Checkout rust-skia
       id: rust-skia
       run: |
         export TAG=$(awk '/skia-safe/{getline; print}' skia-canvas/Cargo.toml | egrep -o '[0-9\.]+')
-        echo "::set-output name=VERSION::$TAG"
-
-        # git clone --depth 1 --branch $TAG https://github.com/rust-skia/rust-skia.git
-        # cd rust-skia
-        # git submodule update --init --depth 1 skia-bindings/skia
-        # git submodule update --init --depth 1 skia-bindings/depot_tools
-
-    - name: Checkout rust-skia
-      uses: actions/checkout@v2
-      with:
-        repository: rust-skia/rust-skia
-        submodules: true
-        path: rust-skia
-        ref: ${{ steps.rust-skia.outputs.VERSION }}
-
-    # - name: Fetch rust-skia submodules
-    #   run: |
-    #     cd rust-skia
-    #     git submodule update --init --depth 1 skia-bindings/skia
-    #     git submodule update --init --depth 1 skia-bindings/depot_tools
+        git clone --depth 1 --branch $TAG https://github.com/rust-skia/rust-skia.git
+        cd rust-skia
+        git submodule update --init --depth 1 skia-bindings/skia
+        git submodule update --init --depth 1 skia-bindings/depot_tools
 
     - name: Patch build files
       run: |
