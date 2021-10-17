@@ -7,6 +7,62 @@ on:
 
 jobs:
 
+  linux-arm:
+    runs-on: [self-hosted, linux, ARM]
+    container: arm32v7/debian:buster
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v2
+      with:
+        path: skia-canvas
+
+    - name: Use Node.js
+      uses: actions/setup-node@v2
+      with:
+        node-version: 14
+
+    - name: Use Rust
+      uses: actions-rs/toolchain@v1.0.6
+      with:
+        toolchain: stable
+
+    - name: Install system dependencies
+      run: |
+        apt-get update
+        apt-get install -y \
+          build-essential lsb-release wget software-properties-common \
+          python2 libssl-dev libfontconfig-dev git clang lldb lld ninja-build
+
+    - name: Build gn binary
+      run: |
+        git clone https://gn.googlesource.com/gn
+        cd gn
+        python build/gen.py
+        ninja -C out
+        cp out/gn /usr/local/bin/gn
+
+    # - name: Checkout rust-skia
+    #   id: rust-skia
+    #   run: |
+    #     export TAG=$(awk '/skia-safe/{getline; print}' skia-canvas/Cargo.toml | egrep -o '[0-9\.]+')
+    #     git clone --depth 1 --branch $TAG https://github.com/rust-skia/rust-skia.git
+    #     cd rust-skia
+    #     git submodule update --init --depth 1 skia-bindings/skia
+    #     git submodule update --init --depth 1 skia-bindings/depot_tools
+
+
+
+
+
+
+
+
+
+
+
+
+
   # linux-x86:
   #   runs-on: ubuntu-latest
   #   container: node:lts-stretch
@@ -71,37 +127,37 @@ jobs:
 
 
 
-  windows-x86:
-    runs-on: windows-latest
+  # windows-x86:
+  #   runs-on: windows-latest
 
-    steps:
-    - name: Checkout repository
-      uses: actions/checkout@v2
+  #   steps:
+  #   - name: Checkout repository
+  #     uses: actions/checkout@v2
 
-    - name: Use Node.js
-      uses: actions/setup-node@v2
-      with:
-        node-version: 16
+  #   - name: Use Node.js
+  #     uses: actions/setup-node@v2
+  #     with:
+  #       node-version: 16
 
-    - name: Use Rust
-      uses: actions-rs/toolchain@v1.0.6
-      with:
-        toolchain: stable
+  #   - name: Use Rust
+  #     uses: actions-rs/toolchain@v1.0.6
+  #     with:
+  #       toolchain: stable
 
-    - name: Build module
-      run: |
-        npm ci --ignore-scripts
-        npm run build -- --release
-    #    npm run build
+  #   - name: Build module
+  #     run: |
+  #       npm ci --ignore-scripts
+  #       npm run build -- --release
+  #   #    npm run build
 
-    - name: Package module
-      run: |
-        npm test && npm run package
+  #   - name: Package module
+  #     run: |
+  #       npm test && npm run package
 
-    - name: Upload to S3
-      env:
-        AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-        AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-      run: |
-        npm run upload
+  #   - name: Upload to S3
+  #     env:
+  #       AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+  #       AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+  #     run: |
+  #       npm run upload
 
