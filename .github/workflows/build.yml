@@ -11,9 +11,6 @@ jobs:
     runs-on: ubuntu-latest
     container:
       image: ghcr.io/samizdatco/skia-canvas-musl-env:v1
-      # credentials:
-      #   username: ${{ github.actor }}
-      #   password: ${{ secrets.CR_PAT }}
 
     steps:
     - name: Checkout repository
@@ -30,10 +27,10 @@ jobs:
         git submodule update --init --depth 1 skia-bindings/skia
         git submodule update --init --depth 1 skia-bindings/depot_tools
 
-    # - name: Install rust
-    #   run: |
-    #     curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
-    #     echo "$HOME/.cargo/bin" >> $GITHUB_PATH
+    - name: Install rust
+      run: |
+        curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
+        echo "$HOME/.cargo/bin" >> $GITHUB_PATH
 
     - name: Patch build files
       run: |
