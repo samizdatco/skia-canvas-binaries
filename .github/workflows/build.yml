@@ -7,7 +7,7 @@ on:
 
 jobs:
 
-  linux-x86:
+  linux-musl:
     runs-on: ubuntu-latest
     container:
       image: ghcr.io/samizdatco/skia-canvas-musl-env:v1
@@ -37,7 +37,7 @@ jobs:
 
     - name: Patch build files
       run: |
-        patch -p0 < alpine-build.patch
+        patch -p0 < /code/alpine-build.patch
         echo "#!/bin/true" > rust-skia/skia-bindings/skia/bin/fetch-gn
         perl -0777 -pi.bak -e 's/(\[dependencies.skia-safe\]\n)version.*/$1path = "..\/rust-skia\/skia-safe"/m' skia-canvas/Cargo.toml
 
