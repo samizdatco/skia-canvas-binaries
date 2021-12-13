@@ -18,15 +18,6 @@ jobs:
       with:
         path: skia-canvas
 
-    - name: Checkout rust-skia
-      id: rust-skia
-      run: |
-        export TAG=$(awk '/skia-safe/{getline; print}' skia-canvas/Cargo.toml | egrep -o '[0-9\.]+')
-        git clone --depth 1 --branch $TAG https://github.com/rust-skia/rust-skia.git
-        cd rust-skia
-        git submodule update --init --depth 1 skia-bindings/skia
-        git submodule update --init --depth 1 skia-bindings/depot_tools
-
     - name: Install rust
       run: |
         curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
