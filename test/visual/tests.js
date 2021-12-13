@@ -1,3 +1,5 @@
+// @ts-check
+
 var DOMMatrix
 var Image
 var imageSrc
@@ -10,6 +12,7 @@ if (typeof module !== 'undefined' && module.exports) {
   DOMMatrix = skCanvas.DOMMatrix
   imageSrc = function (filename) { return require('path').join(__dirname, '../assets', filename) }
 } else {
+  // @ts-expect-error We are creating a tests propery
   window.tests = tests
   Image = window.Image
   DOMMatrix = window.DOMMatrix
@@ -471,7 +474,7 @@ tests['createPattern() repeats'] = function (ctx, done) {
   var img = new Image()
   img.onload = function () {
     ctx.scale(0.1, 0.1)
-    ctx.lineStyle = 'black'
+    ctx.strokeStyle = 'black'
     ctx.lineWidth = 10
     ctx.fillStyle = ctx.createPattern(img, 'no-repeat')
     ctx.fillRect(0, 0, 900, 900)

@@ -7,10 +7,10 @@ on:
 
 jobs:
 
-  linux-musl:
+  linux-x86:
     runs-on: ubuntu-latest
     container:
-      image: ghcr.io/samizdatco/skia-canvas-musl-env:v1
+      image: ghcr.io/samizdatco/skia-canvas-x86-env:v1
 
     steps:
     - name: Checkout repository
@@ -33,16 +33,13 @@ jobs:
         echo "$HOME/.cargo/bin" >> $GITHUB_PATH
 
     - name: Patch build files
-      run: |
-        patch -p0 < /code/alpine-build.patch
-        echo "#!/bin/true" > rust-skia/skia-bindings/skia/bin/fetch-gn
-        perl -0777 -pi.bak -e 's/(\[dependencies.skia-safe\]\n)version.*/$1path = "..\/rust-skia\/skia-safe"/m' skia-canvas/Cargo.toml
+      run: perl -0777 -pi.bak -e 's/("textlayout")/$1, "embed-freetype"/' skia-canvas/Cargo.toml
 
     - name: Build module
       run: |
         cd skia-canvas
         npm ci --ignore-scripts
-        npm run build -- --release
+        npm run build -- --release -p skia-canv
 
     - name: Package module
       run: |
@@ -56,4 +53,3 @@ jobs:
       run: |
         cd skia-canvas
         npm run upload
-
