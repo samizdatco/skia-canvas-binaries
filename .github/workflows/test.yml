@@ -1,7 +1,7 @@
 name: Run tests
 on:
   workflow_dispatch:
-  # push:
+  push:
   pull_request:
     branches:
       - main
@@ -38,14 +38,7 @@ jobs:
     - name: Build module
       run: |
         npm ci --ignore-scripts
-        npm run build
-
-    # - name: Bundle ICU data (windows only)
-    #   if: startsWith(matrix.os,'windows')
-    #   shell: bash
-    #   run: |
-    #     ICU=$(find . -name icudtl.dat | grep skia-bindings | head -n 1)
-    #     cp $ICU lib/v6
+        npm run build -- --release
 
     - name: Run tests
       run: npm test
