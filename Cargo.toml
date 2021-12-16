@@ -26,4 +26,4 @@ features = ["napi-6", "channel-api"]
 
 [dependencies.skia-safe]
 version = "0.45.1"
-features = ["textlayout"]
+features = ["textlayout", "webp"]
