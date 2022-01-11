@@ -45,9 +45,9 @@ jobs:
           username: ${{ github.repository_owner }}
           password: ${{ secrets.CR_PAT }}
 
-      - name: Downcase CPU
-        run: |
-          echo "CPU=$(echo ${{ matrix.runner }} | tr [:upper:] [:lower:])" >> ${GITHUB_ENV}
+      # - name: Downcase CPU
+      #   run: |
+      #     echo "CPU=$(echo ${{ matrix.runner }} | tr [:upper:] [:lower:])" >> ${GITHUB_ENV}
 
       - id: cpu
         uses: ASzc/change-string-case-action@v1
