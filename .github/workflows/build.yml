@@ -25,10 +25,12 @@ jobs:
       run: perl -0777 -pi.bak -e 's/("textlayout")/$1, "embed-freetype"/' Cargo.toml
 
     - name: Build module
-      run: cargo build --verbose
+      run: |
+        npm ci --ignore-scripts
+        cargo-cp-artifact -nc lib/v6/index.node -- cargo build --message-format=json-render-diagnostics --release
       # run: |
       #   npm ci --ignore-scripts
-      #   npm run build -- --release --verbose
+      #   npm run build -- --release
 
     - name: Package module
       run: |
