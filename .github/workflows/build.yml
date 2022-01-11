@@ -16,13 +16,14 @@ jobs:
     - name: Checkout repository
       uses: actions/checkout@v2
 
-    - name: Use Rust
-      uses: dtolnay/rust-toolchain@stable
-
-    # - name: Install rust
-    #   run: |
-    #     curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
-    #     echo "$HOME/.cargo/bin" >> $GITHUB_PATH
+    - name: Install rust
+      run: |
+        curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --profile minimal
+        echo "$HOME/.cargo/bin" >> $GITHUB_PATH
+        echo "HOME"
+        ls $HOME/.cargo
+        echo "ROOT"
+        ls /root/.cargo
 
     - name: Patch build files
       run: perl -0777 -pi.bak -e 's/("textlayout")/$1, "embed-freetype"/' Cargo.toml
@@ -63,13 +64,10 @@ jobs:
         git submodule update --init --depth 1 skia-bindings/skia
         git submodule update --init --depth 1 skia-bindings/depot_tools
 
-    - name: Use Rust
-      uses: dtolnay/rust-toolchain@stable
-
-    # - name: Install rust
-    #   run: |
-    #     curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
-    #     echo "$HOME/.cargo/bin" >> $GITHUB_PATH
+    - name: Install rust
+      run: |
+        curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --profile minimal
+        echo "$HOME/.cargo/bin" >> $GITHUB_PATH
 
     - name: Patch build files
       run: |
