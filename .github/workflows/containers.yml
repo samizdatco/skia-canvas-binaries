@@ -29,6 +29,7 @@ jobs:
         with:
           tags: ghcr.io/${{ github.repository }}-${{ matrix.libc }}:latest
           context: containers/${{ matrix.libc }}
+          platforms: linux/amd64
           push: true
 
   # arm64:
