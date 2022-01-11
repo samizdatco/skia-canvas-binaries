@@ -33,19 +33,25 @@ jobs:
         runner:
           - [self-hosted, linux, ARM]
           - [self-hosted, linux, ARM64]
+        include:
+          - runner: [self-hosted, linux, ARM]
+            cpu: arm
+          - runner: [self-hosted, linux, ARM64]
+            cpu: arm64
 
     steps:
-      - id: cpu
-        uses: ASzc/change-string-case-action@v1
-        with:
-          string: ${{ matrix.runner.2 }}
+      # - id: cpu
+      #   uses: ASzc/change-string-case-action@v1
+      #   with:
+      #     string: ${{ matrix.runner.2 }}
+          # echo "CPU=${${{ matrix.runner.2 }},,}" >>${GITHUB_ENV}
+          # echo CPU is $CPU
+          # echo cpu is ${{ steps.cpu.outputs.lowercase }}
 
       - name: downcase CPU
         run: |
-          echo "CPU=${${{ matrix.runner.2 }},,}" >>${GITHUB_ENV}
-          echo CPU is $CPU
-          echo cpu is ${{ steps.cpu.outputs.lowercase }}
-
+          echo runner is ${{ matrix.runner }}
+          echo cpu is ${{ matrix.cpu }}
       # - name: Checkout
       #   uses: actions/checkout@v2
 
