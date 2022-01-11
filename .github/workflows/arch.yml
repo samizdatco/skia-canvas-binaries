@@ -27,16 +27,19 @@ jobs:
   #         push: true
 
   acorn:
-    runs-on: ${{ matrix.runner }}
+    runs-on:
+      - self-hosted
+      - linux
+      - ${{ matrix.runner }}
     strategy:
       matrix:
         runner:
-          - [self-hosted, linux, ARM]
-          - [self-hosted, linux, ARM64]
+          - ARM
+          - ARM64
         include:
-          - runner: [self-hosted, linux, ARM]
+          - runner: ARM
             cpu: arm
-          - runner: [self-hosted, linux, ARM64]
+          - runner: ARM64
             cpu: arm64
 
     steps:
