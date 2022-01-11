@@ -26,8 +26,6 @@ jobs:
 
     - name: Build module
       run: |
-        echo i am $(whoami)
-        chown -R $(whoami).$(whoami) /github/home/.cargo/
         npm ci --ignore-scripts
         npm run build -- --release
 
