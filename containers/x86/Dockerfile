@@ -1,4 +1,4 @@
-FROM node:lts-stretch
+FROM node:lts-stretch-slim
 
 RUN apt-get update && apt-get install -y -q software-properties-common
 RUN add-apt-repository "deb http://deb.debian.org/debian stretch-backports main"

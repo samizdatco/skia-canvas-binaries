@@ -20,7 +20,7 @@ jobs:
       run: |
         curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --profile minimal
         echo "$HOME/.cargo/bin" >> $GITHUB_PATH
-        $HOME/.cargo/bin/cargo update
+        ls -lR $HOME
 
     - name: Patch build files
       run: perl -0777 -pi.bak -e 's/("textlayout")/$1, "embed-freetype"/' Cargo.toml
