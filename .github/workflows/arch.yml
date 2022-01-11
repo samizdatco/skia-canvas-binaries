@@ -35,10 +35,6 @@ jobs:
       matrix:
         runner: [ARM, ARM64]
     steps:
-      - name: downcase CPU
-        run: |
-          echo "CPU=$(echo ${{ matrix.runner }} | tr [:upper:] [:lower:])" >> ${GITHUB_ENV}
-
       - name: Checkout
         uses: actions/checkout@v2
 
@@ -48,6 +44,10 @@ jobs:
           registry: ghcr.io
           username: ${{ github.repository_owner }}
           password: ${{ secrets.CR_PAT }}
+
+      - name: Downcase CPU
+        run: |
+          echo "CPU=$(echo ${{ matrix.runner }} | tr [:upper:] [:lower:])" >> ${GITHUB_ENV}
 
       - name: Build and Push Docker Image
         uses: docker/build-push-action@v2
