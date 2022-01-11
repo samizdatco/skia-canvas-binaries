@@ -3,8 +3,11 @@ on:
   workflow_dispatch:
 
 jobs:
-  x86:
+  linux:
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        libc: [x86, musl]
     steps:
       - name: Checkout
         uses: actions/checkout@v2
@@ -19,8 +22,8 @@ jobs:
       - name: Build and Push Docker Image
         uses: docker/build-push-action@v2
         with:
-          tags: ghcr.io/${{ github.repository }}-x86-test:latest
-          context: containers/x86
+          tags: ghcr.io/${{ github.repository }}-${{ matrix.libc }}:latest
+          context: containers/${{ matrix.libc }}
           push: true
 
   # arm64:
