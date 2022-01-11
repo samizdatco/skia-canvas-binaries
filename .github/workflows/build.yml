@@ -10,7 +10,7 @@ jobs:
   linux-x86:
     runs-on: ubuntu-latest
     container:
-      image: ghcr.io/samizdatco/skia-canvas-binaries-x86-env:v1
+      image: ghcr.io/samizdatco/skia-canvas-binaries-x86-env:latest
 
     steps:
     - name: Checkout repository
@@ -43,7 +43,7 @@ jobs:
   linux-musl:
     runs-on: ubuntu-latest
     container:
-      image: ghcr.io/samizdatco/skia-canvas-binaries-musl-env:v1
+      image: ghcr.io/samizdatco/skia-canvas-binaries-musl-env:latest
 
     steps:
     - name: Checkout repository
