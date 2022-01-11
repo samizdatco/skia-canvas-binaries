@@ -11,6 +11,7 @@ jobs:
     runs-on: ubuntu-latest
     container:
       image: ghcr.io/samizdatco/skia-canvas-binaries-x86:latest
+      options: --user root
 
     steps:
     - name: Checkout repository
@@ -18,8 +19,6 @@ jobs:
 
     - name: Install rust
       run: |
-        whoami
-        cat /etc/passwd
         curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --profile minimal
         echo "$HOME/.cargo/bin" >> $GITHUB_PATH
 
@@ -29,7 +28,7 @@ jobs:
     - name: Build module
       run: |
         npm ci --ignore-scripts
-        npm run build
+        npm run build -- --release
 
     - name: Package module
       run: |
