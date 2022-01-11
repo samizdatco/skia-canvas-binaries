@@ -15,8 +15,8 @@ diff -Naur rust-skia/skia-bindings/build_support/skia/config.rs modified/skia-bi
              let opt_level_arg;
 -            let mut cflags: Vec<&str> = vec![];
 +            let mut cflags: Vec<&str> = vec![
-+                "-I/usr/include/c++/10.3.1",
-+                "-I/usr/include/c++/10.3.1/x86_64-alpine-linux-musl"
++                "-I/usr/include/c++/11.2.1",
++                "-I/usr/include/c++/11.2.1/x86_64-alpine-linux-musl"
 +            ];
              let mut asmflags: Vec<&str> = vec![];
  
