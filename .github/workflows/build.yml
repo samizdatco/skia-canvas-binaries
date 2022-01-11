@@ -10,7 +10,7 @@ jobs:
   linux-x86:
     runs-on: ubuntu-latest
     container:
-      image: ghcr.io/samizdatco/skia-canvas-x86-env:v1
+      image: ghcr.io/samizdatco/skia-canvas-binaries-x86:latest
 
     steps:
     - name: Checkout repository
@@ -27,6 +27,7 @@ jobs:
     - name: Build module
       run: |
         npm ci --ignore-scripts
+        cargo build --release
         npm run build -- --release
 
     - name: Package module
