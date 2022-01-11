@@ -59,7 +59,7 @@ jobs:
 
 
       - run: |
-        echo CPU is $CPU
+          echo CPU is $CPU
       # - name: Checkout
       #   uses: actions/checkout@v2
 
