@@ -27,7 +27,7 @@ jobs:
     - name: Build module
       run: |
         npm ci --ignore-scripts
-        cargo-cp-artifact -nc lib/v6/index.node -- cargo build --message-format=json-render-diagnostics --release
+        ./node_modules/.bin/cargo-cp-artifact -nc lib/v6/index.node -- cargo build --message-format=json-render-diagnostics --release
       # run: |
       #   npm ci --ignore-scripts
       #   npm run build -- --release
