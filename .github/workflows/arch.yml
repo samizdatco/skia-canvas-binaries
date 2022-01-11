@@ -45,23 +45,20 @@ jobs:
           username: ${{ github.repository_owner }}
           password: ${{ secrets.CR_PAT }}
 
-      # - name: Downcase CPU
-      #   run: |
-      #     echo "CPU=$(echo ${{ matrix.runner }} | tr [:upper:] [:lower:])" >> ${GITHUB_ENV}
-
       - id: cpu
         uses: ASzc/change-string-case-action@v1
         with:
           string: ${{ matrix.runner }}
-        # echo "CPU=${${{ matrix.runner.2 }},,}" >>${GITHUB_ENV}
-        # echo CPU is $CPU
-        # echo cpu is ${{ steps.cpu.outputs.lowercase }}
 
       - name: Build Docker Image
         run: |
-          cd arch/${{ steps.cpu.outputs.lowercase }}
-          docker build . -t ghcr.io/${{ github.repository }}-${{ steps.cpu.outputs.lowercase }}:latest
-          docker push ghcr.io/${{ github.repository }}-${{ steps.cpu.outputs.lowercase }}:latest
+          cd ${{ env.context }}
+          docker build . -t ${{ env.tag }}
+          docker push ${{ env.tag }}
+        env:
+          context: arch/${{ steps.cpu.outputs.lowercase }}
+          tag: ghcr.io/${{ github.repository }}-${{ steps.cpu.outputs.lowercase }}:latest
+
       # - name: Build and Push Docker Image
       #   uses: docker/build-push-action@v2
       #   with:
