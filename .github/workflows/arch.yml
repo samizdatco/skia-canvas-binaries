@@ -38,12 +38,12 @@ jobs:
       - id: cpu
         uses: ASzc/change-string-case-action@v1
         with:
-          string: ${{ matrix.cpu }}
+          string: ${{ matrix.runner.2 }}
 
       - name: downcase CPU
         run: |
-          echo "CPU=${${{ matrix.cpu }},,}" >>${GITHUB_ENV}
-          echo arch is $CPU
+          echo "CPU=${${{ matrix.runner.2 }},,}" >>${GITHUB_ENV}
+          echo CPU is $CPU
           echo cpu is ${{ steps.cpu.outputs.lowercase }}
 
       # - name: Checkout
