@@ -70,6 +70,8 @@ jobs:
         patch -p0 < /code/alpine-build.patch
         echo "#!/bin/true" > rust-skia/skia-bindings/skia/bin/fetch-gn
         perl -0777 -pi.bak -e 's/(\[dependencies.skia-safe\]\n)version.*/$1path = "..\/rust-skia\/skia-safe"/m' skia-canvas/Cargo.toml
+        perl -0777 -pi.bak -e 's/("textlayout")/$1, "embed-freetype"/' Cargo.toml
+
 
     - name: Build module
       run: |
