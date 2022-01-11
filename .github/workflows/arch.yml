@@ -30,7 +30,9 @@ jobs:
     strategy:
       matrix:
         cpu: [ARM, ARM64]
+
     runs-on: [self-hosted, linux, ${{ matrix.cpu }}]
+
     steps:
       - id: cpu
         uses: ASzc/change-string-case-action@v1
