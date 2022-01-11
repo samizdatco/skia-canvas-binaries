@@ -27,7 +27,6 @@ jobs:
     - name: Build module
       run: |
         npm ci --ignore-scripts
-        cargo build --release
         npm run build -- --release
 
     - name: Package module
