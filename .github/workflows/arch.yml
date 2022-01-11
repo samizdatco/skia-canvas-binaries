@@ -53,8 +53,10 @@ jobs:
 
       - name: downcase CPU
         run: |
+          echo "CPU=${${{ matrix.runner }},,}" >> ${GITHUB_ENV}
           echo runner is ${{ matrix.runner }}
           echo cpu is ${{ matrix.cpu }}
+          echo CPU is $CPU
       # - name: Checkout
       #   uses: actions/checkout@v2
 
