@@ -10,3 +10,6 @@ ENV PATH="/root/.cargo/bin:${PATH}"
 
 RUN apt-get install -y ninja-build
 ENV SKIA_NINJA_COMMAND="/usr/bin/ninja"
+
+COPY entrypoint.sh /usr/local/bin
+ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]
