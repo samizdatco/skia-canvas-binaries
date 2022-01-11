@@ -27,10 +27,12 @@ jobs:
   #         push: true
 
   acorn:
-    runs-on: [self-hosted, linux, ${{ matrix.cpu }}]
+    runs-on: ${{ matrix.runner }}
     strategy:
       matrix:
-        cpu: [ARM, ARM64]
+        runner:
+          - [self-hosted, linux, ARM]
+          - [self-hosted, linux, ARM64]
 
     steps:
       - id: cpu
