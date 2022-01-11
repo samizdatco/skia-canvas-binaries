@@ -150,6 +150,17 @@ tests['arc() 2'] = function (ctx) {
   }
 }
 
+tests['arc() 3'] = function (ctx) {
+  ctx.translate(100, 60)
+  ctx.beginPath()
+  ctx.moveTo(0, 100)
+  ctx.lineTo(0, 0)
+  ctx.arc(0, 0, 50, -Math.PI*1.2, Math.PI*.2, false)
+  ctx.lineWidth = 3
+  ctx.strokeStyle = 'darkgreen'
+  ctx.stroke()
+}
+
 tests['arcTo()'] = function (ctx) {
   ctx.fillStyle = '#08C8EE'
   ctx.translate(-50, -50)
@@ -215,6 +226,17 @@ tests['ellipse() 4'] = function (ctx) {
     ctx.ellipse(x, y, 10, 15, a, a, 0, true)
     ctx.stroke()
   }
+}
+
+tests["ellipse() 5"] = function (ctx) {
+  ctx.translate(100, 50)
+  ctx.beginPath()
+  ctx.moveTo(-39,-33);
+  ctx.ellipse(39,-23, 9,9, 0, -Math.PI/2,0, true);
+  ctx.lineTo(49,23);
+  ctx.closePath()
+  ctx.fillStyle="#5a0e3e"
+  ctx.fill()
 }
 
 tests['bezierCurveTo()'] = function (ctx) {
@@ -379,10 +401,23 @@ tests['scale()'] = function (ctx) {
   }
 }
 
-tests['rect()'] = function (ctx) {
+tests['rect() 1'] = function (ctx) {
   ctx.rect(5, 5, 50, 50)
   ctx.strokeStyle = 'yellow'
   ctx.fill()
+  ctx.stroke()
+}
+
+tests['rect() 2'] = function (ctx) {
+  ctx.translate(100, 50)
+  ctx.rotate(Math.PI*.25)
+  ctx.beginPath()
+  ctx.moveTo(0, 0);
+  ctx.lineTo(0, 25);
+  ctx.rect(25,0, 25, 25);
+  ctx.lineTo(75,50);
+  ctx.lineWidth = 3
+  ctx.strokeStyle = '#333'
   ctx.stroke()
 }
 
@@ -449,7 +484,6 @@ tests['createPattern()'] = function (ctx, done) {
     ctx.strokeRect(1100, 1100, 800, 800)
     done()
   }
-  console.log('load',imageSrc('globe.jpg'))
   img.src = imageSrc('globe.jpg')
 }
 
@@ -1314,7 +1348,31 @@ const gco = [
 ]
 
 gco.forEach(op => {
-  tests['globalCompositeOperator ' + op] = function (ctx, done) {
+  tests['path globalCompositeOperator ' + op] = function (ctx, done) {
+    ctx.save();
+    ctx.beginPath();
+    ctx.fillStyle = "rgba(255,0,0,1)";
+    ctx.arc(50, 100, 50, Math.PI*2, 0, false);
+    ctx.fill()
+
+    ctx.globalCompositeOperation = op;
+
+    ctx.beginPath();
+    ctx.fillStyle = "rgba(0,0,255,1)";
+    ctx.arc(110, 100, 50, Math.PI*2, 0, false);
+    ctx.fill()
+
+    ctx.beginPath();
+    ctx.fillStyle = "rgba(0,255,0,1)";
+    ctx.arc(80, 50, 50, Math.PI*2, 0, false);
+    ctx.fill();
+
+    done()
+  }
+})
+
+gco.forEach(op => {
+  tests['image globalCompositeOperator ' + op] = function (ctx, done) {
     var img1 = new Image()
     var img2 = new Image()
     img1.onload = function () {
@@ -2360,7 +2418,6 @@ tests['putImageData() png data'] = function (ctx, done) {
       for (var i = 0, len = data.length; i < len; i += 4) {
         data[i + 3] = 80
       }
-      console.log(data.slice(-40))
     }
     ctx.putImageData(imageData, 50, 50)
     done(null)

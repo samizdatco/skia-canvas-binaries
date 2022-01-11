@@ -6,8 +6,9 @@
 use std::f32::consts::PI;
 use std::cell::RefCell;
 use neon::prelude::*;
-use skia_safe::{Path, Matrix, Rect, PathDirection, PaintStyle};
+use skia_safe::{Point, Rect, Matrix, Path, PathDirection, PaintStyle};
 use skia_safe::path::AddPathMode::Append;
+use skia_safe::path::AddPathMode::Extend;
 use skia_safe::textlayout::{TextDirection};
 use skia_safe::PaintStyle::{Fill, Stroke};
 
@@ -106,6 +107,41 @@ pub fn resetTransform(mut cx: FunctionContext) -> JsResult<JsUndefined> {
   Ok(cx.undefined())
 }
 
+pub fn createProjection(mut cx: FunctionContext) -> JsResult<JsArray> {
+  let this = cx.argument::<BoxedContext2D>(0)?;
+  let mut this = this.borrow_mut();
+  let dst = points_arg(&mut cx, 1)?;
+  let src = points_arg(&mut cx, 2)?;
+
+  let basis:Vec<Point> = match src.len(){
+    0 => this.bounds.to_quad().to_vec(), // use canvas dims
+    1 => Rect::from_wh(src[0].x, src[0].y).to_quad().to_vec(), // implicit 0,0 origin
+    2 => Rect::new(src[0].x, src[0].y, src[1].x, src[1].y).to_quad().to_vec(), // lf/top, rt/bot
+    _ => src.clone(),
+  };
+
+  let quad:Vec<Point> = match dst.len(){
+    1 => Rect::from_wh(dst[0].x, dst[0].y).to_quad().to_vec(), // implicit 0,0 origin
+    2 => Rect::new(dst[0].x, dst[0].y, dst[1].x, dst[1].y).to_quad().to_vec(), // lf/top, rt/bot
+    _ => dst.clone(),
+  };
+
+  match (Matrix::from_poly_to_poly(&basis, &quad), basis.len() == quad.len()){
+    (Some(projection), true) => {
+      let array = JsArray::new(&mut cx, 9);
+      for i in 0..9 {
+        let num = cx.number(projection[i as usize]);
+        array.set(&mut cx, i as u32, num)?;
+      }
+      Ok(array)
+    },
+    _ => cx.throw_type_error(format!(
+      "Expected 2 or 4 x/y points for output quad (got {}) and 0, 1, 2, or 4 points for the coordinate basis (got {})",
+      quad.len(), basis.len()
+    ))
+  }
+}
+
 // -- ctm property ----------------------------------------------------------------------
 
 pub fn get_currentTransform(mut cx: FunctionContext) -> JsResult<JsArray> {
@@ -152,10 +188,12 @@ pub fn rect(mut cx: FunctionContext) -> JsResult<JsUndefined> {
 
   if let [x, y, w, h] = nums.as_slice(){
     let rect = Rect::from_xywh(*x, *y, *w, *h);
-    let matrix = this.state.matrix;
-    let mut rect_path = Path::new();
-    rect_path.add_rect(&rect, Some((PathDirection::CW, 0)));
-    this.path.add_path(&rect_path.with_transform(&matrix), (0, 0), Append);
+    let quad = this.state.matrix.map_rect_to_quad(rect);
+    this.path.move_to(quad[0]);
+    this.path.line_to(quad[1]);
+    this.path.line_to(quad[2]);
+    this.path.line_to(quad[3]);
+    this.path.close();
   }
   Ok(cx.undefined())
 }
@@ -170,7 +208,7 @@ pub fn arc(mut cx: FunctionContext) -> JsResult<JsUndefined> {
     let matrix = this.state.matrix;
     let mut arc = Path2D::new();
     arc.add_ellipse((*x, *y), (*radius, *radius), 0.0, *start_angle, *end_angle, ccw);
-    this.path.add_path(&arc.path.with_transform(&matrix), (0,0), Append);
+    this.path.add_path(&arc.path.with_transform(&matrix), (0,0), Extend);
   }
   Ok(cx.undefined())
 }
@@ -188,7 +226,7 @@ pub fn ellipse(mut cx: FunctionContext) -> JsResult<JsUndefined> {
     let matrix = this.state.matrix;
     let mut arc = Path2D::new();
     arc.add_ellipse((*x, *y), (*x_radius, *y_radius), *rotation, *start_angle, *end_angle, ccw);
-    this.path.add_path(&arc.path.with_transform(&matrix), (0,0), Append);
+    this.path.add_path(&arc.path.with_transform(&matrix), (0,0), Extend);
   }
   Ok(cx.undefined())
 }
@@ -629,7 +667,7 @@ pub fn drawRaster(mut cx: FunctionContext) -> JsResult<JsUndefined> {
       let (src, dst) = fit_bounds(width, height, src, dst);
 
       let mut this = this.borrow_mut();
-      this.draw_image(&image, &src, &dst);
+      this.draw_image(image, &src, &dst);
       Ok(cx.undefined())
     },
     None => cx.throw_error(format!("Expected 2, 4, or 8 coordinates (got {})", nums.len()))
@@ -651,7 +689,7 @@ pub fn drawCanvas(mut cx: FunctionContext) -> JsResult<JsUndefined> {
     Some((src, dst)) => {
       let pict = {
         let mut ctx = context.borrow_mut();
-        ctx.get_picture(None)
+        ctx.get_picture()
       };
 
       let mut this = this.borrow_mut();
@@ -785,7 +823,7 @@ pub fn measureText(mut cx: FunctionContext) -> JsResult<JsArray> {
 
   let results = JsArray::new(&mut cx, text_metrics.len() as u32);
   for (i, info) in text_metrics.iter().enumerate(){
-    let line = floats_to_array(&mut cx, &info)?;
+    let line = floats_to_array(&mut cx, info)?;
     results.set(&mut cx, i as u32, line)?;
   }
   Ok(results)

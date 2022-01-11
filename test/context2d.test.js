@@ -3,11 +3,12 @@
 "use strict"
 
 const _ = require('lodash'),
-      {Canvas, DOMMatrix, loadImage} = require('../lib'),
+      {Canvas, DOMMatrix, ImageData, loadImage} = require('../lib'),
       css = require('../lib/css');
 
 const BLACK = [0,0,0,255],
       WHITE = [255,255,255,255],
+      GREEN = [0,128,0,255],
       CLEAR = [0,0,0,0]
 
 describe("Context2D", ()=>{
@@ -195,6 +196,24 @@ describe("Context2D", ()=>{
       expect(bmp.height).toBe(height)
       expect(bmp.data.length).toBe(width * height * 4)
       expect(Array.from(bmp.data.slice(0,4))).toEqual(CLEAR)
+
+      let blank = new ImageData(width, height)
+      expect(blank.width).toBe(width)
+      expect(blank.height).toBe(height)
+      expect(blank.data.length).toBe(width * height * 4)
+      expect(Array.from(blank.data.slice(0,4))).toEqual(CLEAR)
+
+      new ImageData(blank.data, width, height)
+      new ImageData(blank.data, height, width)
+      new ImageData(blank.data, width)
+      new ImageData(blank.data, height)
+      expect(() => new ImageData(blank.data, width+1, height) ).toThrow()
+      expect(() => new ImageData(blank.data, width+1) ).toThrow()
+
+      // @ts-ignore
+      new ImageData(blank)
+      // @ts-ignore
+      expect(() => new ImageData(blank.data) ).toThrow()
     })
 
     describe("CanvasPattern", () => {
@@ -552,6 +571,42 @@ describe("Context2D", ()=>{
       })
       expect(lft).toBeCloseTo(cnt)
       expect(cnt).toBeCloseTo(rgt)
+    })
+
+
+    test("createProjection()", () => {
+      let quad = [
+        WIDTH*.33, HEIGHT/2,
+        WIDTH*.66, HEIGHT/2,
+        WIDTH, HEIGHT*.9,
+        0, HEIGHT*.9,
+      ]
+
+      let matrix = ctx.createProjection(quad)
+      ctx.setTransform(matrix)
+
+      ctx.fillStyle = 'black'
+      ctx.fillRect(0,0, WIDTH/4, HEIGHT)
+      ctx.fillStyle = 'white'
+      ctx.fillRect(WIDTH/4, 0, WIDTH/4, HEIGHT)
+      ctx.fillStyle = 'green'
+      ctx.fillRect(WIDTH/2, 0, WIDTH/4, HEIGHT)
+      ctx.resetTransform()
+
+      let x = WIDTH/2, y = HEIGHT/2 + 2
+      expect(pixel(x, y - 5)).toEqual(CLEAR)
+      expect(pixel(x + 25, y)).toEqual(GREEN)
+      expect(pixel(x + 75, y)).toEqual(CLEAR)
+      expect(pixel(x - 25, y)).toEqual(WHITE)
+      expect(pixel(x - 75, y)).toEqual(BLACK)
+      expect(pixel(x - 100, y)).toEqual(CLEAR)
+
+      y = HEIGHT*.9 - 2
+      expect(pixel(x + 100, y)).toEqual(GREEN)
+      expect(pixel(x + 130, y)).toEqual(CLEAR)
+      expect(pixel(x - 75, y)).toEqual(WHITE)
+      expect(pixel(x - 200, y)).toEqual(BLACK)
+      expect(pixel(0, y)).toEqual(CLEAR)
     })
 
   })

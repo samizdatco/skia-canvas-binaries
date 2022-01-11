@@ -41,10 +41,9 @@ impl CanvasPattern{
         false => FilterQuality::None
       };
 
-      match image.to_shader(stamp.repeat, to_sampling_opts(quality), None){
-        Some(shader) => Some(shader.with_local_matrix(&stamp.matrix)),
-        None => None
-      }
+      image.to_shader(stamp.repeat, to_sampling_opts(quality), None).map(|shader|
+        shader.with_local_matrix(&stamp.matrix)
+      )
     }else if let Some(pict) = &stamp.pict{
       let shader = pict.to_shader(stamp.repeat, FilterMode::Linear, None, None);
       Some(shader.with_local_matrix(&stamp.matrix))
@@ -97,7 +96,7 @@ pub fn from_canvas(mut cx: FunctionContext) -> JsResult<BoxedCanvasPattern> {
     let dims = ctx.bounds.size();
     let stamp = Stamp{
       image:None,
-      pict:ctx.get_picture(None),
+      pict:ctx.get_picture(),
       dims,
       repeat,
       matrix:Matrix::new_identity()

@@ -1,6 +1,6 @@
 [package]
 name = "skia-canvas"
-version = "0.9.28"
+version = "0.9.27"
 description = "A canvas environment for Node"
 authors = ["Christian Swinehart <drafting@samizdat.co>"]
 license = "MIT"
@@ -9,9 +9,6 @@ exclude = ["index.node"]
 
 [lib]
 crate-type = ["cdylib"]
-
-[profile.release]
-lto = "fat"
 
 [dependencies]
 crc = "1.8.1"
