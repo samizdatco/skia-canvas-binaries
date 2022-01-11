@@ -11,7 +11,7 @@ exclude = ["index.node"]
 crate-type = ["cdylib"]
 
 [dependencies]
-crc = "1.8.1"
+crc = "^2.1.0"
 css-color = "0.1.1"
 lazy_static = "1.4.0"
 rayon = "1.5.1"
