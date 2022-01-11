@@ -26,7 +26,8 @@ jobs:
 
     - name: Build module
       run: |
-        mkdir -p /github/home/.cargo/registry/index/github.com-1ecc629
+        echo i am $(whoami)
+        chown -R $(whoami).$(whoami) /github/home/.cargo/
         npm ci --ignore-scripts
         npm run build -- --release
 
