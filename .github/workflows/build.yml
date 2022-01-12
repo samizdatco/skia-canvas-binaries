@@ -15,11 +15,14 @@ jobs:
       fail-fast: false
       matrix:
         runner: [ARM, ARM64]
-        include:
-          - runner: ARM
-            container: ghcr.io/samizdatco/skia-canvas-binaries-arm:latest
-          - runner: ARM64
-            container: ghcr.io/samizdatco/skia-canvas-binaries-arm64:latest
+        # include:
+        #   - runner: ARM
+        #     container: ghcr.io/samizdatco/skia-canvas-binaries-arm:latest
+        #   - runner: ARM64
+        #     container: ghcr.io/samizdatco/skia-canvas-binaries-arm64:latest
+
+    container:
+      image: ghcr.io/${{ github.repository }}-${{ matrix.libc }}:latest
 
     steps:
     - name: Use Node.js
@@ -51,14 +54,14 @@ jobs:
         submodules: true
         path: rust-skia
 
+    - name: Patch sources
+      run: |
+        perl -0777 -pi.bak -e 's/(\[dependencies.skia-safe\]\n)version.*/$1path = "..\/rust-skia\/skia-safe"/m' skia-canvas/Cargo.toml
+
     - name: Use system GN
       if: ${{ matrix.runner == 'ARM' }}
       run: |
         echo "#!/bin/true" > rust-skia/skia-bindings/skia/bin/fetch-gn
-
-    - name: Patch sources
-      run: |
-        perl -0777 -pi.bak -e 's/(\[dependencies.skia-safe\]\n)version.*/$1path = "..\/rust-skia\/skia-safe"/m' skia-canvas/Cargo.toml
 
     - name: Build module
       run: |
@@ -211,142 +214,3 @@ jobs:
         include:
           - libc: glibc
             container: ghcr.io/samizdatco/skia-canvas-binaries-glibc:latest
-          - libc: musl
-            container: ghcr.io/samizdatco/skia-canvas-binaries-musl:latest
-
-    steps:
-    - name: Checkout repository
-      uses: actions/checkout@v2
-      with:
-        path: skia-canvas
-
-    - name: Checkout rust-skia
-      id: rust-skia
-      run: |
-        export TAG=$(awk '/skia-safe/{getline; print}' skia-canvas/Cargo.toml | egrep -o '[0-9\.]+')
-        git clone --depth 1 --branch $TAG https://github.com/rust-skia/rust-skia.git
-        cd rust-skia
-        git submodule update --init --depth 1 skia-bindings/skia
-        git submodule update --init --depth 1 skia-bindings/depot_tools
-
-    - name: Install rust
-      run: |
-        curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --profile minimal
-        echo "$HOME/.cargo/bin" >> $GITHUB_PATH
-
-    - name: Patch build files
-      run: |
-        patch -p0 < /code/alpine-build.patch
-        echo "#!/bin/true" > rust-skia/skia-bindings/skia/bin/fetch-gn
-        perl -0777 -pi.bak -e 's/(\[dependencies.skia-safe\]\n)version.*/$1path = "..\/rust-skia\/skia-safe"/m' skia-canvas/Cargo.toml
-        perl -0777 -pi.bak -e 's/("textlayout")/$1, "embed-freetype"/' skia-canvas/Cargo.toml
-
-    - name: Build module
-      run: |
-        cd skia-canvas
-        npm ci --ignore-scripts
-        npm run build -- --release
-
-    - name: Package module
-      run: |
-        cd skia-canvas
-        npm test && npm run package
-
-    - name: Upload to S3
-      env:
-        AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-        AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-      run: |
-        cd skia-canvas
-        npm run upload
-
-
-
-
-
-
-
-
-  # linux-x86:
-  #   runs-on: ubuntu-latest
-  #   container:
-  #     image: ghcr.io/samizdatco/skia-canvas-binaries-x86:latest
-
-  #   steps:
-  #   - name: Checkout repository
-  #     uses: actions/checkout@v2
-
-  #   - name: Install rust
-  #     run: |
-  #       curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --profile minimal
-  #       echo "$HOME/.cargo/bin" >> $GITHUB_PATH
-
-  #   - name: Patch build files
-  #     run: perl -0777 -pi.bak -e 's/("textlayout")/$1, "embed-freetype"/' Cargo.toml
-
-  #   - name: Build module
-  #     run: |
-  #       npm ci --ignore-scripts
-  #       npm run build -- --release
-
-  #   - name: Package module
-  #     run: |
-  #       npm test && npm run package
-
-  #   - name: Upload to S3
-  #     env:
-  #       AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-  #       AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-  #     run: |
-  #       npm run upload
-
-  # linux-musl:
-  #   runs-on: ubuntu-latest
-  #   container:
-  #     image: ghcr.io/samizdatco/skia-canvas-binaries-musl:latest
-
-  #   steps:
-  #   - name: Checkout repository
-  #     uses: actions/checkout@v2
-  #     with:
-  #       path: skia-canvas
-
-  #   - name: Checkout rust-skia
-  #     id: rust-skia
-  #     run: |
-  #       export TAG=$(awk '/skia-safe/{getline; print}' skia-canvas/Cargo.toml | egrep -o '[0-9\.]+')
-  #       git clone --depth 1 --branch $TAG https://github.com/rust-skia/rust-skia.git
-  #       cd rust-skia
-  #       git submodule update --init --depth 1 skia-bindings/skia
-  #       git submodule update --init --depth 1 skia-bindings/depot_tools
-
-  #   - name: Install rust
-  #     run: |
-  #       curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --profile minimal
-  #       echo "$HOME/.cargo/bin" >> $GITHUB_PATH
-
-  #   - name: Patch build files
-  #     run: |
-  #       patch -p0 < /code/alpine-build.patch
-  #       echo "#!/bin/true" > rust-skia/skia-bindings/skia/bin/fetch-gn
-  #       perl -0777 -pi.bak -e 's/(\[dependencies.skia-safe\]\n)version.*/$1path = "..\/rust-skia\/skia-safe"/m' skia-canvas/Cargo.toml
-  #       perl -0777 -pi.bak -e 's/("textlayout")/$1, "embed-freetype"/' skia-canvas/Cargo.toml
-
-  #   - name: Build module
-  #     run: |
-  #       cd skia-canvas
-  #       npm ci --ignore-scripts
-  #       npm run build -- --release
-
-  #   - name: Package module
-  #     run: |
-  #       cd skia-canvas
-  #       npm test && npm run package
-
-  #   - name: Upload to S3
-  #     env:
-  #       AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-  #       AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-  #     run: |
-  #       cd skia-canvas
-  #       npm run upload
