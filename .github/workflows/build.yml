@@ -14,14 +14,15 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
+        runner: [ARM, ARM64]
         include:
           - runner: ARM
-            arch: arm
+            container: ${{ format('ghcr.io/{0}-arm:latest', github.repository) }}
           - runner: ARM64
-            arch: arm64
+            container: ${{ format('ghcr.io/{0}-arm64:latest', github.repository) }}
 
     container:
-      image: ${{ format('ghcr.io/{0}-{1}:latest', github.repository, matrix.arch) }}
+      image: ${{ matrix.container }}
 
     steps:
     - name: Use Node.js
