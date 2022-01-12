@@ -20,7 +20,6 @@ jobs:
 
     - name: Install rust
       run: |
-        ls -lRa /github/home/.cargo
         curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --profile minimal
         echo "$HOME/.cargo/bin" >> $GITHUB_PATH
 
