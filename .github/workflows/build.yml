@@ -9,6 +9,10 @@ jobs:
 
 
   linux-arm:
+    runs-on:
+      - self-hosted
+      - linux
+      - ${{ matrix.runner }}
     strategy:
       fail-fast: false
       matrix:
@@ -18,8 +22,6 @@ jobs:
             container: ghcr.io/samizdatco/skia-canvas-binaries-arm:latest
           - runner: ARM64
             container: ghcr.io/samizdatco/skia-canvas-binaries-arm64:latest
-    runs-on:
-      - ${{ matrix.runner }}
 
     steps:
     - name: Use Node.js
