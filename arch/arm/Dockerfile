@@ -16,8 +16,8 @@ RUN git clone https://gn.googlesource.com/gn && \
 ENV SKIA_GN_COMMAND="/usr/local/bin/gn"
 ENV SKIA_NINJA_COMMAND="/usr/bin/ninja"
 
-RUN curl https://sh.rustup.rs -sSf | bash -s -- -y --profile minimal
-ENV PATH="/root/.cargo/bin:${PATH}"
+# RUN curl https://sh.rustup.rs -sSf | bash -s -- -y --profile minimal
+# ENV PATH="/root/.cargo/bin:${PATH}"
 
 RUN groupadd -r -g 1000 pi
 RUN useradd -r -u 1000 -g pi pi
