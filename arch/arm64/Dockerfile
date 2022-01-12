@@ -11,5 +11,6 @@ ENV PATH="/root/.cargo/bin:${PATH}"
 RUN apt-get install -y ninja-build
 ENV SKIA_NINJA_COMMAND="/usr/bin/ninja"
 
-COPY entrypoint.sh /usr/local/bin
-ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]
+RUN groupadd -r -g 1000 pi
+RUN useradd -r -u 1000 -g pi pi
+USER pi
