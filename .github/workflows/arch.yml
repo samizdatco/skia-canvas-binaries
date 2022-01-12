@@ -34,7 +34,8 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        runner: [ARM, ARM64]
+        runner: [ARM64]
+        # runner: [ARM, ARM64]
     steps:
       - name: Checkout
         uses: actions/checkout@v2
