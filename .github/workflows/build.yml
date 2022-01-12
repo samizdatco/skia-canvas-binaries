@@ -15,14 +15,14 @@ jobs:
       fail-fast: false
       matrix:
         runner: [ARM, ARM64]
-        # include:
-        #   - runner: ARM
-        #     container: ghcr.io/samizdatco/skia-canvas-binaries-arm:latest
-        #   - runner: ARM64
-        #     container: ghcr.io/samizdatco/skia-canvas-binaries-arm64:latest
+        include:
+          - runner: ARM
+            container: ghcr.io/samizdatco/skia-canvas-binaries-arm:latest
+          - runner: ARM64
+            container: ghcr.io/samizdatco/skia-canvas-binaries-arm64:latest
 
     container:
-      image: ghcr.io/${{ github.repository }}-${{ matrix.libc }}:latest
+      image: ${{ matrix.container }}
 
     steps:
     - name: Use Node.js
@@ -200,6 +200,8 @@ jobs:
   #     run: |
   #       cd skia-canvas
   #       npm run upload
+
+
 
 
 
