@@ -14,7 +14,6 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        runner: [ARM, ARM64]
         include:
           - runner: ARM
             arch: arm
@@ -113,7 +112,7 @@ jobs:
         git submodule update --init --depth 1 skia-bindings/depot_tools
 
     - name: Patch build files
-      if: ${{ matrix.glibc == 'musl' }}
+      if: ${{ matrix.libc == 'musl' }}
       run: |
         patch -p0 < /code/alpine-build.patch
         echo "#!/bin/true" > rust-skia/skia-bindings/skia/bin/fetch-gn
