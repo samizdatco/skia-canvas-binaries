@@ -49,11 +49,6 @@ jobs:
         username: ${{ github.repository_owner }}
         password: ${{ secrets.CR_PAT }}
 
-    - id: cpu
-      uses: ASzc/change-string-case-action@v1
-      with:
-        string: ${{ matrix.runner }}
-
     - name: Build and Push Docker Image
       run: |
         cd ${{ env.context }}
@@ -61,4 +56,4 @@ jobs:
         docker push ${{ env.tag }}
       env:
         context: arch/${{ steps.cpu.outputs.lowercase }}
-        tag: ghcr.io/${{ github.repository }}-${{ steps.cpu.outputs.lowercase }}:latest
+        tag: ghcr.io/${{ github.repository }}-${{ matrix.runner }}:latest
