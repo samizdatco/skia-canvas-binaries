@@ -1,4 +1,4 @@
-FROM arm64v8/debian:buster
+FROM arm64v8/debian:buster-slim
 
 RUN apt-get update && \
     apt-get install -y -q \
