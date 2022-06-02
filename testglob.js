@@ -12,7 +12,7 @@ fs.writeFileSync(`${TMP}/output-04.png`, 'empty')
 fs.writeFileSync(`${TMP}/output-05.png`, 'empty')
 fs.writeFileSync(`${TMP}/output-06.png`, 'empty')
 
-let qmark = glob(`${TMP}/output-0?.png`),
-    star = glob(`${TMP}/output-*.png`)
+let qmark = glob(`/output-0?.png`, {root:TMP}),
+    star = glob(`/output-*.png`, {root:TMP})
 
 console.log({qmark, star})
