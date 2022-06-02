@@ -1,0 +1,24 @@
+name: Test Windows Glob
+
+on:
+  workflow_dispatch:
+    
+jobs:
+  x86-platform:
+    runs-on: windows-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v2
+    
+    - name: Use Node.js ${{ matrix.node-version }}
+      uses: actions/setup-node@v2
+      with:
+        node-version: 15
+
+    - name: Run test script
+      shell: bash
+      run: |
+        npm i glob tmp
+        node testglob.js
+
