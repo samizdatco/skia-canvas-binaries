@@ -1,14 +1,6 @@
 diff -Naur -x target -x Cargo.lock rust-skia/skia-bindings/build_support/skia/config.rs modified/skia-bindings/build_support/skia/config.rs
 --- rust-skia/skia-bindings/build_support/skia/config.rs    2022-06-03 12:39:48.306141844 -0400
 +++ modified/skia-bindings/build_support/skia/config.rs     2022-06-03 12:44:18.111334942 -0400
-@@ -84,6 +84,7 @@
-                 ("skia_use_system_zlib", yes_if(use_system_libraries)),
-                 ("skia_use_xps", no()),
-                 ("skia_use_dng_sdk", yes_if(features.dng)),
-+                ("skia_use_system_freetype2", no()),
-                 ("cc", quote(&build.cc)),
-                 ("cxx", quote(&build.cxx)),
-             ];
 @@ -142,7 +143,10 @@
              let target = cargo::target();
              let mut target_str = format!("--target={}", target);
