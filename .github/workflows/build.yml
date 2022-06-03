@@ -112,19 +112,19 @@ jobs:
         git submodule update --init --depth 1 skia-bindings/skia
         git submodule update --init --depth 1 skia-bindings/depot_tools
 
-    # - name: Patch build files
-    #   if: ${{ matrix.libc == 'musl' }}
-    #   run: |
-    #     patch -p0 < /code/alpine-build.patch
-    #     echo "#!/bin/true" > rust-skia/skia-bindings/skia/bin/fetch-gn
-    #     perl -0777 -pi.bak -e 's/(\[dependencies.skia-safe\]\n)version.*/$1path = "..\/rust-skia\/skia-safe"/m' skia-canvas/Cargo.toml
+    - name: Patch build files
+      if: ${{ matrix.libc == 'musl' }}
+      run: |
+        patch -p0 < /code/alpine-build.patch
+        echo "#!/bin/true" > rust-skia/skia-bindings/skia/bin/fetch-gn
+        perl -0777 -pi.bak -e 's/(\[dependencies.skia-safe\]\n)version.*/$1path = "..\/rust-skia\/skia-safe"/m' skia-canvas/Cargo.toml
 
     - name: Build module
       run: |
         cd skia-canvas
         perl -0777 -pi.bak -e 's/("textlayout")/$1, "embed-freetype"/' Cargo.toml
         npm ci --ignore-scripts
-        RUST_BACKTRACE=1 npm run build -- --release
+        npm run build -- --release
 
     - name: Package module
       run: |

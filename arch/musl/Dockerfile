@@ -8,7 +8,7 @@ ENV RUSTFLAGS="-C target-feature=-crt-static" \
     SKIA_NINJA_COMMAND="/usr/bin/ninja"
 
 RUN apk add --update --no-cache \
-    bash curl git tar python3 perl clang llvm make  \
+    bash curl git tar python3 python2 perl clang llvm make  \
     musl-dev build-base fontconfig-dev openssl-dev g++ \
     fontconfig ttf-dejavu
 
