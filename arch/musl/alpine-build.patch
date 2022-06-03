@@ -14,9 +14,9 @@ diff -Naur -x target -x Cargo.lock rust-skia/skia-bindings/build_support/skia/co
              let mut target_str = format!("--target={}", target);
              let mut set_target = true;
 -            let mut cflags: Vec<String> = Vec::new();
-+            let mut cflags: Vec<&str> = vec![
-+                "-I/usr/include/c++/10.3.1",
-+                "-I/usr/include/c++/10.3.1/x86_64-alpine-linux-musl"
++            let mut cflags: Vec<String> = vec![
++                "-I/usr/include/c++/10.3.1".to_string(),
++                "-I/usr/include/c++/10.3.1/x86_64-alpine-linux-musl".to_string()
 +            ];
              let mut asmflags: Vec<String> = Vec::new();
  
