@@ -15,7 +15,6 @@ RUN apk add --update --no-cache \
 RUN sed -i -e 's/v[[:digit:]]\..*\//edge\//g' /etc/apk/repositories
 RUN apk add --update --no-cache --repository http://dl-cdn.alpinelinux.org/alpine/edge/testing \
     gn ninja
-RUN apk upgrade
 
 WORKDIR /code
 COPY alpine-build.patch .
