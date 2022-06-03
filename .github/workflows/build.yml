@@ -124,7 +124,7 @@ jobs:
         cd skia-canvas
         perl -0777 -pi.bak -e 's/("textlayout")/$1, "embed-freetype"/' Cargo.toml
         npm ci --ignore-scripts
-        npm run build -- --release
+        RUST_BACKTRACE=1 npm run build -- --release
 
     - name: Package module
       run: |
