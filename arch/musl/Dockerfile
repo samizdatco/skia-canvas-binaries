@@ -12,7 +12,6 @@ RUN apk add --update --no-cache \
     musl-dev build-base fontconfig-dev openssl-dev g++ \
     fontconfig ttf-dejavu
 
-RUN sed -i -e 's/v[[:digit:]]\..*\//edge\//g' /etc/apk/repositories
 RUN apk add --update --no-cache --repository http://dl-cdn.alpinelinux.org/alpine/edge/testing \
     gn ninja
 
