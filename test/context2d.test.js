@@ -405,14 +405,66 @@ describe("Context2D", ()=>{
       // b | b
       // -----
       // w | b
+      ctx.save()
       ctx.clip() // nonzero
       ctx.fillStyle = 'black'
       ctx.fillRect(0, 0, 2, 2)
+      ctx.restore()
 
       expect(pixel(0, 0)).toEqual(BLACK)
       expect(pixel(1, 0)).toEqual(BLACK)
       expect(pixel(0, 1)).toEqual(WHITE)
       expect(pixel(1, 1)).toEqual(BLACK)
+
+      // test intersection of sequential clips while incorporating transform
+      ctx.fillStyle = 'black'
+      ctx.fillRect(0,0,WIDTH,HEIGHT)
+
+      ctx.save()
+      ctx.beginPath()
+      ctx.rect(20,20,60,60)
+      ctx.clip()
+      ctx.fillStyle = 'white'
+      ctx.fillRect(0,0,WIDTH,HEIGHT)
+
+      ctx.beginPath()
+      ctx.translate(20, 20)
+      ctx.rect(0,0,30,30)
+      ctx.clip()
+      ctx.fillStyle = 'green'
+      ctx.fillRect(0,0,WIDTH,HEIGHT)
+      ctx.restore()
+
+      expect(pixel(10, 10)).toEqual(BLACK)
+      expect(pixel(90, 90)).toEqual(BLACK)
+      expect(pixel(22, 22)).toEqual(GREEN)
+      expect(pixel(48, 48)).toEqual(GREEN)
+      expect(pixel(52, 52)).toEqual(WHITE)
+
+      // non-overlapping clips & empty clips should prevent drawing altogether
+      ctx.beginPath()
+      ctx.rect(20,20,30,30)
+      ctx.clip()
+      ctx.fillStyle = 'black'
+      ctx.fillRect(0,0,WIDTH,HEIGHT)
+
+      ctx.save()
+      ctx.beginPath()
+      ctx.rect(25,25,0,0)
+      ctx.clip()
+      ctx.fillStyle = 'green'
+      ctx.fillRect(0,0,WIDTH,HEIGHT)
+      ctx.restore()
+
+      ctx.save()
+      ctx.beginPath()
+      ctx.rect(0,0,10,10)
+      ctx.clip()
+      ctx.fillStyle = 'green'
+      ctx.fillRect(0,0,WIDTH,HEIGHT)
+      ctx.restore()
+
+      expect(pixel(30, 30)).toEqual(BLACK)
     })
 
     test("fill()", () => {
@@ -608,6 +660,98 @@ describe("Context2D", ()=>{
       expect(pixel(x - 200, y)).toEqual(BLACK)
       expect(pixel(0, y)).toEqual(CLEAR)
     })
+
+    test('drawImage()', async () => {
+      let image = await loadAsset('checkers.png')
+      ctx.imageSmoothingEnabled = false
+
+      ctx.drawImage(image, 0,0)
+      expect(pixel(0, 0)).toEqual(BLACK)
+      expect(pixel(1, 0)).toEqual(WHITE)
+      expect(pixel(0, 1)).toEqual(WHITE)
+      expect(pixel(1, 1)).toEqual(BLACK)
+
+      ctx.drawImage(image,-256,-256,512,512)
+      expect(pixel(0, 0)).toEqual(BLACK)
+      expect(pixel(149, 149)).toEqual(BLACK)
+
+      ctx.clearRect(0,0,WIDTH,HEIGHT)
+      ctx.save()
+      ctx.translate(WIDTH/2, HEIGHT/2)
+      ctx.rotate(.25*Math.PI)
+      ctx.drawImage(image,-256,-256,512,512)
+      ctx.restore()
+      expect(pixel(0, 0)).toEqual(CLEAR)
+      expect(pixel(WIDTH/2, HEIGHT*.25)).toEqual(BLACK)
+      expect(pixel(WIDTH/2, HEIGHT*.75)).toEqual(BLACK)
+      expect(pixel(WIDTH*.25, HEIGHT/2)).toEqual(WHITE)
+      expect(pixel(WIDTH*.75, HEIGHT/2)).toEqual(WHITE)
+      expect(pixel(WIDTH-1, HEIGHT-1)).toEqual(CLEAR)
+
+      let srcCanvas = new Canvas(3, 3),
+          srcCtx = srcCanvas.getContext("2d");
+      srcCtx.fillStyle = 'green'
+      srcCtx.fillRect(0,0,3,3)
+      srcCtx.clearRect(1,1,1,1)
+
+      ctx.drawImage(srcCanvas, 0,0)
+      expect(pixel(0, 0)).toEqual(GREEN)
+      expect(pixel(1, 1)).toEqual(CLEAR)
+      expect(pixel(2, 2)).toEqual(GREEN)
+
+      ctx.clearRect(0,0,WIDTH,HEIGHT)
+      ctx.drawImage(srcCanvas,-2,-2,6,6)
+      expect(pixel(0, 0)).toEqual(CLEAR)
+      expect(pixel(2, 0)).toEqual(GREEN)
+      expect(pixel(2, 2)).toEqual(GREEN)
+
+      ctx.clearRect(0,0,WIDTH,HEIGHT)
+      ctx.save()
+      ctx.translate(WIDTH/2, HEIGHT/2)
+      ctx.rotate(.25*Math.PI)
+      ctx.drawImage(srcCanvas,-256,-256,512,512)
+      ctx.restore()
+      expect(pixel(WIDTH/2, HEIGHT*.25)).toEqual(GREEN)
+      expect(pixel(WIDTH/2, HEIGHT*.75)).toEqual(GREEN)
+      expect(pixel(WIDTH*.25, HEIGHT/2)).toEqual(GREEN)
+      expect(pixel(WIDTH*.75, HEIGHT/2)).toEqual(GREEN)
+      expect(pixel(WIDTH/2, HEIGHT/2)).toEqual(CLEAR)
+    })
+
+    test('drawCanvas()', async () => {
+      let srcCanvas = new Canvas(3, 3),
+          srcCtx = srcCanvas.getContext("2d");
+      srcCtx.fillStyle = 'green'
+      srcCtx.fillRect(0,0,3,3)
+      srcCtx.clearRect(1,1,1,1)
+
+      ctx.drawCanvas(srcCanvas, 0,0)
+      expect(pixel(0, 0)).toEqual(GREEN)
+      expect(pixel(1, 1)).toEqual(CLEAR)
+      expect(pixel(2, 2)).toEqual(GREEN)
+
+      ctx.clearRect(0,0,WIDTH,HEIGHT)
+      ctx.drawCanvas(srcCanvas,-2,-2,6,6)
+      expect(pixel(0, 0)).toEqual(CLEAR)
+      expect(pixel(2, 0)).toEqual(GREEN)
+      expect(pixel(2, 2)).toEqual(GREEN)
+
+      ctx.clearRect(0,0,WIDTH,HEIGHT)
+      ctx.save()
+      ctx.translate(WIDTH/2, HEIGHT/2)
+      ctx.rotate(.25*Math.PI)
+      ctx.drawCanvas(srcCanvas,-256,-256,512,512)
+      ctx.restore()
+      expect(pixel(WIDTH/2, HEIGHT*.25)).toEqual(GREEN)
+      expect(pixel(WIDTH/2, HEIGHT*.75)).toEqual(GREEN)
+      expect(pixel(WIDTH*.25, HEIGHT/2)).toEqual(GREEN)
+      expect(pixel(WIDTH*.75, HEIGHT/2)).toEqual(GREEN)
+      expect(pixel(WIDTH/2, HEIGHT/2)).toEqual(CLEAR)
+
+      let image = await loadAsset('checkers.png')
+      expect( () => ctx.drawCanvas(image, 0, 0) ).not.toThrow()
+    })
+
 
   })
 

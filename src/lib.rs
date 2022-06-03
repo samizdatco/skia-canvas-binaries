@@ -92,6 +92,7 @@ fn main(mut cx: ModuleContext) -> NeonResult<()> {
   cx.export_function("FontLibrary_has", typography::has)?;
   cx.export_function("FontLibrary_family", typography::family)?;
   cx.export_function("FontLibrary_addFamily", typography::addFamily)?;
+  cx.export_function("FontLibrary_reset", typography::reset)?;
 
   // -- Canvas ------------------------------------------------------------------------------------
 
@@ -171,7 +172,7 @@ fn main(mut cx: ModuleContext) -> NeonResult<()> {
   cx.export_function("CanvasRenderingContext2D_set_miterLimit", ctx::set_miterLimit)?;
 
   // imagery
-  cx.export_function("CanvasRenderingContext2D_drawRaster", ctx::drawRaster)?;
+  cx.export_function("CanvasRenderingContext2D_drawImage", ctx::drawImage)?;
   cx.export_function("CanvasRenderingContext2D_drawCanvas", ctx::drawCanvas)?;
   cx.export_function("CanvasRenderingContext2D_getImageData", ctx::getImageData)?;
   cx.export_function("CanvasRenderingContext2D_putImageData", ctx::putImageData)?;

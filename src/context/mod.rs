@@ -8,7 +8,7 @@ use neon::prelude::*;
 use skia_safe::{Canvas as SkCanvas, Surface, Paint, Path, PathOp, Image, ImageInfo,
                 Matrix, Rect, Point, IPoint, Size, ISize, Color, Color4f, ColorType,
                 PaintStyle, BlendMode, AlphaType, TileMode, ClipOp, Data,
-                PictureRecorder, Picture, Drawable,
+                PictureRecorder, Picture, Drawable, image::CachingHint,
                 image_filters, color_filters, table_color_filter, dash_path_effect, path_1d_path_effect};
 use skia_safe::textlayout::{ParagraphStyle, TextStyle};
 use skia_safe::canvas::SrcRectConstraint::Strict;
@@ -44,7 +44,7 @@ pub struct Context2D{
 
 #[derive(Clone)]
 pub struct State{
-  clip: Path,
+  clip: Option<Path>,
   matrix: Matrix,
   paint: Paint,
 
@@ -91,7 +91,7 @@ impl Default for State {
     char_style.set_font_size(10.0);
 
     State {
-      clip: Path::new(),
+      clip: None,
       matrix: Matrix::new_identity(),
 
       paint,
@@ -238,6 +238,7 @@ impl Context2D{
             canvas.save();
             canvas.set_matrix(&Matrix::new_identity().into());
             let mut blend_paint = Paint::default();
+            blend_paint.set_anti_alias(true);
             blend_paint.set_blend_mode(self.state.global_composite_operation);
             canvas.draw_picture(&pict, None, Some(&blend_paint));
             canvas.restore();
@@ -264,7 +265,7 @@ impl Context2D{
   }
 
   pub fn map_points(&self, coords:&[f32]) -> Vec<Point>{
-    coords.chunks(2)
+    coords.chunks_exact(2)
           .map(|pair| self.state.matrix.map_xy(pair[0], pair[1]))
           .collect()
   }
@@ -334,18 +335,13 @@ impl Context2D{
   }
 
   pub fn clip_path(&mut self, path: Option<Path>, rule:FillType){
-    let mut clip = path.unwrap_or_else(|| {
-      // the current path has already incorporated its transform state
-      let inverse = self.state.matrix.invert().unwrap();
-      self.path.with_transform(&inverse)
-    });
-
+    let mut clip = path.unwrap_or_else(|| self.path.clone()) ;
     clip.set_fill_type(rule);
-    if self.state.clip.is_empty(){
-      self.state.clip = clip.clone();
-    }else if let Some(new_clip) = self.state.clip.op(&clip, PathOp::Intersect){
-      self.state.clip = new_clip;
-    }
+
+    self.state.clip = match &self.state.clip {
+      Some(old_clip) => old_clip.op(&clip, PathOp::Intersect),
+      None => Some(clip.clone())
+    };
 
     self.with_recorder(|mut recorder|{
       recorder.set_clip(&self.state.clip);
@@ -378,8 +374,9 @@ impl Context2D{
   pub fn clear_rect(&mut self, rect:&Rect){
     self.with_canvas(|canvas| {
       let mut paint = Paint::default();
-      paint.set_style(PaintStyle::Fill);
-      paint.set_blend_mode(BlendMode::Clear);
+      paint.set_anti_alias(true)
+           .set_style(PaintStyle::Fill)
+           .set_blend_mode(BlendMode::Clear);
       canvas.draw_rect(&rect, &paint);
     });
   }
@@ -465,8 +462,14 @@ impl Context2D{
     recorder.get_page()
   }
 
+  pub fn get_image(&self) -> Option<Image> {
+    let recorder = Arc::clone(&self.recorder);
+    let mut recorder = recorder.lock().unwrap();
+    recorder.get_image()
+  }
+
   pub fn get_picture(&mut self) -> Option<Picture> {
-    self.get_page().get_picture()
+    self.get_page().get_picture(None)
   }
 
   pub fn get_pixels(&mut self, buffer: &mut [u8], origin: impl Into<IPoint>, size: impl Into<ISize>){
@@ -474,12 +477,8 @@ impl Context2D{
     let size = size.into();
     let info = ImageInfo::new(size, ColorType::RGBA8888, AlphaType::Unpremul, None);
 
-    if let Some(pict) = self.get_picture() {
-      if let Some(mut bitmap_surface) = Surface::new_raster_n32_premul(size){
-        let shift = Matrix::translate((-origin.x as f32, -origin.y as f32));
-        bitmap_surface.canvas().draw_picture(&pict, Some(&shift), None);
-        bitmap_surface.read_pixels(&info, buffer, info.min_row_bytes(), (0,0));
-      }
+    if let Some(img) = self.get_image(){
+      img.read_pixels(&info, buffer, info.min_row_bytes(), origin, CachingHint::Allow);
     }
   }
 
