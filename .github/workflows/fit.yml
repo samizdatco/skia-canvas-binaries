@@ -1,0 +1,24 @@
+name: Test Windows Text Fit
+
+on:
+  workflow_dispatch:
+    
+jobs:
+  x86-platform:
+    runs-on: windows-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v2
+    
+    - name: Use Node.js ${{ matrix.node-version }}
+      uses: actions/setup-node@v2
+      with:
+        node-version: 16
+
+    - name: Run test script
+      shell: bash
+      run: |
+        npm i skia-canvas
+        node testfit.js
+
