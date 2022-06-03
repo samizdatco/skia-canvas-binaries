@@ -106,6 +106,7 @@ jobs:
     - name: Checkout rust-skia
       id: rust-skia
       run: |
+        perl -0777 -pi.bak -e 's/0.50.0/0.51.0/' skia-canvas/Cargo.toml
         export TAG=$(awk '/skia-safe/{getline; print}' skia-canvas/Cargo.toml | egrep -o '[0-9\.]+')
         git clone --depth 1 --branch $TAG https://github.com/rust-skia/rust-skia.git
         cd rust-skia
