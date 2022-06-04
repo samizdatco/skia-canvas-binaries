@@ -25,5 +25,3 @@ features = ["napi-6", "promise-api", "task-api"]
 version = "0.50.0"
 features = ["textlayout"]
 
-[target.'cfg(target_os = "linux")'.dependencies]
-skia-safe = { version = "0.50.0", features = ["textlayout", "embed-freetype"] }

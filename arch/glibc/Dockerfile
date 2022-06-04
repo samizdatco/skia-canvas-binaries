@@ -9,6 +9,6 @@ RUN apt-get update && \
 
 ENV SKIA_NINJA_COMMAND="/usr/bin/ninja"
 
-RUN groupadd -r -g 1001 ghuser
-RUN useradd -r -u 1001 -g ghuser ghuser
-USER ghuser
+# RUN groupadd -r -g 1001 ghuser
+# RUN useradd -r -u 1001 -g ghuser ghuser
+# USER ghuser
