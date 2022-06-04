@@ -31,7 +31,7 @@ jobs:
       if: ${{ matrix.libc == 'musl' }}
       id: rust-skia
       run: |
-        export TAG=$(awk '/skia-safe/{getline; print}' skia-canvas/Cargo.toml | egrep -o '[0-9\.]+')
+        export TAG=$(awk '/\[dependencies.skia-safe\]/{getline; print}' skia-canvas/Cargo.toml | egrep -o '[0-9\.]+')
         git clone --depth 1 --branch $TAG https://github.com/rust-skia/rust-skia.git
         cd rust-skia
         git submodule update --init --depth 1 skia-bindings/skia
@@ -46,7 +46,6 @@ jobs:
     - name: Build module
       run: |
         cd skia-canvas
-        perl -0777 -pi.bak -e 's/("textlayout")/$1, "embed-freetype"/' Cargo.toml
         npm ci --ignore-scripts
         npm run build -- --release
 
@@ -79,11 +78,11 @@ jobs:
     container:
       image: ${{ format('ghcr.io/{0}-{1}:latest', github.repository, matrix.libc) }}
 
-    steps:
-    - name: Use Node.js
-      uses: actions/setup-node@v2
-      with:
-        node-version: 14
+    # steps:
+    # - name: Use Node.js
+    #   uses: actions/setup-node@v2
+    #   with:
+    #     node-version: 14
 
     - name: Install rust
       run: |
@@ -98,7 +97,7 @@ jobs:
     - name: Determine current upstream version
       id: rust-skia
       run: |
-        export TAG=$(awk '/skia-safe/{getline; print}' skia-canvas/Cargo.toml | egrep -o '[0-9\.]+')
+        export TAG=$(awk '/\[dependencies.skia-safe\]/{getline; print}' skia-canvas/Cargo.toml | egrep -o '[0-9\.]+')
         echo "::set-output name=VERSION::$TAG"
 
     - name: Checkout rust-skia
