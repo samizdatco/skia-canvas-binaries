@@ -113,7 +113,7 @@ jobs:
       run: |
         patch -p0 < /code/alpine-build.patch
 
-    - name: Use patched rust-skia repo
+    - name: Use local rust-skia repo
       run: |
         perl -0777 -pi.bak -e 's/(\[dependencies.skia-safe\]\n)version.*/$1path = "..\/rust-skia\/skia-safe"/m' skia-canvas/Cargo.toml
 
