@@ -71,12 +71,16 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        runner: [ARM, ARM64]
+        # runner: [ARM, ARM64]
+        # include:
+        #   - runner: ARM
+        #     container: ${{ format('ghcr.io/{0}-{1}:latest', github.repository, 'arm') }}
+        #   - runner: ARM64
+        #     container: ${{ format('ghcr.io/{0}-{1}:latest', github.repository, 'arm64') }}
+        runner: [ARM64]
         include:
-          - runner: ARM
-            container: ${{ format('ghcr.io/{0}-{1}:latest', github.repository, 'arm') }}
           - runner: ARM64
-            container: ${{ format('ghcr.io/{0}-{1}:latest', github.repository, 'arm64') }}
+            container: ${{ format('ghcr.io/{0}-{1}-musl:latest', github.repository, 'arm64') }}
 
     container:
       image: ${{ matrix.container }}
@@ -113,6 +117,7 @@ jobs:
 
     - name: Patch sources
       run: |
+        patch -p0 < /code/alpine-build.patch
         perl -0777 -pi.bak -e 's/(\[dependencies.skia-safe\]\n)version.*/$1path = "..\/rust-skia\/skia-safe"/m' skia-canvas/Cargo.toml
 
     - name: Use system GN
