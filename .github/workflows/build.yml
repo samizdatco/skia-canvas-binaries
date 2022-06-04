@@ -62,7 +62,6 @@ jobs:
         cd skia-canvas
         npm run upload
 
-
   linux-arm:
     runs-on:
       - self-hosted
