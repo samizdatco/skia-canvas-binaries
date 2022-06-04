@@ -31,6 +31,7 @@ jobs:
       if: ${{ matrix.libc == 'musl' }}
       id: rust-skia
       run: |
+        export TAG=$(awk '/\[dependencies.skia-safe\]/{getline; print}' skia-canvas/Cargo.toml | egrep -o '[0-9\.]+')
         git clone --depth 1 --branch $TAG https://github.com/rust-skia/rust-skia.git
         cd rust-skia
         git submodule update --init --depth 1 skia-bindings/skia
@@ -61,6 +62,7 @@ jobs:
         cd skia-canvas
         npm run upload
 
+
   linux-arm:
     runs-on:
       - self-hosted
@@ -76,7 +78,7 @@ jobs:
     container:
       image: ${{ format('ghcr.io/{0}-{1}:latest', github.repository, matrix.libc) }}
 
-    # steps:
+    steps:
     # - name: Use Node.js
     #   uses: actions/setup-node@v2
     #   with:
@@ -95,6 +97,7 @@ jobs:
     - name: Determine current upstream version
       id: rust-skia
       run: |
+        export TAG=$(awk '/\[dependencies.skia-safe\]/{getline; print}' skia-canvas/Cargo.toml | egrep -o '[0-9\.]+')
         echo "::set-output name=VERSION::$TAG"
 
     - name: Checkout rust-skia
@@ -113,6 +116,11 @@ jobs:
     - name: Use local rust-skia repo
       run: |
         perl -0777 -pi.bak -e 's/(\[dependencies.skia-safe\]\n)version.*/$1path = "..\/rust-skia\/skia-safe"/m' skia-canvas/Cargo.toml
+
+    # - name: Use system GN
+    #   if: ${{ matrix.runner == 'ARM' }}
+    #   run: |
+    #     echo "#!/bin/true" > rust-skia/skia-bindings/skia/bin/fetch-gn
 
     - name: Build module
       run: |
