@@ -9,6 +9,11 @@ jobs:
     strategy:
       matrix:
         libc: [glibc, musl]
+        # include:
+        #   - libc: glibc
+        #     platforms: linux/amd64
+        #   - libc: musl
+        #     platforms: linux/amd64,linux/arm64
 
     steps:
       - name: Checkout
@@ -27,20 +32,12 @@ jobs:
           username: ${{ github.repository_owner }}
           password: ${{ secrets.CR_PAT }}
 
-      - name: Determine Checkout Depth
-        uses: haya14busa/action-cond@v1
-        id: platforms
-        with:
-          cond: ${{ matrix.libc == 'musl' }}
-          if_true: 'linux/amd64,linux/arm64'  # string value
-          if_false: 'linux/amd64' # string value
-
       - name: Build and push
         uses: docker/build-push-action@v3
         with:
           tags: ghcr.io/${{ github.repository }}-${{ matrix.libc }}:latest
           context: arch/${{ matrix.libc }}
-          platforms: ${{ steps.platform.outputs.value }}
+          platforms: ${{ matrix.platforms }}
           push: true
 
 
