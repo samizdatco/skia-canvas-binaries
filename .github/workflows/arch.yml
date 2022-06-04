@@ -104,5 +104,5 @@ jobs:
         docker build . -t ${{ env.tag }}
         docker push ${{ env.tag }}
       env:
-        context: arch/musl
+        context: arch/musl-pi
         tag: ghcr.io/${{ github.repository }}-${{ steps.cpu.outputs.lowercase }}:latest
