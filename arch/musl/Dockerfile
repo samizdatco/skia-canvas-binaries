@@ -15,8 +15,9 @@ RUN apk update && apk add --update --no-cache \
 RUN apk add --update --no-cache --repository http://dl-cdn.alpinelinux.org/alpine/edge/testing \
     gn ninja
 
-RUN mkdir /usr/include/c++/10.3.1/aarch64-alpine-linux-musl/asm && \
-    touch /usr/include/c++/10.3.1/aarch64-alpine-linux-musl/asm/hwcap.h
+RUN export ASM="/usr/include/c++/10.3.1/aarch64-alpine-linux-musl/asm" && \
+    mkdir -p ${ASM} && \
+    touch ${ASM}/hwcap.h
 
 WORKDIR /code
 COPY alpine-build.patch .
