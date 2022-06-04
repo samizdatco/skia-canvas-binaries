@@ -74,9 +74,9 @@ jobs:
         runner: [ARM, ARM64]
         include:
           - runner: ARM
-            container: ${{ format('ghcr.io/{0}-{1}:latest', github.repository, 'arm') }}
+            container: ${{ format('ghcr.io/{0}-{1}:latest', 'samizdatco/skia-canvas', 'arm') }}
           - runner: ARM64
-            container: ${{ format('ghcr.io/{0}-{1}:latest', github.repository, 'arm64') }}
+            container: ${{ format('ghcr.io/{0}-{1}:latest', 'samizdatco/skia-canvas', 'arm64') }}
 
     container:
       image: ${{ matrix.container }}
