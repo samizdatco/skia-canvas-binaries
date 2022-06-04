@@ -31,7 +31,6 @@ jobs:
       if: ${{ matrix.libc == 'musl' }}
       id: rust-skia
       run: |
-        export TAG=$(awk '/dependencies.skia-safe/{getline; print}' skia-canvas/Cargo.toml | egrep -o '[0-9\.]+')
         git clone --depth 1 --branch $TAG https://github.com/rust-skia/rust-skia.git
         cd rust-skia
         git submodule update --init --depth 1 skia-bindings/skia
@@ -96,7 +95,6 @@ jobs:
     - name: Determine current upstream version
       id: rust-skia
       run: |
-        export TAG=$(awk '/dependencies.skia-safe/{getline; print}' skia-canvas/Cargo.toml | egrep -o '[0-9\.]+')
         echo "::set-output name=VERSION::$TAG"
 
     - name: Checkout rust-skia
