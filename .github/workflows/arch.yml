@@ -4,16 +4,11 @@ on:
 
 
 jobs:
-  docker:
+  server:
     runs-on: ubuntu-latest
     strategy:
       matrix:
         libc: [glibc, musl]
-        # include:
-        #   - libc: glibc
-        #     platforms: linux/amd64
-        #   - libc: musl
-        #     platforms: linux/amd64,linux/arm64
 
     steps:
       - name: Checkout
@@ -37,7 +32,7 @@ jobs:
         with:
           tags: ghcr.io/${{ github.repository }}-${{ matrix.libc }}:latest
           context: arch/${{ matrix.libc }}
-          platforms: ${{ matrix.platforms }}
+          platforms: linux/amd64,linux/arm64,linux/arm/v7
           push: true
 
 
