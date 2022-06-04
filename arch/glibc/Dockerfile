@@ -3,7 +3,7 @@ FROM node:buster-slim
 RUN apt-get update && \
     apt-get install -y -q \
     curl python2 python3 perl git clang lldb lld \
-    build-essential software-properties-common \
+    build-essential software-properties-common ca-certificates \
     libssl-dev libfontconfig-dev \
     ninja-build
 
