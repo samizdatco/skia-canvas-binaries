@@ -105,4 +105,4 @@ jobs:
         docker push ${{ env.tag }}
       env:
         context: arch/musl-pi
-        tag: ghcr.io/${{ github.repository }}-${{ steps.cpu.outputs.lowercase }}:latest
+        tag: ghcr.io/${{ github.repository }}-${{ steps.cpu.outputs.lowercase }}-musl:latest
