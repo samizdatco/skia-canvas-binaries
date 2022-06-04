@@ -8,7 +8,7 @@ RUN apt-get update && \
     ninja-build
 
 RUN add-apt-repository "deb http://deb.debian.org/debian buster-backports main" && \
-    apt-get update && apt-get install -y -t buster-backports \
+    apt-get update && apt-get install -t buster-backports -y -q \
     curl
 
 ENV SKIA_NINJA_COMMAND="/usr/bin/ninja"
