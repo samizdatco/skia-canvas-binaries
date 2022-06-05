@@ -169,7 +169,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        runner: [ARM64]
+        runner: [AARCH64]
         libc: [musl]
     container:
       image: ${{ format('ghcr.io/{0}-{1}-pi:latest', github.repository, matrix.libc) }}
