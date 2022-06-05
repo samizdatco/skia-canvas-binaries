@@ -14,6 +14,7 @@ WORKDIR /code
 RUN chown pi:pi /code
 
 USER pi
-RUN CARGO_HOME=/code/.cargo curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --profile minimal
+RUN export CARGO_HOME=/code/.cargo &&
+    curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --profile minimal
 ENV PATH="$CARGO_HOME/bin:${PATH}"
 
