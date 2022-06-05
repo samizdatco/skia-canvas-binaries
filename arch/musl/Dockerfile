@@ -22,5 +22,5 @@ WORKDIR /code
 COPY alpine-build.patch .
 
 RUN addgroup -S -g 1000 ghuser && \
-    adduser -S -i 1000 -G ghuser ghuser
+    adduser -S -u 1000 -G ghuser ghuser
 USER ghuser
