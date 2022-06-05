@@ -16,14 +16,6 @@ RUN git clone https://gn.googlesource.com/gn && \
 ENV SKIA_GN_COMMAND="/usr/local/bin/gn"
 ENV SKIA_NINJA_COMMAND="/usr/bin/ninja"
 
-RUN groupadd -r -g 1000 pi
-RUN useradd -r -u 1000 -g pi pi
-
-WORKDIR /code
-RUN chown pi:pi /code
-
-USER pi
-RUN export CARGO_HOME=/code/.cargo && \
-    curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --profile minimal
-ENV PATH="$CARGO_HOME/bin:${PATH}"
+RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --profile minimal
+ENV PATH="$HOME/bin:${PATH}"
 
