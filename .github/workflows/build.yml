@@ -154,11 +154,11 @@ jobs:
     container:
       image: ${{ format('ghcr.io/{0}-{1}:latest', github.repository, matrix.libc) }}
 
-    steps:
-    - name: Install rust
-      run: |
-        curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --profile minimal
-        echo "$HOME/.cargo/bin" >> $GITHUB_PATH
+    # steps:
+    # - name: Install rust
+    #   run: |
+    #     curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --profile minimal
+    #     echo "$HOME/.cargo/bin" >> $GITHUB_PATH
 
     - name: Checkout repositories
       env:
