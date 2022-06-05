@@ -164,7 +164,6 @@ jobs:
   musl-arm64:
     runs-on:
       - self-hosted
-      - linux
       - ${{ matrix.runner }}
     strategy:
       fail-fast: false
