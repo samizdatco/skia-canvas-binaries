@@ -18,8 +18,9 @@ RUN export ASM="/usr/include/c++/10.3.1/aarch64-alpine-linux-musl/asm" && \
     mkdir -p ${ASM} && \
     touch ${ASM}/hwcap.h
 
-RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --profile minimal
-ENV PATH="/root/.cargo/bin:${PATH}"
+RUN export CARGO_HOME="/code/.cargo" &&
+    curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --profile minimal
+ENV PATH="/code/.cargo/bin:${PATH}"
 
 WORKDIR /code
 COPY alpine-build.patch .
