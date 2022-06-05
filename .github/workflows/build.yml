@@ -152,7 +152,7 @@ jobs:
         libc: [musl]
 
     container:
-      image: ${{ format('ghcr.io/{0}-{1}-arm64:latest', github.repository, matrix.libc) }}
+      image: ${{ format('ghcr.io/{0}-{1}:latest', github.repository, matrix.libc) }}
 
     steps:
     - name: Install rust
