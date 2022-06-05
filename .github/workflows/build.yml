@@ -162,9 +162,10 @@ jobs:
 
     - name: Checkout repositories
       env:
-        REPO: ${{ github.repositoryUrl }}
+        SERVER: ${{ github.server_url }}
+        REPO: ${{ github.repository }}
       run: |
-        git clone ${REPO} skia-canvas
+        git clone --depth 1 ${SERVER}/${REPO} skia-canvas
         export TAG=$(awk '/skia-safe/{getline; print}' skia-canvas/Cargo.toml | egrep -o '[0-9\.]+')
         git clone --depth 1 --branch ${TAG} https://github.com/rust-skia/rust-skia.git
         perl -0777 -pi.bak -e 's/(\[dependencies.skia-safe\]\n)version.*/$1path = "..\/rust-skia\/skia-safe"/m' skia-canvas/Cargo.toml
