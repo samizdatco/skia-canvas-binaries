@@ -164,11 +164,12 @@ jobs:
   musl-arm64:
     runs-on:
       - self-hosted
+      - macOS
       - ${{ matrix.runner }}
     strategy:
       fail-fast: false
       matrix:
-        runner: [AARCH64]
+        runner: [ARM64]
         libc: [musl]
     container:
       image: ${{ format('ghcr.io/{0}-{1}-pi:latest', github.repository, matrix.libc) }}
