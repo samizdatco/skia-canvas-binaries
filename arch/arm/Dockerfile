@@ -19,3 +19,6 @@ ENV SKIA_NINJA_COMMAND="/usr/bin/ninja"
 RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --profile minimal
 ENV PATH="$HOME/bin:${PATH}"
 RUN chmod 755 /root
+
+RUN id
+RUN echo $HOME
