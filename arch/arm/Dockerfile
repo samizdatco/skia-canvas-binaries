@@ -20,7 +20,7 @@ RUN groupadd -r -g 1000 pi
 RUN useradd -r -u 1000 -g pi pi
 
 WORKDIR /code
-RUN chown pi:pi code
+RUN chown pi:pi /code
 
 USER pi
 RUN CARGO_HOME=/code/.cargo curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --profile minimal
