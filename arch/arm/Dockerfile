@@ -23,6 +23,6 @@ ENV SKIA_NINJA_COMMAND="/usr/bin/ninja"
 # RUN id
 # RUN echo $HOME
 
-RUN groupadd -r -g 1000 pi
-RUN useradd -r -m -u 1000 -g pi pi
-USER pi
+# RUN groupadd -r -g 1000 pi
+# RUN useradd -r -m -u 1000 -g pi pi
+# USER pi
