@@ -6,7 +6,7 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/samizdatco/skia-canvas-binaries.git"
+    "url": "git+https://github.com/samizdatco/skia-canvas.git"
   },
   "bugs": {
     "url": "https://github.com/samizdatco/skia-canvas/issues"
@@ -21,7 +21,7 @@
     "build": "cargo-cp-artifact -nc lib/v6/index.node -- cargo build --message-format=json-render-diagnostics",
     "install": "node-pre-gyp install || npm run build -- --release",
     "package": "node-pre-gyp package",
-    "upload": "node-pre-gyp-github publish",
+    "upload": "node-pre-gyp publish",
     "test": "jest"
   },
   "dependencies": {
@@ -49,9 +49,9 @@
   "binary": {
     "module_name": "index",
     "module_path": "./lib/v{napi_build_version}",
-    "remote_path": "v{version}",
+    "remote_path": "./v{version}",
     "package_name": "{platform}-{arch}-{node_napi_label}-{libc}.tar.gz",
-    "host": "https://github.com/samizdatco/skia-canvas-binaries/releases/download/",
+    "host": "https://skia-canvas.s3.us-east-1.amazonaws.com",
     "napi_versions": [
       6
     ]
