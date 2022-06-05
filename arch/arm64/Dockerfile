@@ -7,9 +7,9 @@ RUN apt-get update && \
 
 ENV SKIA_NINJA_COMMAND="/usr/bin/ninja"
 
-# RUN groupadd -r -g 1000 pi
-# RUN useradd -r -m -u 1000 -g pi pi
-# USER pi
+RUN groupadd -r -g 1000 pi
+RUN useradd -r -m -u 1000 -g pi pi
+USER pi
 
 # RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --profile minimal
 # ENV PATH="$HOME/bin:${PATH}"
