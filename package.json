@@ -1,5 +1,5 @@
 {
-  "name": "skia-canvas-binaries",
+  "name": "skia-canvas",
   "version": "0.9.30",
   "description": "A canvas environment for Node",
   "author": "Christian Swinehart <drafting@samizdat.co>",
@@ -9,9 +9,9 @@
     "url": "git+https://github.com/samizdatco/skia-canvas-binaries.git"
   },
   "bugs": {
-    "url": "https://github.com/samizdatco/skia-canvas-binaries/issues"
+    "url": "https://github.com/samizdatco/skia-canvas/issues"
   },
-  "homepage": "https://github.com/samizdatco/skia-canvas-binaries#readme",
+  "homepage": "https://github.com/samizdatco/skia-canvas#readme",
   "main": "lib",
   "browser": {
     "lib": "./lib/browser.js",
