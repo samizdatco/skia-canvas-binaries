@@ -82,15 +82,15 @@ jobs:
       image: ${{ matrix.container }}
 
     steps:
+    - name: Install rust
+      run: |
+        curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --profile minimal --default-toolchain nightly
+        echo "$HOME/bin" >> $GITHUB_PATH
+
     - name: Use Node.js
       uses: actions/setup-node@v2
       with:
         node-version: 14
-
-    - name: Install rust
-      run: |
-        curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --profile minimal
-        echo "$HOME/bin" >> $GITHUB_PATH
 
     - name: Checkout repository
       uses: actions/checkout@v2
