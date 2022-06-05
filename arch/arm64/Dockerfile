@@ -7,12 +7,13 @@ RUN apt-get update && \
 
 ENV SKIA_NINJA_COMMAND="/usr/bin/ninja"
 
-# RUN groupadd -r -g 1000 pi
-# RUN useradd -r -u 1000 -g pi pi
+RUN groupadd -r -g 1000 pi
+RUN useradd -r -u 1000 -g pi pi
+USER pi
 
-RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --profile minimal
-ENV PATH="$HOME/bin:${PATH}"
-RUN chmod 755 /root
+# RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --profile minimal
+# ENV PATH="$HOME/bin:${PATH}"
+# RUN chmod 755 /root
 
-RUN id
-RUN echo $HOME
+# RUN id
+# RUN echo $HOME
