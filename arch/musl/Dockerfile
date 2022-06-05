@@ -21,6 +21,4 @@ RUN export ASM="/usr/include/c++/10.3.1/aarch64-alpine-linux-musl/asm" && \
 WORKDIR /code
 COPY alpine-build.patch .
 
-RUN addgroup -S -g 1000 ghuser && \
-    adduser -S -u 1000 -G ghuser ghuser
-USER ghuser
+USER 1000
