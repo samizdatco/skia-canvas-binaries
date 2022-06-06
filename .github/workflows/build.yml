@@ -148,7 +148,10 @@ jobs:
         fail-fast: false
         matrix:
           runner: [ARM, ARM64]
-          libc: [musl, glibc]
+          libc: [glibc]
+          include:
+            - runner: ARM64
+              libc: musl
 
       container:
         image: ${{ format('ghcr.io/{0}-{1}:latest', github.repository, matrix.libc) }}
