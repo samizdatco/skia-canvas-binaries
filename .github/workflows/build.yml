@@ -46,9 +46,8 @@ jobs:
     - name: Build module
       run: |
         cd skia-canvas
-        perl -0777 -pi.bak -e 's/("textlayout")/$1, "embed-freetype"/' Cargo.toml
         npm ci --ignore-scripts
-        npm run build -- --release
+        npm run build -- --release --features skia-safe/embed-freetype
 
     - name: Package module
       run: |
@@ -123,9 +122,8 @@ jobs:
     - name: Build module
       run: |
         cd skia-canvas
-        perl -0777 -pi.bak -e 's/("textlayout")/$1, "embed-freetype"/' Cargo.toml
         npm ci --ignore-scripts
-        npm run build -- --release
+        npm run build -- --release --features skia-safe/embed-freetype
 
     - name: Package module
       run: |
