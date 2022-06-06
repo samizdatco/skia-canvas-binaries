@@ -114,6 +114,11 @@ jobs:
         run: |
           patch -p0 < /code/alpine-build.patch
 
+      - name: Use system GN
+        if: ${{ matrix.runner == 'ARM' }}
+        run: |
+          echo "#!/bin/true" > rust-skia/skia-bindings/skia/bin/fetch-gn
+
       - name: Build module
         run: |
           cd skia-canvas
@@ -132,6 +137,8 @@ jobs:
         run: |
           cd skia-canvas
           npm run upload  # linux-arm:
+
+  # linux-arm:
   #   runs-on:
   #     - self-hosted
   #     - linux
