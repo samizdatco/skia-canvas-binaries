@@ -103,6 +103,7 @@ jobs:
         run: |
           ls
           git clone --depth 1 ${SERVER}/${REPO} skia-canvas
+          perl -0777 -pi.bak -e 's/(\[dependencies.skia-safe\]\n)version.*/$1path = "..\/rust-skia\/skia-safe"/m' skia-canvas/Cargo.toml
 
       - name: Checkout rust-skia
         run: |
@@ -111,8 +112,7 @@ jobs:
           cd rust-skia
           git submodule update --init --depth 1 skia-bindings/skia
           git submodule update --init --depth 1 skia-bindings/depot_tools
-          perl -0777 -pi.bak -e 's/(\[dependencies.skia-safe\]\n)version.*/$1path = "..\/rust-skia\/skia-safe"/m' skia-canvas/Cargo.toml
-          echo "#!/bin/true" > rust-skia/skia-bindings/skia/bin/fetch-gn
+          echo "#!/bin/true" > skia-bindings/skia/bin/fetch-gn
 
       - name: Apply patches
         if: ${{ matrix.libc == 'musl' }}
@@ -137,6 +137,49 @@ jobs:
         run: |
           cd skia-canvas
           npm run upload  # linux-arm:
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
   # linux-arm:
   #   runs-on:
