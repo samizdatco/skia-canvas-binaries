@@ -157,8 +157,8 @@ jobs:
       steps:
       - name: Prepare workspace
         run: |
-          rm -rf "${{ github.workspace }}"
-          mkdir -p "${{ github.workspace }}"
+          rm -rf "$RUNNER_WORKSPACE"
+          mkdir -p "$RUNNER_WORKSPACE"
 
       - name: Install rust
         run: |
