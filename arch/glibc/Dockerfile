@@ -12,4 +12,4 @@ RUN add-apt-repository "deb http://deb.debian.org/debian buster-backports main" 
     curl
 
 ENV SKIA_NINJA_COMMAND="/usr/bin/ninja"
-USER node
+# USER node
