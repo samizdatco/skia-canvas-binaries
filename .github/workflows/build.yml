@@ -17,25 +17,30 @@ jobs:
       image: ${{ format('ghcr.io/{0}-{1}:latest', github.repository, matrix.libc) }}
 
     steps:
-    - name: Checkout repository
-      uses: actions/checkout@v2
-      with:
-        path: skia-canvas
-
     - name: Install rust
       run: |
         curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --profile minimal
         echo "$HOME/.cargo/bin" >> $GITHUB_PATH
 
-    - name: Checkout rust-skia
-      if: ${{ matrix.libc == 'musl' }}
+    - name: Checkout skia-canvas
+      uses: actions/checkout@v2
+      with:
+        path: skia-canvas
+
+    - name: Determine current upstream version
       id: rust-skia
       run: |
         export TAG=$(awk '/\[dependencies.skia-safe\]/{getline; print}' skia-canvas/Cargo.toml | egrep -o '[0-9\.]+')
-        git clone --depth 1 --branch $TAG https://github.com/rust-skia/rust-skia.git
-        cd rust-skia
-        git submodule update --init --depth 1 skia-bindings/skia
-        git submodule update --init --depth 1 skia-bindings/depot_tools
+        echo "::set-output name=VERSION::$TAG"
+
+    - name: Checkout rust-skia
+      if: ${{ matrix.libc == 'musl' }}
+      uses: actions/checkout@v2
+      with:
+        repository: rust-skia/rust-skia
+        ref: ${{ steps.rust-skia.outputs.VERSION }}
+        submodules: true
+        path: rust-skia
 
     - name: Patch build files
       if: ${{ matrix.libc == 'musl' }}
