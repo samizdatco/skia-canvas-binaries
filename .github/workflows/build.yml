@@ -100,12 +100,19 @@ jobs:
     #     ls
     #     git clone --depth 1 ${SERVER}/${REPO} skia-canvas
 
+    # - name: Checkout rust-skia
+    #   run: |
+    #     export TAG=$(awk '/skia-safe/{getline; print}' skia-canvas/Cargo.toml | egrep -o '[0-9\.]+')
+    #     perl -0777 -pi.bak -e 's/(\[dependencies.skia-safe\]\n)version.*/$1path = "..\/rust-skia\/skia-safe"/m' skia-canvas/Cargo.toml
+
+    #     git clone --depth 1 --branch ${TAG} https://github.com/rust-skia/rust-skia.git
+    #     cd rust-skia
+    #     git submodule update --init --depth 1 skia-bindings/skia
+    #     git submodule update --init --depth 1 skia-bindings/depot_tools
+
     - name: Checkout rust-skia
       run: |
-        export TAG=$(awk '/skia-safe/{getline; print}' skia-canvas/Cargo.toml | egrep -o '[0-9\.]+')
-        perl -0777 -pi.bak -e 's/(\[dependencies.skia-safe\]\n)version.*/$1path = "..\/rust-skia\/skia-safe"/m' skia-canvas/Cargo.toml
-
-        git clone --depth 1 --branch ${TAG} https://github.com/rust-skia/rust-skia.git
+        git clone --depth 1 --branch 0.50.0 https://github.com/rust-skia/rust-skia.git
         cd rust-skia
         git submodule update --init --depth 1 skia-bindings/skia
         git submodule update --init --depth 1 skia-bindings/depot_tools
