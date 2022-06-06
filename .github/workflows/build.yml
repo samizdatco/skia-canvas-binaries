@@ -100,7 +100,6 @@ jobs:
           git clone --depth 1 ${SERVER}/${REPO} skia-canvas
 
       - name: Checkout rust-skia
-        if: ${{ matrix.libc == 'musl' }}
         run: |
           export TAG=$(awk '/skia-safe/{getline; print}' skia-canvas/Cargo.toml | egrep -o '[0-9\.]+')
           git clone --depth 1 --branch ${TAG} https://github.com/rust-skia/rust-skia.git
