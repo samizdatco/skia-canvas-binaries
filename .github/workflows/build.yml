@@ -154,10 +154,10 @@ jobs:
         image: ${{ format('ghcr.io/{0}-{1}:latest', github.repository, matrix.libc) }}
 
       steps:
-      # - name: Install rust
-      #   run: |
-      #     curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --profile minimal
-      #     echo "$HOME/.cargo/bin" >> $GITHUB_PATH
+      - name: Install rust
+        run: |
+          curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --profile minimal
+          echo "$HOME/.cargo/bin" >> $GITHUB_PATH
 
       - name: Checkout repositories
         env:
@@ -167,31 +167,20 @@ jobs:
           git clone --depth 1 ${SERVER}/${REPO} skia-canvas
           export TAG=$(awk '/skia-safe/{getline; print}' skia-canvas/Cargo.toml | egrep -o '[0-9\.]+')
           git clone --depth 1 --branch ${TAG} https://github.com/rust-skia/rust-skia.git
+          cd rust-skia
+          git submodule update --init --depth 1 skia-bindings/skia
+          git submodule update --init --depth 1 skia-bindings/depot_tools
+
+      - name: Patch sources
+        run: |
           perl -0777 -pi.bak -e 's/(\[dependencies.skia-safe\]\n)version.*/$1path = "..\/rust-skia\/skia-safe"/m' skia-canvas/Cargo.toml
           patch -p0 < /code/alpine-build.patch
-      # - name: Determine current upstream version
-      #   id: rust-skia
-      #   run: |
-      #     export TAG=$(awk '/skia-safe/{getline; print}' skia-canvas/Cargo.toml | egrep -o '[0-9\.]+')
-      #     echo "::set-output name=VERSION::$TAG"
-
-      # - name: Checkout rust-skia
-      #   uses: actions/checkout@v2
-      #   with:
-      #     repository: rust-skia/rust-skia
-      #     ref: ${{ steps.rust-skia.outputs.VERSION }}
-      #     submodules: true
-      #     path: rust-skia
-
-      # - name: Patch sources
-      #   run: |
-      #     perl -0777 -pi.bak -e 's/(\[dependencies.skia-safe\]\n)version.*/$1path = "..\/rust-skia\/skia-safe"/m' skia-canvas/Cargo.toml
 
       - name: Build module
         run: |
           cd skia-canvas
           npm ci --ignore-scripts
-          npm run build -- --release
+          npm run build -- --release --features skia-safe/embed-freetype
       - name: Package module
         run: |
           cd skia-canvas
