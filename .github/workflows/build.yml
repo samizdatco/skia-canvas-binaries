@@ -158,6 +158,7 @@ jobs:
       - name: Prepare workspace
         run: |
           rm -rf "${{ github.workspace }}"
+          mkdir "${{ github.workspace }}"
 
       - name: Install rust
         run: |
