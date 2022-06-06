@@ -165,6 +165,7 @@ jobs:
           SERVER: ${{ github.server_url }}
           REPO: ${{ github.repository }}
         run: |
+          ls
           git clone --depth 1 ${SERVER}/${REPO} skia-canvas
 
       - name: Checkout rust-skia

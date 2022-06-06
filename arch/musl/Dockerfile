@@ -20,3 +20,4 @@ RUN export ASM="/usr/include/c++/10.3.1/aarch64-alpine-linux-musl/asm" && \
 
 WORKDIR /code
 COPY alpine-build.patch .
+USER node
