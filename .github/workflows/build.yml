@@ -109,7 +109,6 @@ jobs:
         cd rust-skia
         git submodule update --init --depth 1 skia-bindings/skia
         git submodule update --init --depth 1 skia-bindings/depot_tools
-        echo "#!/bin/true" > skia-bindings/skia/bin/fetch-gn
 
     - name: Apply patches
       if: ${{ matrix.libc == 'musl' }}
