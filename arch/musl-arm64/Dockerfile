@@ -21,6 +21,6 @@ RUN export ASM="/usr/include/c++/10.3.1/aarch64-alpine-linux-musl/asm" && \
 WORKDIR /code
 COPY alpine-build.patch .
 
-RUN addgroup -g 1000 -S pi && \
-    adduser -u 1000 -S pi -G pi
-USER pi
+# RUN addgroup -g 1000 -S pi && \
+#     adduser -u 1000 -S pi -G pi
+USER node
