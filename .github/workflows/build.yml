@@ -155,6 +155,10 @@ jobs:
         options: --user 1000:1000
 
       steps:
+      - name: Prepare workspace
+        run: |
+          rm -rf "${{ github.workspace }}"
+
       - name: Install rust
         run: |
           curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --profile minimal
