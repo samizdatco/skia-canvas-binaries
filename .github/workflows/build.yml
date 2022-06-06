@@ -139,7 +139,7 @@ jobs:
   #       npm run upload
 
 
-  linux-arm64:
+  linux-arm:
       runs-on:
         - self-hosted
         - linux
