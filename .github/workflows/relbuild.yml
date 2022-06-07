@@ -26,13 +26,12 @@ jobs:
         path: skia-canvas
 
     - name: Check for gh
+      id: release
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       run: |
-        cd skia-canvas
-        gh release list
-
-
+        export RELEASE="v$(jq -r '.version' package.json)"
+        gh release upload $RELEASE README.md
 
 
 
