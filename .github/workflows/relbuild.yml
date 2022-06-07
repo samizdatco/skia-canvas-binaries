@@ -31,7 +31,7 @@ jobs:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       run: |
         cd skia-canvas
-        export RELEASE="v$(jq -r '.version' package.json)"
+        export RELEASE="xyz$(jq -r '.version' package.json)"
         gh release upload $RELEASE README.md Arista.ttf
 
 
