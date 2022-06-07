@@ -103,6 +103,15 @@ jobs:
         rm -rf "$GITHUB_WORKSPACE"
         mkdir -p "$GITHUB_WORKSPACE"
 
+    - name: Build system GN
+      if: ${{ matrix.runner == 'ARM' }}
+      run: |
+        git clone https://gn.googlesource.com/gn && \
+        cd gn && \
+        python build/gen.py && \
+        ninja -C out && \
+        cp out/gn /usr/local/bin/gn
+
     - name: Install rust
       run: |
         curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --profile minimal
@@ -130,6 +139,7 @@ jobs:
       if: ${{ matrix.libc == 'musl' }}
       run: |
         patch -p0 < /code/alpine-build.patch
+
 
     - name: Use system GN
       if: ${{ matrix.libc == 'musl' }}
