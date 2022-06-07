@@ -5,6 +5,9 @@ on:
     tags:
       - "v*"
 
+
+# node-pre-gyp package 2>&1 | grep 'info package' | cut -d "\"" -f 2
+
 jobs:
 
   linux-x86:
@@ -23,6 +26,10 @@ jobs:
       run: |
         gh release
         gh release list
+
+
+
+
 
     # - name: Install rust
     #   run: |
