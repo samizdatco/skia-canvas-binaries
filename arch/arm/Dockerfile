@@ -3,7 +3,7 @@ FROM arm32v7/debian:buster-slim
 RUN apt-get update && \
     apt-get install -y \
       curl build-essential lsb-release wget software-properties-common \
-      python2 libssl-dev libfontconfig-dev git clang lldb lld ninja-build
+      python2 libssl-dev libfontconfig-dev jq git clang lldb lld ninja-build
 
 WORKDIR /usr/local/src
 RUN git clone https://gn.googlesource.com/gn && \
