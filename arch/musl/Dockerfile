@@ -18,6 +18,8 @@ RUN export ASM="/usr/include/c++/10.3.1/aarch64-alpine-linux-musl/asm" && \
     mkdir -p ${ASM} && \
     touch ${ASM}/hwcap.h
 
+RUN echo "@community http://dl-cdn.alpinelinux.org/alpine/edge/community" >> /etc/apk/repositories && \
+    apk add github-cli@community
+
 WORKDIR /code
 COPY alpine-build.patch .
-# USER node
