@@ -67,6 +67,7 @@ jobs:
         cd skia-canvas
         npm run upload
 
+
   linux-arm64:
     runs-on:
       - self-hosted
@@ -137,7 +138,7 @@ jobs:
         AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
       run: |
         cd skia-canvas
-        npm run upload  # linux-arm:
+        npm run upload
 
 
   linux-arm:
