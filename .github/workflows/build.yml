@@ -67,78 +67,78 @@ jobs:
         cd skia-canvas
         npm run upload
 
-  # linux-arm64:
-  #   runs-on:
-  #     - self-hosted
-  #     - linux
-  #     - ARM64
-  #   strategy:
-  #     fail-fast: false
-  #     matrix:
-  #       libc: [glibc, musl]
+  linux-arm64:
+    runs-on:
+      - self-hosted
+      - linux
+      - ARM64
+    strategy:
+      fail-fast: false
+      matrix:
+        # libc: [glibc, musl]
+        libc: [musl]
 
-  #   container:
-  #     image: ${{ format('ghcr.io/{0}-{1}:latest', github.repository, matrix.libc) }}
-  #     options: --user 1000:1000
+    container:
+      image: ${{ format('ghcr.io/{0}-{1}:latest', github.repository, matrix.libc) }}
+      options: --user 1000:1000
 
-  #   steps:
-  #   - name: Prepare workspace
-  #     run: |
-  #       rm -rf "$GITHUB_WORKSPACE"
-  #       mkdir -p "$GITHUB_WORKSPACE"
+    steps:
+    - name: Prepare workspace
+      run: |
+        rm -rf "$GITHUB_WORKSPACE"
+        mkdir -p "$GITHUB_WORKSPACE"
 
-  #   - name: Install rust
-  #     run: |
-  #       curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --profile minimal
-  #       echo "$HOME/.cargo/bin" >> $GITHUB_PATH
+    - name: Install rust
+      run: |
+        curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --profile minimal
+        echo "$HOME/.cargo/bin" >> $GITHUB_PATH
 
-  #   - name: Checkout skia-canvas
-  #     id: rust-skia
-  #     env:
-  #       SERVER: ${{ github.server_url }}
-  #       REPO: ${{ github.repository }}
-  #     run: |
-  #       git clone --depth 1 ${SERVER}/${REPO} skia-canvas
-  #       export TAG=$(awk '/\[dependencies.skia-safe\]/{getline; print}' skia-canvas/Cargo.toml | egrep -o '[0-9\.]+')
-  #       perl -0777 -pi.bak -e 's/(\[dependencies.skia-safe\]\n)version.*/$1path = "..\/rust-skia\/skia-safe"/m' skia-canvas/Cargo.toml
-  #       echo "::set-output name=VERSION::$TAG"
+    - name: Checkout skia-canvas
+      id: rust-skia
+      env:
+        SERVER: ${{ github.server_url }}
+        REPO: ${{ github.repository }}
+      run: |
+        git clone --depth 1 ${SERVER}/${REPO} skia-canvas
+        export TAG=$(awk '/\[dependencies.skia-safe\]/{getline; print}' skia-canvas/Cargo.toml | egrep -o '[0-9\.]+')
+        perl -0777 -pi.bak -e 's/(\[dependencies.skia-safe\]\n)version.*/$1path = "..\/rust-skia\/skia-safe"/m' skia-canvas/Cargo.toml
+        echo "::set-output name=VERSION::$TAG"
 
-  #   - name: Checkout rust-skia
-  #     run: |
-  #       git clone --depth 1 --branch ${{ steps.rust-skia.outputs.VERSION }} https://github.com/rust-skia/rust-skia.git
-  #       cd rust-skia
-  #       git submodule update --init --depth 1 skia-bindings/skia
-  #       git submodule update --init --depth 1 skia-bindings/depot_tools
+    - name: Checkout rust-skia
+      run: |
+        git clone --depth 1 --branch ${{ steps.rust-skia.outputs.VERSION }} https://github.com/rust-skia/rust-skia.git
+        cd rust-skia
+        git submodule update --init --depth 1 skia-bindings/skia
+        git submodule update --init --depth 1 skia-bindings/depot_tools
 
-  #   - name: Apply patches
-  #     if: ${{ matrix.libc == 'musl' }}
-  #     run: |
-  #       patch -p0 < /code/alpine-build.patch
+    - name: Apply patches
+      if: ${{ matrix.libc == 'musl' }}
+      run: |
+        patch -p0 < /code/alpine-build.patch
 
-  #   - name: Use system GN
-  #     if: ${{ matrix.libc == 'musl' }}
-  #     run: |
-  #       echo "#!/bin/true" > rust-skia/skia-bindings/skia/bin/fetch-gn
+    - name: Use system GN
+      if: ${{ matrix.libc == 'musl' }}
+      run: |
+        echo "#!/bin/true" > rust-skia/skia-bindings/skia/bin/fetch-gn
 
-  #   - name: Build module
-  #     run: |
-  #       cd skia-canvas
-  #       npm ci --ignore-scripts
-  #       npm run build -- --release --features skia-safe/embed-freetype
+    - name: Build module
+      run: |
+        cd skia-canvas
+        npm ci --ignore-scripts
+        npm run build -- --release --features skia-safe/embed-freetype
 
-  #   - name: Package module
-  #     run: |
-  #       cd skia-canvas
-  #       npm test && npm run package
+    - name: Package module
+      run: |
+        cd skia-canvas
+        npm test && npm run package
 
-  #   - name: Add to release
-  #     env:
-  #       GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-  #     run: |
-  #       cd skia-canvas
-  #       export RELEASE="v$(jq -r '.version' package.json)"
-  #       export ASSET=$(npm run package 2>&1 | grep 'info package' | cut -d "\"" -f 2)
-  #       gh release upload $RELEASE $ASSET
+    - name: Upload to S3
+      env:
+        AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      run: |
+        cd skia-canvas
+        npm run upload
 
 
   # linux-arm:

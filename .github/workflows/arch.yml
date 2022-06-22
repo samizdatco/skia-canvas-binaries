@@ -6,6 +6,7 @@ on:
 jobs:
 
   # build x64 on debian stretch since node:14 still uses it (and its old glibc version)
+  # if/when they update the to buster, use the `glibc` container instead of `glibc-x64`
   legacy:
     runs-on: ubuntu-latest
     steps:
