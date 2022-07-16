@@ -14,7 +14,7 @@ jobs:
       matrix:
         libc: [glibc, musl]
     container:
-      image: ${{ format('ghcr.io/{0}-{1}:latest', github.repository, matrix.libc) }}
+      image: ${{ format('ghcr.io/{0}-{1}:latest', "skia-canvas", matrix.libc) }}
 
     steps:
     - name: Install rust
