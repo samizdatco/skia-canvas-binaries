@@ -27,9 +27,6 @@ describe("Canvas", ()=>{
       WIDTH = 512, HEIGHT = 512,
       pixel = (x, y) => Array.from(ctx.getImageData(x, y, 1, 1).data);
 
-  let TMP,
-      findTmp = pattern => glob(pattern, {root:TMP});
-
   beforeEach(()=>{
     canvas = new Canvas(WIDTH, HEIGHT)
     ctx = canvas.getContext("2d")
@@ -56,6 +53,7 @@ describe("Canvas", ()=>{
   })
 
   describe("handles bad arguments for", ()=>{
+    let TMP
     beforeEach(() => TMP = tmp.dirSync().name )
     afterEach(() => fs.rmSync(TMP, {recursive:true}) )
 
@@ -88,7 +86,7 @@ describe("Canvas", ()=>{
       c = new Canvas('garbage', NaN)
       expect(c.width).toBe(W)
       expect(c.height).toBe(H)
-
+      
       // @ts-expect-error
       c = new Canvas(false, {})
       expect(c.width).toBe(W)
@@ -141,6 +139,7 @@ describe("Canvas", ()=>{
   })
 
   describe("can create | async", ()=>{
+    let TMP
     beforeEach(() => {
       TMP = tmp.dirSync().name
 
@@ -162,7 +161,7 @@ describe("Canvas", ()=>{
       ])
 
       let magic = MAGIC.jpg
-      for (let path of findTmp(`/*`)){
+      for (let path of glob(`${TMP}/*`)){
         let header = fs.readFileSync(path).slice(0, magic.length)
         expect(header.equals(magic)).toBe(true)
       }
@@ -177,7 +176,7 @@ describe("Canvas", ()=>{
       ])
 
       let magic = MAGIC.png
-      for (let path of findTmp(`/*`)){
+      for (let path of glob(`${TMP}/*`)){
         let header = fs.readFileSync(path).slice(0, magic.length)
         expect(header.equals(magic)).toBe(true)
       }
@@ -191,7 +190,7 @@ describe("Canvas", ()=>{
         canvas.saveAs(`${TMP}/output4.jpeg`, {format:'svg'}),
       ])
 
-      for (let path of findTmp(`/*`)){
+      for (let path of glob(`${TMP}/*`)){
         let svg = fs.readFileSync(path, 'utf-8')
         expect(svg).toMatch(/^<\?xml version/)
       }
@@ -206,7 +205,7 @@ describe("Canvas", ()=>{
       ])
 
       let magic = MAGIC.pdf
-      for (let path of findTmp(`/*`)){
+      for (let path of glob(`${TMP}/*`)){
         let header = fs.readFileSync(path).slice(0, magic.length)
         expect(header.equals(magic)).toBe(true)
       }
@@ -226,7 +225,7 @@ describe("Canvas", ()=>{
 
       await canvas.saveAs(`${TMP}/output-{2}.png`)
 
-      let files = findTmp(`/output-0?.png`)
+      let files = glob(`${TMP}/output-0?.png`)
       expect(files.length).toEqual(colors.length+1)
 
       files.forEach((fn, i) => {
@@ -315,6 +314,7 @@ describe("Canvas", ()=>{
   })
 
   describe("can create | sync", ()=>{
+    let TMP
     beforeEach(() => {
       TMP = tmp.dirSync().name
 
@@ -334,7 +334,7 @@ describe("Canvas", ()=>{
       canvas.saveAsSync(`${TMP}/output6.png`, {format:'jpeg'})
 
       let magic = MAGIC.jpg
-      for (let path of findTmp(`/*`)){
+      for (let path of glob(`${TMP}/*`)){
         let header = fs.readFileSync(path).slice(0, magic.length)
         expect(header.equals(magic)).toBe(true)
       }
@@ -347,7 +347,7 @@ describe("Canvas", ()=>{
       canvas.saveAsSync(`${TMP}/output4.svg`, {format:'png'})
 
       let magic = MAGIC.png
-      for (let path of findTmp(`/*`)){
+      for (let path of glob(`${TMP}/*`)){
         let header = fs.readFileSync(path).slice(0, magic.length)
         expect(header.equals(magic)).toBe(true)
       }
@@ -359,7 +359,7 @@ describe("Canvas", ()=>{
       canvas.saveAsSync(`${TMP}/output3`, {format:'svg'})
       canvas.saveAsSync(`${TMP}/output4.jpeg`, {format:'svg'})
 
-      for (let path of findTmp(`/*`)){
+      for (let path of glob(`${TMP}/*`)){
         let svg = fs.readFileSync(path, 'utf-8')
         expect(svg).toMatch(/^<\?xml version/)
       }
@@ -372,7 +372,7 @@ describe("Canvas", ()=>{
       canvas.saveAsSync(`${TMP}/output4.jpg`, {format:'pdf'})
 
       let magic = MAGIC.pdf
-      for (let path of findTmp(`/*`)){
+      for (let path of glob(`${TMP}/*`)){
         let header = fs.readFileSync(path).slice(0, magic.length)
         expect(header.equals(magic)).toBe(true)
       }
@@ -392,7 +392,7 @@ describe("Canvas", ()=>{
 
       canvas.saveAsSync(`${TMP}/output-{2}.png`)
 
-      let files = findTmp(`/output-0?.png`)
+      let files = glob(`${TMP}/output-0?.png`)
       expect(files.length).toEqual(colors.length+1)
 
       files.forEach((fn, i) => {

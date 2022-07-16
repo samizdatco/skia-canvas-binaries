@@ -3,15 +3,17 @@ use std::path::Path as FilePath;
 use rayon::prelude::*;
 use neon::prelude::*;
 use neon::result::Throw;
-use skia_safe::image::BitDepth;
 use skia_safe::{Canvas as SkCanvas, Path, Matrix, Rect, ClipOp, Size, Data, Color, ColorSpace,
-                PictureRecorder, Picture, Surface, EncodedImageFormat, Image as SkImage,
-                svg::{self, canvas::Flags}, pdf, Document};
+                PictureRecorder, Picture, Surface, EncodedImageFormat, Image as SkImage, ColorType,
+                svg::{self, canvas::Flags}, pdf, Document, ImageInfo, Budgeted,
+                gpu::{SurfaceOrigin, DirectContext},
+                image::BitDepth};
 
 use crc::{Crc, CRC_32_ISO_HDLC};
 const CRC32: Crc<u32> = Crc::<u32>::new(&CRC_32_ISO_HDLC);
 
 use crate::context::BoxedContext2D;
+use crate::gpu::get_surface;
 
 //
 // Deferred canvas (records drawing commands for later replay on an output surface)
@@ -116,7 +118,7 @@ impl Page{
     let mut compositor = PictureRecorder::new();
     compositor.begin_recording(self.bounds, None);
     if let Some(output) = compositor.recording_canvas() {
-      output.clear(matte.unwrap_or(Color::TRANSPARENT)); // BUG?? Is this where the empty <rect/> in svg exports is coming from?
+      output.clear(matte.unwrap_or(Color::TRANSPARENT));
       for pict in self.layers.iter(){
         pict.playback(output);
       }
@@ -140,8 +142,18 @@ impl Page{
       if let Some(img_format) = img_format{
         let img_scale = Matrix::scale((density, density));
         let img_dims = Size::new(img_dims.width * density, img_dims.height * density).to_floor();
-        if let Some(img) = SkImage::from_picture(picture, img_dims, Some(&img_scale), None, BitDepth::U8, Some(ColorSpace::new_srgb())){
-          img
+        let img_info = ImageInfo::new_n32_premul(img_dims, None);
+
+        let mut surface = get_surface(&img_info);
+
+        if let Some(mut surface) = surface{
+          surface
+            .canvas()
+            .clear(matte.unwrap_or(Color::TRANSPARENT))
+            .set_matrix(&img_scale.into())
+            .draw_picture(&picture, None, None);
+          surface
+            .image_snapshot()
             .encode_to_data_with_quality(img_format, (quality*100.0) as i32)
             .map(|data| with_dpi(data, img_format, density))
             .ok_or(format!("Could not encode as {}", format))
@@ -161,10 +173,9 @@ impl Page{
       }else{
         Err(format!("Unsupported file format {}", format))
       }
-
     }
-
   }
+
 
   pub fn write(&self, filename: &str, file_format:&str, quality:f32, density:f32, outline:bool, matte:Option<Color>) -> Result<(), String> {
     let path = FilePath::new(&filename);
@@ -250,7 +261,7 @@ impl PageSequence{
 // Helpers
 //
 
-pub fn pages_arg(cx: &mut FunctionContext, idx: i32) -> NeonResult<PageSequence> {
+pub fn pages_arg(cx: &mut FunctionContext, idx: i32) -> Result<PageSequence, Throw> {
   let pages = cx.argument::<JsArray>(idx)?
       .to_vec(cx)?
       .iter()

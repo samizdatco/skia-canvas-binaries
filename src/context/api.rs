@@ -5,7 +5,7 @@
 #![allow(non_snake_case)]
 use std::f32::consts::PI;
 use std::cell::RefCell;
-use neon::{prelude::*, types::buffer::TypedArray};
+use neon::prelude::*;
 use skia_safe::{Point, Rect, Matrix, Path, PathDirection, PaintStyle};
 use skia_safe::path::AddPathMode::Append;
 use skia_safe::path::AddPathMode::Extend;
@@ -739,9 +739,10 @@ pub fn getImageData(mut cx: FunctionContext) -> JsResult<JsBuffer> {
   let width = float_arg(&mut cx, 3, "width")? as i32;
   let height = float_arg(&mut cx, 4, "height")? as i32;
 
-  let mut buffer = cx.buffer(4 * (width * height) as usize)?;
-  this.get_pixels(buffer.as_mut_slice(&mut cx), (x, y), (width, height));
-
+  let buffer = JsBuffer::new(&mut cx, 4 * (width * height) as u32)?;
+  cx.borrow(&buffer, |data| {
+    this.get_pixels(data.as_mut_slice(), (x, y), (width, height));
+  });
   Ok(buffer)
 }
 
@@ -770,9 +771,11 @@ pub fn putImageData(mut cx: FunctionContext) -> JsResult<JsUndefined> {
       Rect::from_xywh(x, y, width, height)
   )};
 
-  let buffer: Handle<JsBuffer> = img_data.get(&mut cx, "data")?;
+  let buffer = img_data.get(&mut cx, "data")?.downcast_or_throw::<JsBuffer, _>(&mut cx)?;
   let info = Image::info(width, height);
-  this.blit_pixels(buffer.as_slice(&cx), &info, &src, &dst);
+  cx.borrow(&buffer, |data| {
+    this.blit_pixels(data.as_slice(), &info, &src, &dst);
+  });
   Ok(cx.undefined())
 }
 
@@ -962,7 +965,7 @@ pub fn set_fontVariant(mut cx: FunctionContext) -> JsResult<JsUndefined> {
   let arg = cx.argument::<JsObject>(1)?;
 
   let variant = string_for_key(&mut cx, &arg, "variant")?;
-  let feat_obj: Handle<JsObject> = arg.get(&mut cx, "features")?;
+  let feat_obj = arg.get(&mut cx, "features")?.downcast_or_throw::<JsObject, _>(&mut cx)?;
   let features = font_features(&mut cx, &feat_obj)?;
   this.set_font_variant(&variant, &features);
   Ok(cx.undefined())

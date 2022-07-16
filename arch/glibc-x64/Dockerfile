@@ -11,6 +11,8 @@ FROM node:lts-stretch-slim
  RUN ln -s /usr/bin/clang-cpp-5.0 /usr/bin/clang-cpp
  RUN ln -s /usr/bin/ld.lld-5.0    /usr/bin/ld.lld
  RUN ln -s /usr/bin/lld-5.0       /usr/bin/lld
+ RUN cd /usr/include/c++/6/experimental && \
+     cp * ..
 
  RUN groupadd -r -g 1001 ghuser
  RUN useradd -r -u 1001 -g ghuser ghuser

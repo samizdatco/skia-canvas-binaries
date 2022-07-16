@@ -152,7 +152,7 @@ pub struct FontSpec{
   pub canonical: String
 }
 
-pub fn font_arg(cx: &mut FunctionContext, idx: i32) -> NeonResult<Option<FontSpec>> {
+pub fn font_arg(cx: &mut FunctionContext, idx: i32) -> Result<Option<FontSpec>, Throw> {
   let arg = cx.argument::<JsValue>(idx)?;
   if arg.is_a::<JsNull, _>(cx){ return Ok(None) }
 
@@ -167,14 +167,14 @@ pub fn font_arg(cx: &mut FunctionContext, idx: i32) -> NeonResult<Option<FontSpe
   let slant = to_slant(string_for_key(cx, &font_desc, "style")?.as_str());
   let width = to_width(string_for_key(cx, &font_desc, "stretch")?.as_str());
 
-  let feat_obj:Handle<JsObject> = font_desc.get(cx, "features")?;
+  let feat_obj = font_desc.get(cx, "features")?.downcast::<JsObject, _>(cx).or_throw(cx)?;
   let features = font_features(cx, &feat_obj)?;
 
   let style = FontStyle::new(weight, width, slant);
   Ok(Some(FontSpec{ families, size, leading, style, features, variant, canonical}))
 }
 
-pub fn font_features(cx: &mut FunctionContext, obj: &Handle<JsObject>) -> NeonResult<Vec<(String, i32)>>{
+pub fn font_features(cx: &mut FunctionContext, obj: &Handle<JsObject>) -> Result<Vec<(String, i32)>, Throw>{
   let keys = obj.get_own_property_names(cx)?.to_vec(cx)?;
   let mut features:Vec<(String, i32)> = vec![];
   for key in strings_in(cx, &keys).iter() {
@@ -392,7 +392,8 @@ impl FontLibrary{
 
   fn families(&self) -> Vec<String>{
     let font_mgr = FontMgr::new();
-    let mut names:Vec<String> = font_mgr.family_names().collect();
+    let count = font_mgr.count_families();
+    let mut names:Vec<String> = (0..count).map(|i| font_mgr.family_name(i)).collect();
     for (font, alias) in &self.fonts {
       names.push(match alias{
         Some(name) => name.clone(),
@@ -450,15 +451,6 @@ impl FontLibrary{
   }
 
   fn add_typeface(&mut self, font:Typeface, alias:Option<String>){
-    // replace any previously added font with the same metadata/alias
-    if let Some(idx) = self.fonts.iter().position(|(old_font, old_alias)|
-      match alias.is_some(){
-        true => old_alias == &alias,
-        false => old_font.family_name() == font.family_name()
-      } && old_font.font_style() == font.font_style()
-    ){
-      self.fonts.remove(idx);
-    }
     self.fonts.push((font, alias));
 
     let mut assets = TypefaceFontProvider::new();
@@ -630,8 +622,3 @@ pub fn addFamily(mut cx: FunctionContext) -> JsResult<JsValue> {
   Ok(results.upcast())
 }
 
-pub fn reset(mut cx: FunctionContext) -> JsResult<JsUndefined> {
-  let mut library = FONT_LIBRARY.lock().unwrap();
-  library.fonts.clear();
-  Ok(cx.undefined())
-}

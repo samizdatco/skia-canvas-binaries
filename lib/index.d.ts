@@ -55,6 +55,7 @@ export class Canvas {
   getContext(type?: "2d"): CanvasRenderingContext2D
   newPage(width?: number, height?: number): CanvasRenderingContext2D
   readonly pages: CanvasRenderingContext2D[]
+  gpuSupport(): string
 
   saveAs(filename: string, options?: SaveOptions): Promise<void>
   toBuffer(format: ExportFormat, options?: RenderOptions): Promise<Buffer>
@@ -229,8 +230,6 @@ export interface FontLibrary {
   use(
     families: Record<string, readonly string[] | string>
   ): Record<string, Font[] | Font>
-
-  reset(): void
 }
 
 export const FontLibrary: FontLibrary
