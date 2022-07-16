@@ -1,6 +1,6 @@
 [package]
 name = "skia-canvas"
-version = "0.9.29"
+version = "0.9.30"
 description = "A canvas environment for Node"
 authors = ["Christian Swinehart <drafting@samizdat.co>"]
 license = "MIT"
@@ -11,7 +11,7 @@ exclude = ["index.node"]
 crate-type = ["cdylib"]
 
 [dependencies]
-crc = "^2.1"
+crc = "^3.0"
 css-color = "^0.2"
 lazy_static = "1.4.0"
 rayon = "^1.5"
@@ -20,10 +20,10 @@ gl = "0.14.0"
 ash = "0.35"
 
 [dependencies.neon]
-version = "0.9.1"
+version = "0.10.1"
 default-features = false
-features = ["napi-6", "channel-api"]
+features = ["napi-6", "promise-api", "task-api"]
 
 [dependencies.skia-safe]
-version = "0.46.0"
+version = "0.50.0"
 features = ["textlayout", "gl", "vulkan"]
