@@ -6,6 +6,9 @@ const _ = require('lodash'),
       glob = require('glob').sync,
       {Canvas, Image} = require('../lib');
 
+
+console.log('GPU SUPPORT:', new Canvas().gpuSupport())
+
 const BLACK = [0,0,0,255],
       WHITE = [255,255,255,255],
       CLEAR = [0,0,0,0],

@@ -49,7 +49,6 @@ jobs:
     - name: Run tests
       run: |
         npm test
-        node -e 'console.log(new (require("./lib").Canvas)().gpuSupport())'
 
 
 
