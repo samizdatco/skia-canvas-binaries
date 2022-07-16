@@ -21,6 +21,9 @@ fn gl_init() -> bool {
 }
 
 pub fn gl_supported() -> bool {
+    #[cfg(target_os = "windows")]
+    return false;
+
     gl_init()
 }
 

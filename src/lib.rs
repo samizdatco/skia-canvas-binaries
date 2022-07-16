@@ -17,16 +17,11 @@ mod utils;
 mod gpu;
 
 use context::api as ctx;
-
-// make the FontLibrary global a singleton
 use typography::FontLibrary;
+
 lazy_static! {
   pub static ref FONT_LIBRARY:Mutex<FontLibrary> = FontLibrary::shared();
 }
-
-// detect gpu availability on windows
-use surfman::declare_surfman;
-declare_surfman!();
 
 #[neon::main]
 fn main(mut cx: ModuleContext) -> NeonResult<()> {
