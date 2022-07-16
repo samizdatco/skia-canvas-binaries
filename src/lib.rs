@@ -14,17 +14,19 @@ mod pattern;
 mod texture;
 mod typography;
 mod utils;
-
-use surfman;
-surfman::declare_surfman!();
 mod gpu;
 
 use context::api as ctx;
-use typography::FontLibrary;
 
+// make the FontLibrary global a singleton
+use typography::FontLibrary;
 lazy_static! {
   pub static ref FONT_LIBRARY:Mutex<FontLibrary> = FontLibrary::shared();
 }
+
+// detect gpu availability on windows
+use surfman::declare_surfman;
+declare_surfman!();
 
 #[neon::main]
 fn main(mut cx: ModuleContext) -> NeonResult<()> {
