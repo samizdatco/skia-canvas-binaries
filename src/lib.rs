@@ -14,6 +14,9 @@ mod pattern;
 mod texture;
 mod typography;
 mod utils;
+
+use surfman;
+surfman::declare_surfman!();
 mod gpu;
 
 use context::api as ctx;

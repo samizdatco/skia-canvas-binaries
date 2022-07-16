@@ -1,6 +1,6 @@
 {
   "name": "skia-canvas",
-  "version": "0.9.31",
+  "version": "0.9.29",
   "description": "A canvas environment for Node",
   "author": "Christian Swinehart <drafting@samizdat.co>",
   "license": "MIT",
@@ -19,7 +19,7 @@
   },
   "scripts": {
     "build": "cargo-cp-artifact -nc lib/v6/index.node -- cargo build --message-format=json-render-diagnostics",
-    "install": "npm run build -- --release || true",
+    "install": "node-pre-gyp install || npm run build -- --release",
     "package": "node-pre-gyp package",
     "upload": "node-pre-gyp publish",
     "test": "jest"
