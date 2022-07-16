@@ -30,16 +30,16 @@ jobs:
       with:
         toolchain: stable
 
-    - name: Setup Python 2 (Window only)
-      if: startsWith(matrix.os,'windows')
-      uses: actions/setup-python@v2
-      with:
-        python-version: '2.7.18'
-        architecture: 'x64'
+    # - name: Setup Python 2 (Window only)
+    #   if: startsWith(matrix.os,'windows')
+    #   uses: actions/setup-python@v2
+    #   with:
+    #     python-version: '2.7.18'
+    #     architecture: 'x64'
 
-    - name: Install LLVM (Window only)
-      if: startsWith(matrix.os,'windows')
-      run: choco install llvm
+    # - name: Install LLVM (Window only)
+    #   if: startsWith(matrix.os,'windows')
+    #   run: choco install llvm
 
     - name: Build module
       run: |
