@@ -36,7 +36,6 @@ impl Vulkan {
         Self::init()
     }
 
-
     fn new() -> Result<Self, String> {
         let ash_graphics = unsafe { AshGraphics::new("skia-canvas") }?;
         let context = {
