@@ -11,24 +11,20 @@ pub struct OpenGL {
 
 #[cfg(target_os = "macos")]
 impl OpenGL {
-    fn init() -> bool {
+    fn init() {
         GL_CONTEXT.with(|cell| {
             let mut local_ctx = cell.borrow_mut();
             if local_ctx.is_none(){
                 if let Some(ctx) = OpenGL::new() {
                     local_ctx.replace(ctx);
-                    true
-                } else {
-                    false
                 }
-            } else {
-                true
             }
         })
     }
 
     pub fn supported() -> bool {
-        Self::init()
+        Self::init();
+        GL_CONTEXT.with(|cell| cell.borrow().is_some() )
     }
 
     pub fn new() -> Option<Self> {

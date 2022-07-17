@@ -16,24 +16,20 @@ pub struct Vulkan {
 }
 
 impl Vulkan {
-    fn init() -> bool {
+    fn init() {
         VK_CONTEXT.with(|cell| {
             let mut local_ctx = cell.borrow_mut();
             if local_ctx.is_none() {
                 if let Ok(ctx) = Vulkan::new() {
                     local_ctx.replace(ctx);
-                    true
-                } else {
-                    false
                 }
-            } else {
-                true
             }
         })
     }
 
     pub fn supported() -> bool {
-        Self::init()
+        Self::init();
+        VK_CONTEXT.with(|cell| cell.borrow().is_some() )
     }
 
     fn new() -> Result<Self, String> {
