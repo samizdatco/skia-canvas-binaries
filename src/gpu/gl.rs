@@ -46,7 +46,6 @@ impl OpenGL {
         let context = device.create_context(&context_descriptor, None).ok()?;
         device.make_context_current(&context).ok()?;
         gl::load_with(|symbol_name| device.get_proc_address(&context, symbol_name));
-
         Some(OpenGL{device, context})
     }
 
@@ -72,7 +71,7 @@ pub struct OpenGL {}
 
 #[cfg(not(target_os = "macos"))]
 impl OpenGL {
-    pub fn new() -> Option<self> { None }
+    pub fn new() -> Option<Self> { None }
     pub fn supported() -> bool { false }
     pub fn direct_context() -> Option<DirectContext> { None }
 }
