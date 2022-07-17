@@ -2,42 +2,35 @@ use surfman::{Device, Context, Connection, ContextAttributeFlags, ContextAttribu
 use std::cell::RefCell;
 use skia_safe::gpu::DirectContext;
 
-thread_local!(static GL_CONTEXT: RefCell<Option<GLContext>> = RefCell::new(None));
+thread_local!(static GL_CONTEXT: RefCell<Option<OpenGL>> = RefCell::new(None));
 
-fn gl_init() -> bool {
-    GL_CONTEXT.with(|cell| {
-        let mut local_ctx = cell.borrow_mut();
-        if local_ctx.is_none(){
-            if let Some(ctx) = GLContext::new() {
-                local_ctx.replace(ctx);
-                true
-            } else {
-                false
-            }
-        } else {
-            true
-        }
-    })
-}
-
-pub fn gl_supported() -> bool {
-    // surfman's declare_surfman!() macro isn't actually defining the linker symbols necessary for it
-    // to choose a GPU, so (for the moment) GL is disabled on Windows to prevent aggressive logging
-    // of the failure
-    if cfg!(windows){ false }else{ gl_init() }
-}
-
-pub fn get_gl_context() -> DirectContext {
-    gl_init();
-    DirectContext::new_gl(None, None).expect("Failed to create GL context")
-}
-
-struct GLContext {
+pub struct OpenGL {
     device:Device,
     context:Context
 }
 
-impl GLContext {
+#[cfg(target_os = "macos")]
+impl OpenGL {
+    fn init() -> bool {
+        GL_CONTEXT.with(|cell| {
+            let mut local_ctx = cell.borrow_mut();
+            if local_ctx.is_none(){
+                if let Some(ctx) = OpenGL::new() {
+                    local_ctx.replace(ctx);
+                    true
+                } else {
+                    false
+                }
+            } else {
+                true
+            }
+        })
+    }
+
+    pub fn supported() -> bool {
+        Self::init()
+    }
+
     pub fn new() -> Option<Self> {
         let connection = Connection::new().ok()?;
         let adapter = connection.create_hardware_adapter().ok()?;
@@ -53,12 +46,26 @@ impl GLContext {
         device.make_context_current(&context).ok()?;
         gl::load_with(|symbol_name| device.get_proc_address(&context, symbol_name));
 
-        Some(GLContext{device, context})
+        Some(OpenGL{device, context})
     }
+
+    pub fn direct_context() -> Option<DirectContext> {
+        Self::init();
+        DirectContext::new_gl(None, None)
+    }
+
 }
 
-impl Drop for GLContext {
+impl Drop for OpenGL {
     fn drop(&mut self) {
         self.device.destroy_context(&mut self.context).unwrap();
     }
 }
+
+#[cfg(not(target_os = "macos"))]
+impl OpenGL {
+    pub fn new() -> Option<self> { None }
+    pub fn supported() -> bool { false }
+    pub fn direct_context() -> Option<DirectContext> { None }
+}
+
