@@ -56,6 +56,7 @@ impl OpenGL {
 
 }
 
+#[cfg(target_os = "macos")]
 impl Drop for OpenGL {
     fn drop(&mut self) {
         self.device.destroy_context(&mut self.context).unwrap();
