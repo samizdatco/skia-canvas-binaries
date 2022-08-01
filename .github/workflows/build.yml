@@ -72,13 +72,13 @@ jobs:
         curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --profile minimal
         echo "$HOME/.cargo/bin" >> $GITHUB_PATH
 
-    # - name: Checkout skia-canvas
-    #   id: rust-skia
-    #   env:
-    #     SERVER: ${{ github.server_url }}
-    #     REPO: ${{ github.repository }}
-    #   run: |
-    #     git clone --depth 1 ${SERVER}/${REPO} skia-canvas
+    - name: Checkout skia-canvas
+      id: rust-skia
+      env:
+        SERVER: ${{ github.server_url }}
+        REPO: ${{ github.repository }}
+      run: |
+        git clone --depth 1 ${SERVER}/${REPO} skia-canvas
     #     export TAG=$(make -sC skia-canvas skia-version)
     #     make -sC skia-canvas with-local-skia
     #     echo "::set-output name=VERSION::$TAG"
