@@ -57,7 +57,7 @@ release:
 
 # linux-build helpers
 skia-version:
-	@grep -m 1 'skia-safe' Cargo.toml | egrep -o '[0-9\.]+'
+	@grep -m 1 '^skia-safe' Cargo.toml | egrep -o '[0-9\.]+'
 
 with-local-skia:
 	perl -0777 -pi.bak -e 's/(skia-safe.*?)version = ".*?"/$$1path = "..\/rust-skia\/skia-safe"/g' Cargo.toml
