@@ -60,7 +60,10 @@ skia-version:
 	@grep -m 1 '^skia-safe' Cargo.toml | egrep -o '[0-9\.]+'
 
 with-local-skia:
-	perl -0777 -pi.bak -e 's/(skia-safe.*?version = ".*?")/$$1, path = "..\/rust-skia\/skia-safe"/g' Cargo.toml
+	echo '' >> Cargo.toml
+	echo '[patch.crates-io]' >> Cargo.toml
+	echo 'skia-safe = { path = "../rust-skia/skia-safe" }' >> Cargo.toml
+	echo 'skia-bindings = { path = "../rust-skia/skia-bindings" }' >> Cargo.toml
 
 # debugging
 run: build

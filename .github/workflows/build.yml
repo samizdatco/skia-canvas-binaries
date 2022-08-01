@@ -79,21 +79,21 @@ jobs:
         REPO: ${{ github.repository }}
       run: |
         git clone --depth 1 ${SERVER}/${REPO} skia-canvas
-    #     export TAG=$(make -sC skia-canvas skia-version)
-    #     make -sC skia-canvas with-local-skia
-    #     echo "::set-output name=VERSION::$TAG"
+        export TAG=$(make -sC skia-canvas skia-version)
+        make -sC skia-canvas with-local-skia
+        echo "::set-output name=VERSION::$TAG"
 
-    # - name: Checkout rust-skia
-    #   run: |
-    #     git clone --depth 1 --branch ${{ steps.rust-skia.outputs.VERSION }} https://github.com/rust-skia/rust-skia.git
-    #     cd rust-skia
-    #     git submodule update --init --depth 1 skia-bindings/skia
-    #     git submodule update --init --depth 1 skia-bindings/depot_tools
+    - name: Checkout rust-skia
+      run: |
+        git clone --depth 1 --branch ${{ steps.rust-skia.outputs.VERSION }} https://github.com/rust-skia/rust-skia.git
+        cd rust-skia
+        git submodule update --init --depth 1 skia-bindings/skia
+        git submodule update --init --depth 1 skia-bindings/depot_tools
 
-    # - name: Use system GN
-    #   if: ${{ matrix.libc == 'musl' }}
-    #   run: |
-    #     echo "#!/bin/true" > rust-skia/skia-bindings/skia/bin/fetch-gn
+    - name: Use system GN
+      if: ${{ matrix.libc == 'musl' }}
+      run: |
+        echo "#!/bin/true" > rust-skia/skia-bindings/skia/bin/fetch-gn
 
     - name: Build module
       run: |
