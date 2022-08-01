@@ -60,7 +60,7 @@ skia-version:
 	@grep -m 1 '^skia-safe' Cargo.toml | egrep -o '[0-9\.]+'
 
 with-local-skia:
-	perl -0777 -pi.bak -e 's/(skia-safe.*?)version = ".*?"/$$1path = "..\/rust-skia\/skia-safe"/g' Cargo.toml
+	perl -0777 -pi.bak -e 's/(skia-safe.*?version = ".*?")/$$1, path = "..\/rust-skia\/skia-safe"/g' Cargo.toml
 
 # debugging
 run: build
