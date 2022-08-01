@@ -68,14 +68,6 @@ impl Filter {
       _ => None
     };
 
-    if cached.is_some(){
-      println!("HIT");
-    }else if raster{
-      println!("MISS: raster");
-    }else{
-      println!("MISS: vector");
-    }
-
     cached.or_else(|| {
       let mut mask_filter = None;
       let image_filter = self.specs.iter().fold(None, |chain, next_filter|
@@ -193,7 +185,7 @@ impl Filter {
       if raster{ self._raster = filters.clone(); }
       else{ self._vector = filters.clone(); }
       filters
-    }).expect("Could not create image filter")
+    }).expect("Could not create filter")
   }
 }
 
