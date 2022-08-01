@@ -72,34 +72,34 @@ jobs:
         curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --profile minimal
         echo "$HOME/.cargo/bin" >> $GITHUB_PATH
 
-    - name: Checkout skia-canvas
-      id: rust-skia
-      env:
-        SERVER: ${{ github.server_url }}
-        REPO: ${{ github.repository }}
-      run: |
-        git clone --depth 1 ${SERVER}/${REPO} skia-canvas
-        export TAG=$(make -sC skia-canvas skia-version)
-        make -sC skia-canvas with-local-skia
-        echo "::set-output name=VERSION::$TAG"
+    # - name: Checkout skia-canvas
+    #   id: rust-skia
+    #   env:
+    #     SERVER: ${{ github.server_url }}
+    #     REPO: ${{ github.repository }}
+    #   run: |
+    #     git clone --depth 1 ${SERVER}/${REPO} skia-canvas
+    #     export TAG=$(make -sC skia-canvas skia-version)
+    #     make -sC skia-canvas with-local-skia
+    #     echo "::set-output name=VERSION::$TAG"
 
-    - name: Checkout rust-skia
-      run: |
-        git clone --depth 1 --branch ${{ steps.rust-skia.outputs.VERSION }} https://github.com/rust-skia/rust-skia.git
-        cd rust-skia
-        git submodule update --init --depth 1 skia-bindings/skia
-        git submodule update --init --depth 1 skia-bindings/depot_tools
+    # - name: Checkout rust-skia
+    #   run: |
+    #     git clone --depth 1 --branch ${{ steps.rust-skia.outputs.VERSION }} https://github.com/rust-skia/rust-skia.git
+    #     cd rust-skia
+    #     git submodule update --init --depth 1 skia-bindings/skia
+    #     git submodule update --init --depth 1 skia-bindings/depot_tools
 
-    - name: Use system GN
-      if: ${{ matrix.libc == 'musl' }}
-      run: |
-        echo "#!/bin/true" > rust-skia/skia-bindings/skia/bin/fetch-gn
+    # - name: Use system GN
+    #   if: ${{ matrix.libc == 'musl' }}
+    #   run: |
+    #     echo "#!/bin/true" > rust-skia/skia-bindings/skia/bin/fetch-gn
 
     - name: Build module
       run: |
         cd skia-canvas
         npm ci --ignore-scripts
-        npm run build -- --release --features vulkan,skia-safe/embed-freetype
+        npm run build -- --release --features vulkan,window,skia-safe/embed-freetype
 
     - name: Package module
       run: |
@@ -144,27 +144,27 @@ jobs:
       with:
         path: skia-canvas
 
-    - name: Determine current upstream version
-      id: rust-skia
-      run: |
-        export TAG=$(make -sC skia-canvas skia-version)
-        echo "::set-output name=VERSION::$TAG"
+    # - name: Determine current upstream version
+    #   id: rust-skia
+    #   run: |
+    #     export TAG=$(make -sC skia-canvas skia-version)
+    #     echo "::set-output name=VERSION::$TAG"
 
-    - name: Checkout rust-skia
-      uses: actions/checkout@v2
-      with:
-        repository: rust-skia/rust-skia
-        ref: ${{ steps.rust-skia.outputs.VERSION }}
-        submodules: true
-        path: rust-skia
+    # - name: Checkout rust-skia
+    #   uses: actions/checkout@v2
+    #   with:
+    #     repository: rust-skia/rust-skia
+    #     ref: ${{ steps.rust-skia.outputs.VERSION }}
+    #     submodules: true
+    #     path: rust-skia
 
-    - name: Patch sources
-      run: |
-        make -sC skia-canvas with-local-skia
+    # - name: Patch sources
+    #   run: |
+    #     make -sC skia-canvas with-local-skia
 
-    - name: Use system GN
-      run: |
-        echo "#!/bin/true" > rust-skia/skia-bindings/skia/bin/fetch-gn
+    # - name: Use system GN
+    #   run: |
+    #     echo "#!/bin/true" > rust-skia/skia-bindings/skia/bin/fetch-gn
 
     - name: Build module
       run: |

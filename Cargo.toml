@@ -12,8 +12,8 @@ crate-type = ["cdylib"]
 
 [features]
 metal = ["skia-safe/metal", "dep:metal", "dep:core-graphics-types", "dep:foreign-types", "dep:cocoa", "dep:objc"]
-vulkan = ["skia-safe/vulkan", "dep:ash"]
-window = ["dep:winit", "dep:skulpin"]
+vulkan = ["skia-safe/vulkan", "dep:skulpin", "dep:ash"]
+window = ["dep:winit"]
 
 [dependencies]
 crc = "^3.0"
