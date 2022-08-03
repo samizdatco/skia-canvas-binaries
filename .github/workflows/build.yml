@@ -82,6 +82,7 @@ jobs:
         export TAG=$(make -sC skia-canvas skia-version)
         make -sC skia-canvas with-local-skia
         echo "::set-output name=VERSION::$TAG"
+        echo REF ${GITHUB_REF_NAME}
 
     - name: Checkout rust-skia
       run: |
