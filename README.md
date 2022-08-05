@@ -1,7 +1,6 @@
-<picture>
-  <source media="(prefers-color-scheme: dark)" srcset="/test/assets/readme-header-dark@2x.png">
-  <img alt="Skia Canvas" src="/test/assets/readme-header@2x.png">
-</picture>
+![Fancy logo](/test/assets/readme-header-dark@2x.png#gh-dark-mode-only)
+![Fancy logo](/test/assets/readme-header@2x.png#gh-light-mode-only)
+
 
 Skia Canvas is a browser-less implementation of the HTML Canvas drawing API for Node.js. It is based on Google’s [Skia](https://skia.org) graphics engine and as a result produces very similar results to Chrome’s `<canvas>` element. The library is well suited for use on desktop machines where you can render hardware-accelerated graphics to a window and on the server where it can output a variety of image formats.
 
