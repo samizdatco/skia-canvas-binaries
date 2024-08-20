@@ -6,7 +6,7 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/samizdatco/skia-canvas.git"
+    "url": "git+https://github.com/samizdatco/skia-canvas-binaries.git"
   },
   "bugs": {
     "url": "https://github.com/samizdatco/skia-canvas/issues"
