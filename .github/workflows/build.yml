@@ -18,11 +18,21 @@ jobs:
 
     steps:
 
-    - name: "Install github cli tool (NB: belongs in Dockerfile)"
+    - name: "Install github cli tool (debian)"
+      if: matrix.libc == "glibc"
       run: |
         apt-get install -y wget
         wget https://github.com/cli/cli/releases/download/v2.55.0/gh_2.55.0_linux_amd64.deb
         dpkg -i gh_2.55.0_linux_amd64.deb
+
+    - name: "Install github cli tool (alipine)"
+      if: matrix.libc == "musl"
+      run: |
+        apk add wget
+        wget https://github.com/cli/cli/releases/download/v2.55.0/gh_2.55.0_linux_amd64.tar.gz
+        tar xzf gh_2.55.0_linux_amd64.tar.gz
+        mv gh_2.55.0_linux_amd64/bin/gh /bin
+        gh
 
     - name: Install rust
       run: |
