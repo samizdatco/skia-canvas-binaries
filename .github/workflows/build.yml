@@ -18,7 +18,11 @@ jobs:
 
     steps:
     - name: Install gh
-      run: apt-get install gh -y
+      run: |
+        apt-get install -y wget
+        wget https://github.com/cli/cli/releases/download/v2.55.0/gh_2.55.0_linux_arm64.deb
+        dpkg -i gh_2.55.0_linux_arm64.deb
+        gh
 
 #     - name: Install rust
 #       run: |
