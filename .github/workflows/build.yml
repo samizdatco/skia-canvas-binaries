@@ -255,6 +255,11 @@ jobs:
         sed -i.bak 's/"package_name":.*/"package_name": "{platform}-arm64-{node_napi_label}-{libc}.tar.gz",/' package.json
         npm run package
 
+    - name: Upgrade Node.js version (for publishing script)
+      uses: actions/setup-node@v2
+      with:
+        node-version: 18
+
     - name: Upload to a draft release
       env:
         NODE_PRE_GYP_GITHUB_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
@@ -288,6 +293,11 @@ jobs:
     - name: Package module
       run: |
         npm test && npm run package
+
+    - name: Upgrade Node.js version (for publishing script)
+      uses: actions/setup-node@v2
+      with:
+        node-version: 18
 
     - name: Upload to a draft release
       env:
