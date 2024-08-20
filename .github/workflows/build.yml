@@ -46,12 +46,14 @@ jobs:
     #     npm run upload
     - name: Add to release
       env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       run: |
         cd skia-canvas
         export RELEASE="v$(npm view skia-canvas version)"
         export ASSET=$(npm run package 2>&1 | grep 'info package' | cut -d "\"" -f 2)
-        gh release upload $RELEASE $ASSET
+        echo release $RELEASE
+        echo asset $ASSET
+        gh release upload "$RELEASE" "$ASSET"
 
 
 #   linux-arm64:
@@ -280,7 +282,7 @@ jobs:
       run: |
         export RELEASE="v$(npm view skia-canvas version)"
         export ASSET=$(npm run package 2>&1 | grep 'info package' | cut -d "\"" -f 2)
-        gh release upload $RELEASE $ASSET
+        gh release upload "$RELEASE" "$ASSET"
 
 
 
@@ -328,6 +330,6 @@ jobs:
       run: |
         export RELEASE="v$(npm view skia-canvas version)"
         export ASSET=$(npm run package 2>&1 | grep 'info package' | cut -d "\"" -f 2)
-        gh release upload $RELEASE $ASSET
+        gh release upload "$RELEASE" "$ASSET"
 
 
