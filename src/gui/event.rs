@@ -37,7 +37,7 @@ pub enum CanvasEvent{
   Title(String),
   Fullscreen(bool),
   Visible(bool),
-  Cursor(CursorIcon),
+  Cursor(Option<CursorIcon>),
   Background(Color),
   Fit(Fit),
   Position(LogicalPosition<i32>),
@@ -45,15 +45,15 @@ pub enum CanvasEvent{
 }
 
 #[derive(Debug, Serialize)]
-#[serde(rename_all = "kebab-case")]
+#[serde(rename_all = "lowercase")]
 pub enum UiEvent{
+  #[allow(non_snake_case)]
+  Wheel{deltaX:f32, deltaY:f32},
+  Move{left:f32, top:f32},
   Keyboard{event:String, key:VirtualKeyCode, code:u32, repeat:bool},
   Input(char),
   Mouse(String),
   Focus(bool),
-  Mousewheel(LogicalPosition<f64>),
-  #[serde(rename = "move")]
-  Position(LogicalPosition<i32>),
   Resize(LogicalSize<u32>),
   Fullscreen(bool),
 }
@@ -92,15 +92,15 @@ impl Sieve{
     self.key_repeats.clear(); // keyups don't get delivered during the transition apparently?
   }
 
-  pub fn capture(&mut self, event:&WindowEvent, dpr:f64){
+  pub fn capture(&mut self, event:&WindowEvent){
     match event{
       WindowEvent::Moved(physical_pt) => {
-        let logical_pt = LogicalPosition::from_physical(*physical_pt, dpr);
-        self.queue.push(UiEvent::Position(logical_pt));
+        let LogicalPosition{x, y} = physical_pt.to_logical(self.dpr);
+        self.queue.push(UiEvent::Move{left:x, top:y});
       }
 
       WindowEvent::Resized(physical_size) => {
-        let logical_size = LogicalSize::from_physical(*physical_size, dpr);
+        let logical_size = LogicalSize::from_physical(*physical_size, self.dpr);
         self.queue.push(UiEvent::Resize(logical_size));
       }
 
@@ -134,15 +134,15 @@ impl Sieve{
       }
 
       WindowEvent::MouseWheel{delta, ..} => {
-        let dxdy:LogicalPosition<f64> = match delta {
+        let LogicalPosition{x, y} = match delta {
           MouseScrollDelta::PixelDelta(physical_pt) => {
-            LogicalPosition::from_physical(*physical_pt, dpr)
+            LogicalPosition::from_physical(*physical_pt, self.dpr)
           },
           MouseScrollDelta::LineDelta(h, v) => {
-            LogicalPosition::<f64>{x:*h as f64, y:*v as f64}
+            LogicalPosition{x:*h as f32, y:*v as f32}
           }
         };
-        self.queue.push(UiEvent::Mousewheel(dxdy));
+        self.queue.push(UiEvent::Wheel{deltaX:x, deltaY:y});
       }
 
       WindowEvent::MouseInput{state, button, ..} => {
@@ -203,7 +203,7 @@ impl Sieve{
           modifiers = Some(self.key_modifiers);
           mouse_events.insert(event_type.clone());
         }
-        UiEvent::Mousewheel(..) => {
+        UiEvent::Wheel{..} => {
           modifiers = Some(self.key_modifiers);
           last_wheel = Some(&change);
         }
@@ -247,6 +247,9 @@ impl Sieve{
     Some(json!(payload))
   }
 
+  pub fn is_empty(&self) -> bool {
+    self.queue.is_empty()
+  }
 }
 
 pub struct Cadence{
@@ -277,6 +280,8 @@ impl Cadence{
   }
 
   pub fn set_frame_rate(&mut self, rate:u64){
+    if rate == self.rate{ return }
+
     let frame_time = 1_000_000_000/rate.max(1);
     let watch_interval = 1_000_000.max(frame_time/10);
     self.render = Duration::from_nanos(frame_time);
@@ -285,7 +290,7 @@ impl Cadence{
   }
 
   pub fn on_next_frame<F:Fn()>(&mut self, draw:F) -> ControlFlow{
-    if self.rate == 0{
+    if !self.active(){
       return ControlFlow::Wait;
     }
 

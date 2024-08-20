@@ -66,15 +66,13 @@ pub fn launch(mut cx: FunctionContext) -> JsResult<JsUndefined> {
 
     let mut windows = WindowManager::default();
     let mut cadence = Cadence::default();
-    let mut frame:u64 = 0;
-
-    cadence.set_frame_rate(60);
 
     EVENT_LOOP.with(|event_loop| {
         event_loop.borrow_mut().run_return(|event, event_loop, control_flow| {
             runloop(|| {
                 match event {
                     Event::NewEvents(..) => {
+                        // trigger a Render if the cadence is active, otherwise handle UI events in MainEventsCleared
                         *control_flow = cadence.on_next_frame(|| add_event(CanvasEvent::Render) );
                     }
 
@@ -90,22 +88,8 @@ pub fn launch(mut cx: FunctionContext) -> JsResult<JsUndefined> {
                                 return *control_flow = ControlFlow::Exit;
                             }
                             CanvasEvent::Render => {
-                                // on initial pass, do a roundtrip to sync up the Window object's state attrs:
-                                // send just the initial window positions then read back all state
-                                cadence.on_startup(||{
-                                    roundtrip(&mut cx, json!({"geom":windows.get_geometry()}), &callback,
-                                        |spec, page| windows.update_window(spec, page)
-                                    ).ok();
-                                });
-
-                                // relay UI-driven state changes to js and render the response
-                                frame += 1;
-                                let payload = json!{{
-                                    "frame": frame,
-                                    "changes": windows.get_ui_changes(),
-                                    "state": windows.get_state(),
-                                }};
-                                roundtrip(&mut cx, payload, &callback,
+                                // relay UI-driven state changes to js and render the next frame in the (active) cadence
+                                roundtrip(&mut cx, windows.get_ui_changes(), &callback,
                                     |spec, page| windows.update_window(spec, page)
                                 ).ok();
                             }
@@ -122,29 +106,49 @@ pub fn launch(mut cx: FunctionContext) -> JsResult<JsUndefined> {
                         }
                     }
 
-                    Event::WindowEvent { event:ref win_event, window_id } => match win_event {
-                        WindowEvent::Destroyed | WindowEvent::CloseRequested => {
-                            windows.remove(&window_id);
+                    Event::WindowEvent { event:ref win_event, window_id } => {
+                        windows.capture_ui_event(&window_id, win_event);
+
+                        match win_event {
+                            WindowEvent::Destroyed | WindowEvent::CloseRequested => {
+                                windows.remove(&window_id);
+                            }
+                            WindowEvent::KeyboardInput { input: KeyboardInput { virtual_keycode: Some(VirtualKeyCode::Escape), state: ElementState::Released,.. }, .. } => {
+                                windows.set_fullscreen_state(&window_id, false);
+                            }
+                            WindowEvent::Resized(_) => {
+                                windows.send_event(&window_id, event); // update the window
+                            }
+                            _ => {}
                         }
-                        WindowEvent::KeyboardInput { input: KeyboardInput { virtual_keycode: Some(VirtualKeyCode::Escape), state: ElementState::Released,.. }, .. } => {
-                            windows.set_fullscreen_state(&window_id, false);
+                    }
+
+                    Event::MainEventsCleared => {
+                        // on initial pass, do a roundtrip to sync up the Window object's state attrs:
+                        // send just the initial window positions then read back all state
+                        cadence.on_startup(||{
+                            roundtrip(&mut cx, json!({"geom":windows.get_geometry()}), &callback,
+                                |spec, page| windows.update_window(spec, page)
+                            ).ok();
+                        });
+
+                        // when no windows have frame/draw handlers, the (inactive) cadence will never trigger
+                        // a Render event, so only do a roundtrip if there are new UI events to be relayed
+                        if !cadence.active() && windows.has_ui_changes() {
+                            roundtrip(&mut cx, windows.get_ui_changes(), &callback,
+                                |spec, page| windows.update_window(spec, page)
+                            ).ok();
                         }
-                        WindowEvent::Resized(_) => {
-                            windows.capture_ui_event(&window_id, win_event); // update state
-                            windows.send_event(&window_id, event); // update the window
-                        }
-                        _ => {
-                            windows.capture_ui_event(&window_id, win_event);
-                        }
-                    },
+                    }
 
                     Event::RedrawRequested(window_id) => {
                         windows.send_event(&window_id, event);
                     }
 
                     Event::RedrawEventsCleared => {
-                        *control_flow = match windows.len(){
-                            0 => ControlFlow::Exit,
+                        *control_flow = match (windows.len(), cadence.active()) {
+                            (0, _) => ControlFlow::Exit,
+                            (_, false) => ControlFlow::Wait,
                             _ => ControlFlow::Poll
                         }
                     }

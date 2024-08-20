@@ -1,9 +1,9 @@
 use std::thread;
-use neon::prelude::*;
 use serde_json::json;
 use skia_safe::{Matrix, Color, Paint};
 use crossbeam::channel::{self, Sender};
 use serde::{Serialize, Deserialize};
+use serde_json::{Map, Value};
 use winit::{
     dpi::{LogicalSize, LogicalPosition, PhysicalSize, PhysicalPosition},
     event::{Event, WindowEvent},
@@ -13,13 +13,13 @@ use winit::{
 #[cfg(target_os = "macos" )]
 use winit::platform::macos::WindowExtMacOS;
 
-use crate::utils::css_to_color;
+use crate::utils::{css_to_color, color_to_css};
 use crate::gpu::{Renderer, runloop};
 use crate::context::page::Page;
 use super::event::{CanvasEvent, Sieve};
 
 #[derive(Deserialize, Serialize, Debug, Clone)]
-#[serde(rename_all = "kebab-case")]
+#[serde(rename_all = "camelCase")]
 pub struct WindowSpec {
     pub id: String,
     pub left: Option<f32>,
@@ -33,13 +33,14 @@ pub struct WindowSpec {
     height: f32,
     #[serde(with = "Cursor")]
     cursor: CursorIcon,
+    cursor_hidden: bool,
     fit: Fit,
 }
 
 #[derive(Copy, Clone, PartialEq, Debug, Serialize, Deserialize)]
 #[serde(rename_all = "kebab-case")]
 pub enum Fit{
-  None, ContainX, ContainY, Contain, Cover, Fill, ScaleDown
+  None, ContainX, ContainY, Contain, Cover, Fill, ScaleDown, Resize
 }
 
 #[derive(Copy, Clone, PartialEq, Debug, Serialize, Deserialize)]
@@ -60,10 +61,8 @@ pub struct Window {
     pub page: Page
 }
 
-impl Finalize for Window {}
-
 impl Window {
-    pub fn new(event_loop:&EventLoopWindowTarget<CanvasEvent>, proxy:EventLoopProxy<CanvasEvent>, spec: &WindowSpec, page: &Page) -> Self {
+    pub fn new(event_loop:&EventLoopWindowTarget<CanvasEvent>, proxy:EventLoopProxy<CanvasEvent>, spec: &mut WindowSpec, page: &Page) -> Self {
         let size:LogicalSize<i32> = LogicalSize::new(spec.width as i32, spec.height as i32);
         let handle = WindowBuilder::new()
             .with_inner_size(size)
@@ -78,7 +77,13 @@ impl Window {
         }
 
         let renderer = Renderer::for_window(&handle);
-        let background = css_to_color(&spec.background).unwrap_or(Color::BLACK);
+        let background = match css_to_color(&spec.background){
+            Some(color) => color,
+            None => {
+                spec.background = "rgba(16,16,16,0.85)".to_string();
+                css_to_color(&spec.background).unwrap()
+            }
+        };
 
         Self{ handle, proxy, renderer, page:page.clone(), fit:spec.fit, background }
     }
@@ -114,8 +119,11 @@ impl Window {
             _ => (sf, sf)
         };
 
-        let x_shift = (size.width - dims.width * x_scale) / 2.0;
-        let y_shift = (size.height - dims.height * y_scale) / 2.0;
+        let (x_shift, y_shift) = match self.fit{
+            Fit::Resize => (0.0, 0.0),
+            _ => ( (size.width - dims.width * x_scale) / 2.0,
+                   (size.height - dims.height * y_scale) / 2.0 )
+        };
 
         let mut matrix = Matrix::new_identity();
         matrix.set_scale_translate(
@@ -156,7 +164,10 @@ impl Window {
                             self.handle.set_title(&title);
                         }
                         CanvasEvent::Cursor(icon) => {
-                            self.handle.set_cursor_icon(icon);
+                            if let Some(icon) = icon{
+                                self.handle.set_cursor_icon(icon);
+                            }
+                            self.handle.set_cursor_visible(icon.is_some());
                         }
                         CanvasEvent::Fit(mode) => {
                             self.fit = mode;
@@ -214,7 +225,7 @@ impl Default for WindowManager {
 impl WindowManager {
 
     pub fn add(&mut self, event_loop:&EventLoopWindowTarget<CanvasEvent>, proxy:EventLoopProxy<CanvasEvent>, mut spec: WindowSpec, page: Page) {
-        let mut window = Window::new(event_loop, proxy, &spec, &page);
+        let mut window = Window::new(event_loop, proxy, &mut spec, &page);
         let id = window.handle.id();
         let (tx, rx) = channel::bounded(50);
         let mut sieve = Sieve::new(window.handle.scale_factor());
@@ -279,7 +290,7 @@ impl WindowManager {
         }
     }
 
-    pub fn update_window(&mut self, spec:WindowSpec, page:Page){
+    pub fn update_window(&mut self, mut spec:WindowSpec, page:Page){
         let mut updates:Vec<CanvasEvent> = vec![];
 
         if let Some(mut win) = self.windows.iter_mut().find(|win| win.spec.id == spec.id){
@@ -305,8 +316,9 @@ impl WindowManager {
                 updates.push(CanvasEvent::Fullscreen(spec.fullscreen));
             }
 
-            if spec.cursor != win.spec.cursor {
-                updates.push(CanvasEvent::Cursor(spec.cursor));
+            if spec.cursor != win.spec.cursor || spec.cursor_hidden != win.spec.cursor_hidden {
+                let icon = if spec.cursor_hidden{ None }else{ Some(spec.cursor) };
+                updates.push(CanvasEvent::Cursor(icon));
             }
 
             if spec.fit != win.spec.fit {
@@ -316,6 +328,8 @@ impl WindowManager {
             if spec.background != win.spec.background {
                 if let Some(color) = css_to_color(&spec.background) {
                     updates.push(CanvasEvent::Background(color));
+                }else{
+                    spec.background = win.spec.background.clone();
                 }
             }
 
@@ -331,7 +345,7 @@ impl WindowManager {
 
     pub fn capture_ui_event(&mut self, window_id:&WindowId, event:&WindowEvent){
         if let Some(win) = self.windows.iter_mut().find(|win| win.id == *window_id){
-            win.sieve.capture(event, 1.0);
+            win.sieve.capture(event);
         }
     }
 
@@ -361,22 +375,20 @@ impl WindowManager {
         }
     }
 
-    pub fn get_ui_changes(&mut self) -> serde_json::Value {
-        let mut changes = serde_json::Map::new();
-        self.windows.iter_mut().for_each(|win|{
-            if let Some(payload) = win.sieve.serialize(){
-                changes.insert(win.spec.id.clone(), payload);
-            }
-        });
-        serde_json::json!(changes)
+    pub fn has_ui_changes(&self) -> bool {
+        self.windows.iter().any(|win| !win.sieve.is_empty() )
     }
 
-    pub fn get_state(&mut self) -> serde_json::Value {
-        let mut changes = serde_json::Map::new();
+    pub fn get_ui_changes(&mut self) -> Value {
+        let mut ui = Map::new();
+        let mut state = Map::new();
         self.windows.iter_mut().for_each(|win|{
-            changes.insert(win.spec.id.clone(), json!(win.spec));
+            if let Some(payload) = win.sieve.serialize(){
+                ui.insert(win.spec.id.clone(), payload);
+            }
+            state.insert(win.spec.id.clone(), json!(win.spec));
         });
-        json!(changes)
+        json!({ "ui": ui, "state": state })
     }
 
     pub fn get_geometry(&mut self) -> serde_json::Value {

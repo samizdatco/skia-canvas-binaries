@@ -268,7 +268,7 @@ impl Context2D{
           .collect()
   }
 
-  pub fn resize(&mut self, dims: impl Into<Size>) {
+  pub fn reset_size(&mut self, dims: impl Into<Size>) {
     // called by the canvas when .width or .height are assigned to
     self.bounds = Rect::from_size(dims);
     self.path = Path::default();
@@ -278,6 +278,14 @@ impl Context2D{
     // erase any existing content
     self.with_recorder(|mut recorder| {
       recorder.set_bounds(self.bounds);
+    });
+  }
+
+  pub fn resize(&mut self, dims: impl Into<Size>) {
+    // non-destructively resize the canvas (via the canvas.resize() extension)
+    self.bounds = Rect::from_size(dims);
+    self.with_recorder(|mut recorder| {
+      recorder.update_bounds(self.bounds);
     });
   }
 
@@ -400,7 +408,13 @@ impl Context2D{
 
     if let Some(picture) = picture{
       self.render_to_canvas(&paint, |canvas, paint| {
-        canvas.draw_picture(&picture, Some(&matrix), Some(&paint));
+        // only use paint if we need it for alpha, blend, shadow, or effect since otherwise
+        // the SVG exporter will omit the picture altogether
+        let paint = match (paint.as_blend_mode(), paint.alpha(), paint.image_filter()) {
+          (Some(BlendMode::SrcOver), 255, None) => None,
+          _ => Some(paint)
+        };
+        canvas.draw_picture(&picture, Some(&matrix), paint);
       });
     }
   }

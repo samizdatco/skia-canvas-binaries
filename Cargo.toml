@@ -1,6 +1,6 @@
 [package]
 name = "skia-canvas"
-version = "0.9.30"
+version = "1.0.1"
 description = "A canvas environment for Node"
 authors = ["Christian Swinehart <drafting@samizdat.co>"]
 license = "MIT"
@@ -9,6 +9,9 @@ exclude = ["index.node"]
 
 [lib]
 crate-type = ["cdylib"]
+
+[profile.release]
+lto = "fat"
 
 [features]
 metal = ["skia-safe/metal", "dep:metal", "dep:core-graphics-types", "dep:foreign-types", "dep:cocoa", "dep:objc"]

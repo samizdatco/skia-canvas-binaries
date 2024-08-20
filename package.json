@@ -1,7 +1,7 @@
 {
   "name": "skia-canvas",
-  "version": "0.9.31-rc4",
-  "description": "A canvas environment for Node",
+  "version": "1.0.1",
+  "description": "A GPU-accelerated Canvas Graphics API for Node",
   "author": "Christian Swinehart <drafting@samizdat.co>",
   "license": "MIT",
   "repository": {
@@ -21,7 +21,7 @@
     "build": "cargo-cp-artifact -nc lib/v6/index.node -- cargo build --message-format=json-render-diagnostics",
     "install": "node-pre-gyp install || npm run build -- --release",
     "package": "node-pre-gyp package",
-    "upload": "node-pre-gyp publish",
+    "upload": "node-pre-gyp-github publish",
     "test": "jest"
   },
   "dependencies": {
@@ -39,6 +39,7 @@
     "express": "^4.18.1",
     "jest": "^28.1.3",
     "lodash": "^4.17.21",
+    "node-pre-gyp-github": "^2.0.0",
     "nodemon": "^2.0.19",
     "tmp": "^0.2.1"
   },
@@ -50,14 +51,15 @@
     "module_path": "./lib/v{napi_build_version}",
     "remote_path": "./v{version}",
     "package_name": "{platform}-{arch}-{node_napi_label}-{libc}.tar.gz",
-    "host": "https://skia-canvas.s3.us-east-1.amazonaws.com",
+    "host": "https://github.com/samizdatco/skia-canvas-binaries/releases/download/",
     "napi_versions": [
       6
     ]
   },
   "keywords": [
-    "skia",
     "canvas",
+    "gpu",
+    "skia",
     "offscreen",
     "headless",
     "graphic",
@@ -66,6 +68,8 @@
     "images",
     "compositing",
     "render",
+    "vulkan",
+    "metal",
     "pdf",
     "svg",
     "rust"
