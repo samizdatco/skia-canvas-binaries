@@ -17,43 +17,41 @@ jobs:
       image: ${{ format('ghcr.io/samizdatco/skia-canvas-{0}:latest', matrix.libc) }}
 
     steps:
-    - name: Install gh
+
+    - name: "Install github cli tool (NB: belongs in Dockerfile)"
       run: |
         apt-get install -y wget
         wget https://github.com/cli/cli/releases/download/v2.55.0/gh_2.55.0_linux_amd64.deb
         dpkg -i gh_2.55.0_linux_amd64.deb
-        gh
 
-#     - name: Install rust
-#       run: |
-#         curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --profile minimal
-#         echo "$HOME/.cargo/bin" >> $GITHUB_PATH
-#
-#     - name: Checkout skia-canvas
-#       uses: actions/checkout@v2
-#       with:
-#         path: skia-canvas
-#
-#     - name: Build module
-#       run: |
-#         cd skia-canvas
-#         npm ci --ignore-scripts
-#         npm run build -- --release --features vulkan,window,skia-safe/embed-freetype
-#
-#     - name: Package module
-#       run: |
-#         cd skia-canvas
-#         npm test && npm run package
+    - name: Install rust
+      run: |
+        curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --profile minimal
+        echo "$HOME/.cargo/bin" >> $GITHUB_PATH
+
+    - name: Checkout skia-canvas
+      uses: actions/checkout@v2
+      with:
+        path: skia-canvas
+
+    - name: Build module
+      run: |
+        cd skia-canvas
+        npm ci --ignore-scripts
+        npm run build -- --release --features vulkan,window,skia-safe/embed-freetype
+
+    - name: Package module
+      run: |
+        cd skia-canvas
+        npm test && npm run package
 
     - name: Add to release
       env:
-        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       run: |
         cd skia-canvas
         export RELEASE="v$(npm view skia-canvas version)"
         export ASSET=$(npm run package 2>&1 | grep 'info package' | cut -d "\"" -f 2)
-        echo release $RELEASE
-        echo asset $ASSET
         gh release upload "$RELEASE" "$ASSET"
 
 
