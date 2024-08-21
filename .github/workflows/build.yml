@@ -124,7 +124,7 @@ jobs:
       fail-fast: false
       matrix:
         arch: [x64, arm64]
-    runs-on: ${{ matrix.arch == "x64" && 'macos-13' || 'macos-latest' }}
+    runs-on: ${{ matrix.arch == 'x64' && 'macos-13' || 'macos-latest' }}
 
     steps:
     - name: Checkout repository
