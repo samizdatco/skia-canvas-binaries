@@ -96,7 +96,7 @@ jobs:
         cd skia-canvas
         npm ci --ignore-scripts
         cd ..
-        curl -sL https://github.com/cli/cli/releases/download/v2.55.0/gh_2.55.0_linux_arm64.tar.gz | tar xz --strip-components=2 '*gh'
+        curl -sL https://github.com/cli/cli/releases/download/v2.55.0/gh_2.55.0_linux_arm64.tar.gz | tar xz --strip-components=2
         mv gh skia-canvas/node_modules/.bin
         cd skia-canvas
         npm run upload
