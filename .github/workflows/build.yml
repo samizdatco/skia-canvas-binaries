@@ -22,7 +22,7 @@ jobs:
         curl -sLO https://github.com/cli/cli/releases/download/v2.55.0/gh_2.55.0_linux_amd64.tar.gz
         tar xzf gh_2.55.0_linux_amd64.tar.gz
         mv gh_2.55.0_linux_amd64/bin/gh /usr/local/bin
-
+        gh
     - name: Install rust
       run: |
         curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --profile minimal
@@ -79,7 +79,7 @@ jobs:
         curl -sLO https://github.com/cli/cli/releases/download/v2.55.0/gh_2.55.0_linux_arm64.tar.gz
         tar xzf gh_2.55.0_linux_arm64.tar.gz
         mv gh_2.55.0_linux_arm64/bin/gh /usr/local/bin
-
+        gh
     - name: Install rust
       run: |
         curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --profile minimal
@@ -127,7 +127,7 @@ jobs:
         cd skia-canvas
         export RELEASE="v$(npm run env | grep npm_package_version | cut -d '=' -f 2)"
         export ASSET=$(npm run package 2>&1 | grep 'info package' | cut -d "\"" -f 2)
-        ../gh release upload "$RELEASE" "$ASSET"
+        gh release upload "$RELEASE" "$ASSET"
 
 #
 #
