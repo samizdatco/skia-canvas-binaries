@@ -29,6 +29,7 @@
     "cargo-cp-artifact": "^0.1",
     "glob": "^8.0.3",
     "path-browserify": "^1.0.1",
+    "prebuild-install": "^7.1.2",
     "simple-get": "^4.0.1",
     "string-split-by": "^1.0.0"
   },
@@ -46,13 +47,10 @@
   ],
   "binary": {
     "module_name": "index",
-    "module_path": "./lib/v{napi_build_version}",
+    "module_path": "./lib/v6",
     "remote_path": "./v{version}",
     "package_name": "{platform}-{arch}-{libc}.tar.gz",
-    "host": "https://github.com/samizdatco/skia-canvas-binaries/releases/download/",
-    "napi_versions": [
-      6
-    ]
+    "host": "https://github.com/samizdatco/skia-canvas-binaries/releases/download/"
   },
   "keywords": [
     "canvas",
