@@ -119,43 +119,12 @@ jobs:
 
 
 
-
-  mac-x86:
-    runs-on: macos-13
-
-    steps:
-    - name: Checkout repository
-      uses: actions/checkout@v4
-
-    - name: Use Node.js
-      uses: actions/setup-node@v4
-      with:
-        node-version: 16
-
-    - name: Use Rust
-      uses: dtolnay/rust-toolchain@stable
-      with:
-        toolchain: stable
-
-    - name: Build module
-      env:
-        MACOSX_DEPLOYMENT_TARGET: 10.13
-      run: |
-        npm ci --ignore-scripts
-        npm run build -- --release --features metal,window
-
-    - name: Package module
-      run: |
-        npm test && npm run package
-
-    - name: Add to release
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      run: |
-        npm run upload
-
-  mac-arm64:
-    runs-on: macos-latest
+  mac:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [macos-13, macos-latest]
+    runs-on: ${{ matrix.os }}
 
     steps:
     - name: Checkout repository
@@ -187,6 +156,74 @@ jobs:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       run: |
         npm run upload
+
+#   mac-x86:
+#     runs-on: macos-13
+#
+#     steps:
+#     - name: Checkout repository
+#       uses: actions/checkout@v4
+#
+#     - name: Use Node.js
+#       uses: actions/setup-node@v4
+#       with:
+#         node-version: 16
+#
+#     - name: Use Rust
+#       uses: dtolnay/rust-toolchain@stable
+#       with:
+#         toolchain: stable
+#
+#     - name: Build module
+#       env:
+#         MACOSX_DEPLOYMENT_TARGET: 10.13
+#       run: |
+#         npm ci --ignore-scripts
+#         npm run build -- --release --features metal,window
+#
+#     - name: Package module
+#       run: |
+#         npm test && npm run package
+#
+#     - name: Add to release
+#       env:
+#         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+#       run: |
+#         npm run upload
+#
+#   mac-arm64:
+#     runs-on: macos-latest
+#
+#     steps:
+#     - name: Checkout repository
+#       uses: actions/checkout@v4
+#
+#     - name: Use Node.js
+#       uses: actions/setup-node@v4
+#       with:
+#         node-version: 16
+#
+#     - name: Use Rust
+#       uses: dtolnay/rust-toolchain@stable
+#       with:
+#         toolchain: stable
+#
+#     - name: Build module
+#       env:
+#         MACOSX_DEPLOYMENT_TARGET: 10.13
+#       run: |
+#         npm ci --ignore-scripts
+#         npm run build -- --release --features metal,window
+#
+#     - name: Package module
+#       run: |
+#         npm test && npm run package
+#
+#     - name: Add to release
+#       env:
+#         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+#       run: |
+#         npm run upload
 
 
 
