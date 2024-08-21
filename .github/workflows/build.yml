@@ -17,12 +17,11 @@ jobs:
 #       image: ${{ format('ghcr.io/samizdatco/skia-canvas-{0}:latest', matrix.libc) }}
 #
 #     steps:
-#     - name: "Install github cli tool (debian)"
-#       if: ${{ matrix.libc == 'glibc' }}
+#     - name: "Download github cli tool"
 #       run: |
-#         apt-get install -y wget
-#         wget -q https://github.com/cli/cli/releases/download/v2.55.0/gh_2.55.0_linux_amd64.deb
-#         dpkg -i gh_2.55.0_linux_amd64.deb
+#         curl -sLO https://github.com/cli/cli/releases/download/v2.55.0/gh_2.55.0_linux_amd64.tar.gz
+#         tar xzf gh_2.55.0_linux_amd64.tar.gz
+#         mv gh_2.55.0_linux_amd64/bin/gh .
 #
 #     - name: "Install github cli tool (alipine)"
 #       if: ${{ matrix.libc == 'musl' }}
@@ -60,7 +59,7 @@ jobs:
 #         cd skia-canvas
 #         export RELEASE="v$(npm run env | grep npm_package_version | cut -d '=' -f 2)"
 #         export ASSET=$(npm run package 2>&1 | grep 'info package' | cut -d "\"" -f 2)
-#         gh release upload "$RELEASE" "$ASSET"
+#         ../gh release upload "$RELEASE" "$ASSET"
 
 
   linux-arm64:
@@ -88,7 +87,6 @@ jobs:
         curl -sLO https://github.com/cli/cli/releases/download/v2.55.0/gh_2.55.0_linux_arm64.tar.gz
         tar xzf gh_2.55.0_linux_arm64.tar.gz
         mv gh_2.55.0_linux_arm64/bin/gh .
-        ./gh
 
     - name: Install rust
       run: |
