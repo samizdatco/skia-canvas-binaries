@@ -7,52 +7,51 @@ on:
 
 jobs:
 
-  linux-x86:
-    runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        libc: [glibc, musl]
-    container:
-      image: ${{ format('ghcr.io/samizdatco/skia-canvas-{0}:latest', matrix.libc) }}
-
-    steps:
-    - name: "Download github cli tool"
-      run: |
-        curl -sLO https://github.com/cli/cli/releases/download/v2.55.0/gh_2.55.0_linux_amd64.tar.gz
-        tar xzf gh_2.55.0_linux_amd64.tar.gz
-        echo $PATH
-        mv gh_2.55.0_linux_amd64/bin/gh /usr/local/bin
-        gh
-    - name: Install rust
-      run: |
-        curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --profile minimal
-        echo "$HOME/.cargo/bin" >> $GITHUB_PATH
-
-    - name: Checkout skia-canvas
-      uses: actions/checkout@v2
-      with:
-        path: skia-canvas
-
-    - name: Build module
-      run: |
-        cd skia-canvas
-        npm ci --ignore-scripts
-        npm run build -- --release --features vulkan,window,skia-safe/embed-freetype
-
-    - name: Package module
-      run: |
-        cd skia-canvas
-        npm test && npm run package
-
-    - name: Add to release
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      run: |
-        cd skia-canvas
-        export RELEASE="v$(npm run env | grep npm_package_version | cut -d '=' -f 2)"
-        export ASSET=$(npm run package 2>&1 | grep 'info package' | cut -d "\"" -f 2)
-        gh release upload "$RELEASE" "$ASSET"
+#   linux-x86:
+#     runs-on: ubuntu-latest
+#     strategy:
+#       fail-fast: false
+#       matrix:
+#         libc: [glibc, musl]
+#     container:
+#       image: ${{ format('ghcr.io/samizdatco/skia-canvas-{0}:latest', matrix.libc) }}
+#
+#     steps:
+#     - name: "Download github cli tool"
+#       run: |
+#         curl -sLO https://github.com/cli/cli/releases/download/v2.55.0/gh_2.55.0_linux_amd64.tar.gz
+#         tar xzf gh_2.55.0_linux_amd64.tar.gz
+#         mv gh_2.55.0_linux_amd64/bin/gh .
+#
+#     - name: Install rust
+#       run: |
+#         curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --profile minimal
+#         echo "$HOME/.cargo/bin" >> $GITHUB_PATH
+#
+#     - name: Checkout skia-canvas
+#       uses: actions/checkout@v2
+#       with:
+#         path: skia-canvas
+#
+#     - name: Build module
+#       run: |
+#         cd skia-canvas
+#         npm ci --ignore-scripts
+#         npm run build -- --release --features vulkan,window,skia-safe/embed-freetype
+#
+#     - name: Package module
+#       run: |
+#         cd skia-canvas
+#         npm test && npm run package
+#
+#     - name: Add to release
+#       env:
+#         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+#       run: |
+#         cd skia-canvas
+#         export RELEASE="v$(npm run env | grep npm_package_version | cut -d '=' -f 2)"
+#         export ASSET=$(npm run package 2>&1 | grep 'info package' | cut -d "\"" -f 2)
+#         ../gh release upload "$RELEASE" "$ASSET"
 
 
   linux-arm64:
@@ -75,17 +74,10 @@ jobs:
         rm -rf "$GITHUB_WORKSPACE"
         mkdir -p "$GITHUB_WORKSPACE"
 
-    - name: "Download github cli tool"
-      run: |
-        curl -sLO https://github.com/cli/cli/releases/download/v2.55.0/gh_2.55.0_linux_arm64.tar.gz
-        tar xzf gh_2.55.0_linux_arm64.tar.gz
-        echo $PATH
-        mv gh_2.55.0_linux_arm64/bin/gh /usr/local/bin
-        gh
-    - name: Install rust
-      run: |
-        curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --profile minimal
-        echo "$HOME/.cargo/bin" >> $GITHUB_PATH
+    # - name: Install rust
+    #   run: |
+    #     curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --profile minimal
+    #     echo "$HOME/.cargo/bin" >> $GITHUB_PATH
 
     - name: Checkout skia-canvas
       id: rust-skia
@@ -99,37 +91,47 @@ jobs:
         echo "::set-output name=VERSION::$TAG"
         echo REF ${GITHUB_REF_NAME}
 
-    - name: Checkout rust-skia
-      run: |
-        git clone --depth 1 --branch ${{ steps.rust-skia.outputs.VERSION }} https://github.com/rust-skia/rust-skia.git
-        cd rust-skia
-        git submodule update --init --depth 1 skia-bindings/skia
-        git submodule update --init --depth 1 skia-bindings/depot_tools
-
-    - name: Use system GN
-      if: ${{ matrix.libc == 'musl' }}
-      run: |
-        echo "#!/bin/true" > rust-skia/skia-bindings/skia/bin/fetch-gn
-
-    - name: Build module
+    - name: "Download github cli tool"
       run: |
         cd skia-canvas
         npm ci --ignore-scripts
-        npm run build -- --release --features vulkan,window,skia-safe/embed-freetype
-
-    - name: Package module
-      run: |
+        cd ..
+        curl -sL https://github.com/cli/cli/releases/download/v2.55.0/gh_2.55.0_linux_arm64.tar.gz | tar xz --strip-components=2 '*gh'
+        mv gh skia-canvas/node_modules/.bin
         cd skia-canvas
-        npm test && npm run package
+        npm run upload
 
-    - name: Add to release
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      run: |
-        cd skia-canvas
-        export RELEASE="v$(npm run env | grep npm_package_version | cut -d '=' -f 2)"
-        export ASSET=$(npm run package 2>&1 | grep 'info package' | cut -d "\"" -f 2)
-        gh release upload "$RELEASE" "$ASSET"
+#     - name: Checkout rust-skia
+#       run: |
+#         git clone --depth 1 --branch ${{ steps.rust-skia.outputs.VERSION }} https://github.com/rust-skia/rust-skia.git
+#         cd rust-skia
+#         git submodule update --init --depth 1 skia-bindings/skia
+#         git submodule update --init --depth 1 skia-bindings/depot_tools
+#
+#     - name: Use system GN
+#       if: ${{ matrix.libc == 'musl' }}
+#       run: |
+#         echo "#!/bin/true" > rust-skia/skia-bindings/skia/bin/fetch-gn
+#
+#     - name: Build module
+#       run: |
+#         cd skia-canvas
+#         npm ci --ignore-scripts
+#         npm run build -- --release --features vulkan,window,skia-safe/embed-freetype
+#
+#     - name: Package module
+#       run: |
+#         cd skia-canvas
+#         npm test && npm run package
+#
+#     - name: Add to release
+#       env:
+#         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+#       run: |
+#         cd skia-canvas
+#         export RELEASE="v$(npm run env | grep npm_package_version | cut -d '=' -f 2)"
+#         export ASSET=$(npm run package 2>&1 | grep 'info package' | cut -d "\"" -f 2)
+#         ../gh release upload "$RELEASE" "$ASSET"
 
 #
 #
