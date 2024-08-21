@@ -278,6 +278,7 @@ jobs:
     runs-on: windows-latest
 
     steps:
+
     - name: Checkout repository
       uses: actions/checkout@v2
 
@@ -286,25 +287,30 @@ jobs:
       with:
         node-version: 16
 
-    - name: Use Rust
-      uses: actions-rs/toolchain@v1.0.6
-      with:
-        toolchain: stable
-
-    - name: Build module
-      run: |
-        npm ci --ignore-scripts
-        npm run build -- --release --features vulkan,window
-
-    - name: Package module
-      run: |
-        npm test && npm run package
-
     - name: Add to release
+      shell: bash
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       run: |
-        npm config set script-shell bash
+        mkdir -p build/stage/v1.0.1
+        touch build/stage/v1.0.1/foo-bar-baz.tar.gz
+        npm config set script-shell "C:\\Program Files\\git\\bin\\bash.exe"
         npm run upload
 
+#
+#     - name: Use Rust
+#       uses: actions-rs/toolchain@v1.0.6
+#       with:
+#         toolchain: stable
+#
+#     - name: Build module
+#       run: |
+#         npm ci --ignore-scripts
+#         npm run build -- --release --features vulkan,window
+#
+#     - name: Package module
+#       run: |
+#         npm test && npm run package
+#
+#
 
