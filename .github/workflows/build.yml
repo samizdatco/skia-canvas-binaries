@@ -7,60 +7,60 @@ on:
 
 jobs:
 
-  linux-x86:
-    runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        libc: [glibc, musl]
-    container:
-      image: ${{ format('ghcr.io/samizdatco/skia-canvas-{0}:latest', matrix.libc) }}
-
-    steps:
-    - name: "Install github cli tool (debian)"
-      if: ${{ matrix.libc == 'glibc' }}
-      run: |
-        apt-get install -y wget
-        wget -q https://github.com/cli/cli/releases/download/v2.55.0/gh_2.55.0_linux_amd64.deb
-        dpkg -i gh_2.55.0_linux_amd64.deb
-
-    - name: "Install github cli tool (alipine)"
-      if: ${{ matrix.libc == 'musl' }}
-      run: |
-        apk add wget
-        wget -q https://github.com/cli/cli/releases/download/v2.55.0/gh_2.55.0_linux_amd64.tar.gz
-        tar xzf gh_2.55.0_linux_amd64.tar.gz
-        mv gh_2.55.0_linux_amd64/bin/gh /bin
-
-    - name: Install rust
-      run: |
-        curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --profile minimal
-        echo "$HOME/.cargo/bin" >> $GITHUB_PATH
-
-    - name: Checkout skia-canvas
-      uses: actions/checkout@v2
-      with:
-        path: skia-canvas
-
-    - name: Build module
-      run: |
-        cd skia-canvas
-        npm ci --ignore-scripts
-        npm run build -- --release --features vulkan,window,skia-safe/embed-freetype
-
-    - name: Package module
-      run: |
-        cd skia-canvas
-        npm test && npm run package
-
-    - name: Add to release
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      run: |
-        cd skia-canvas
-        export RELEASE="v$(npm run env | grep npm_package_version | cut -d '=' -f 2)"
-        export ASSET=$(npm run package 2>&1 | grep 'info package' | cut -d "\"" -f 2)
-        gh release upload "$RELEASE" "$ASSET"
+#   linux-x86:
+#     runs-on: ubuntu-latest
+#     strategy:
+#       fail-fast: false
+#       matrix:
+#         libc: [glibc, musl]
+#     container:
+#       image: ${{ format('ghcr.io/samizdatco/skia-canvas-{0}:latest', matrix.libc) }}
+#
+#     steps:
+#     - name: "Install github cli tool (debian)"
+#       if: ${{ matrix.libc == 'glibc' }}
+#       run: |
+#         apt-get install -y wget
+#         wget -q https://github.com/cli/cli/releases/download/v2.55.0/gh_2.55.0_linux_amd64.deb
+#         dpkg -i gh_2.55.0_linux_amd64.deb
+#
+#     - name: "Install github cli tool (alipine)"
+#       if: ${{ matrix.libc == 'musl' }}
+#       run: |
+#         apk add wget
+#         wget -q https://github.com/cli/cli/releases/download/v2.55.0/gh_2.55.0_linux_amd64.tar.gz
+#         tar xzf gh_2.55.0_linux_amd64.tar.gz
+#         mv gh_2.55.0_linux_amd64/bin/gh /bin
+#
+#     - name: Install rust
+#       run: |
+#         curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --profile minimal
+#         echo "$HOME/.cargo/bin" >> $GITHUB_PATH
+#
+#     - name: Checkout skia-canvas
+#       uses: actions/checkout@v2
+#       with:
+#         path: skia-canvas
+#
+#     - name: Build module
+#       run: |
+#         cd skia-canvas
+#         npm ci --ignore-scripts
+#         npm run build -- --release --features vulkan,window,skia-safe/embed-freetype
+#
+#     - name: Package module
+#       run: |
+#         cd skia-canvas
+#         npm test && npm run package
+#
+#     - name: Add to release
+#       env:
+#         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+#       run: |
+#         cd skia-canvas
+#         export RELEASE="v$(npm run env | grep npm_package_version | cut -d '=' -f 2)"
+#         export ASSET=$(npm run package 2>&1 | grep 'info package' | cut -d "\"" -f 2)
+#         gh release upload "$RELEASE" "$ASSET"
 
 
   linux-arm64:
@@ -147,13 +147,7 @@ jobs:
         export RELEASE="v$(npm run env | grep npm_package_version | cut -d '=' -f 2)"
         export ASSET=$(npm run package 2>&1 | grep 'info package' | cut -d "\"" -f 2)
         gh release upload "$RELEASE" "$ASSET"
-    # - name: Upload to S3
-    #   env:
-    #     AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-    #     AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-    #   run: |
-    #     cd skia-canvas
-    #     npm run upload
+
 #
 #
 #   linux-arm:
