@@ -21,6 +21,7 @@ jobs:
       run: |
         curl -sLO https://github.com/cli/cli/releases/download/v2.55.0/gh_2.55.0_linux_amd64.tar.gz
         tar xzf gh_2.55.0_linux_amd64.tar.gz
+        echo $PATH
         mv gh_2.55.0_linux_amd64/bin/gh /usr/local/bin
         gh
     - name: Install rust
@@ -78,6 +79,7 @@ jobs:
       run: |
         curl -sLO https://github.com/cli/cli/releases/download/v2.55.0/gh_2.55.0_linux_arm64.tar.gz
         tar xzf gh_2.55.0_linux_arm64.tar.gz
+        echo $PATH
         mv gh_2.55.0_linux_arm64/bin/gh /usr/local/bin
         gh
     - name: Install rust
