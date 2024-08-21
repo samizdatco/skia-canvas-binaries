@@ -294,7 +294,7 @@ jobs:
       run: |
         mkdir -p build/stage/v1.0.1
         touch build/stage/v1.0.1/foo-bar-baz.tar.gz
-        npm config set script-shell "C:\\Program Files\\git\\bin\\bash.exe"
+        npm config set script-shell bash
         npm run upload
 
 #
