@@ -85,8 +85,8 @@ jobs:
 
     - name: "Install github cli tool"
       run: |
-        curl -O https://github.com/cli/cli/releases/download/v2.55.0/gh_2.55.0_linux_amd64.tar.gz
-        tar xzf gh_2.55.0_linux_amd64.tar.gz
+        curl -sLO https://github.com/cli/cli/releases/download/v2.55.0/gh_2.55.0_linux_arm64.tar.gz
+        tar xzf gh_2.55.0_linux_arm64.tar.gz
         mv gh_2.55.0_linux_amd64/bin/gh .
         ./gh
 
