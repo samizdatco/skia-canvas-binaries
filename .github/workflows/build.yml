@@ -23,7 +23,7 @@ jobs:
         echo "$HOME/.cargo/bin" >> $GITHUB_PATH
 
     - name: Checkout skia-canvas
-      uses: actions/checkout@v2
+      uses: actions/checkout@v4
       with:
         path: skia-canvas
 
@@ -82,7 +82,7 @@ jobs:
         git clone --depth 1 --branch ${GITHUB_REF_NAME} ${SERVER}/${REPO} skia-canvas
         export TAG=$(make -sC skia-canvas skia-version)
         make -sC skia-canvas with-local-skia
-        echo "::set-output name=VERSION::$TAG"
+        echo "VERSION=$TAG" >> $GITHUB_OUTPUT
         echo REF ${GITHUB_REF_NAME}
 
     - name: Checkout rust-skia
@@ -139,12 +139,12 @@ jobs:
 #         echo "$HOME/.cargo/bin" >> $GITHUB_PATH
 #
 #     - name: Use Node.js
-#       uses: actions/setup-node@v2
+#       uses: actions/setup-node@v4
 #       with:
 #         node-version: 14
 #
 #     - name: Checkout repository
-#       uses: actions/checkout@v2
+#       uses: actions/checkout@v4
 #       with:
 #         path: skia-canvas
 #
@@ -155,7 +155,7 @@ jobs:
 #         echo "::set-output name=VERSION::$TAG"
 #
 #     - name: Checkout rust-skia
-#       uses: actions/checkout@v2
+#       uses: actions/checkout@v4
 #       with:
 #         repository: rust-skia/rust-skia
 #         ref: ${{ steps.rust-skia.outputs.VERSION }}
@@ -195,15 +195,15 @@ jobs:
 
     steps:
     - name: Checkout repository
-      uses: actions/checkout@v2
+      uses: actions/checkout@v4
 
     - name: Use Node.js
-      uses: actions/setup-node@v2
+      uses: actions/setup-node@v4
       with:
         node-version: 16
 
     - name: Use Rust
-      uses: actions-rs/toolchain@v1.0.6
+      uses: dtolnay/rust-toolchain@stable
       with:
         toolchain: stable
 
@@ -231,19 +231,18 @@ jobs:
 
     steps:
     - name: Checkout repository
-      uses: actions/checkout@v2
+      uses: actions/checkout@v4
 
     - name: Use Node.js
-      uses: actions/setup-node@v2
+      uses: actions/setup-node@v4
       with:
         node-version: 16
 
     - name: Use Rust
-      uses: actions-rs/toolchain@v1.0.6
+      uses: dtolnay/rust-toolchain@stable
       with:
         target: aarch64-apple-darwin
         toolchain: nightly
-        override: true
 
     - name: Select SDK
       run: |
@@ -274,15 +273,15 @@ jobs:
     steps:
 
     - name: Checkout repository
-      uses: actions/checkout@v2
+      uses: actions/checkout@v4
 
     - name: Use Node.js
-      uses: actions/setup-node@v2
+      uses: actions/setup-node@v4
       with:
         node-version: 16
 
     - name: Use Rust
-      uses: actions-rs/toolchain@v1.0.6
+      uses: dtolnay/rust-toolchain@stable
       with:
         toolchain: stable
 
