@@ -14,8 +14,8 @@ jobs:
           - windows-latest
           - ubuntu-latest
         node:
-          - 10
-          - 15
+          - 16
+          - 22
 
     steps:
     - name: Checkout repository
