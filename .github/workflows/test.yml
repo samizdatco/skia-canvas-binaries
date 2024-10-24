@@ -12,8 +12,9 @@ jobs:
         os:
           - macos-latest
           - windows-latest
-          - ubuntu-18.04
+          - ubuntu-latest
         node:
+          - 10
           - 15
 
     steps:
@@ -26,27 +27,21 @@ jobs:
         node-version: ${{ matrix.node-version }}
 
     - name: Use Rust
-      uses: actions-rs/toolchain@v1.0.6
+      uses: actions-rs/toolchain@v1
       with:
         toolchain: stable
 
-    # - name: Setup Python 2 (Window only)
-    #   if: startsWith(matrix.os,'windows')
-    #   uses: actions/setup-python@v2
-    #   with:
-    #     python-version: '2.7.18'
-    #     architecture: 'x64'
-
-    # - name: Install LLVM (Window only)
-    #   if: startsWith(matrix.os,'windows')
-    #   run: choco install llvm
-
-    - name: Build module
+    - name: Build for Metal
+      if: ${{ matrix.os == 'macos-latest' }}
       run: |
         npm ci --ignore-scripts
-        npm run build -- --release
+        npm run build -- --release --features metal,window
+
+    - name: Build for Vulkan
+      if: ${{ matrix.os != 'macos-latest' }}
+      run: |
+        npm ci --ignore-scripts
+        npm run build -- --release --features vulkan,window
 
     - name: Run tests
-      run: |
-        npm test
-
+      run: npm test
