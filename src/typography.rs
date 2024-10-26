@@ -621,10 +621,11 @@ pub fn addFamily(mut cx: FunctionContext) -> JsResult<JsValue> {
   let alias = opt_string_arg(&mut cx, 1);
   let filenames = cx.argument::<JsArray>(2)?.to_vec(&mut cx)?;
   let results = JsArray::new(&mut cx, filenames.len() as u32);
-  
+  println!("addFamily");
   let mgr = FontMgr::new();
   for (i, filename) in strings_in(&mut cx, &filenames).iter().enumerate(){
     let path = Path::new(&filename);
+    println!("path {:?}", path);
     let typeface = match fs::read(path){
       Err(why) => {
         return cx.throw_error(format!("{}: \"{}\"", why, path.display()))
@@ -637,12 +638,13 @@ pub fn addFamily(mut cx: FunctionContext) -> JsResult<JsValue> {
         // add family/weight/width/slant details to return value
         let details = typeface_details(&mut cx, filename, &font, alias.clone())?;
         results.set(&mut cx, i as u32, details)?;
-
+        println!("details {:#?}", details);
         // register the typeface
         let mut library = FONT_LIBRARY.lock().unwrap();
         library.add_typeface(font, alias.clone());
       },
       None => {
+        println!("load failed");
         return cx.throw_error(format!("Could not decode font data in {}", path.display()))
       }
     }
