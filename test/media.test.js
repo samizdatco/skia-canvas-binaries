@@ -180,11 +180,11 @@ describe("FontLibrary", ()=>{
       let info = FontLibrary.family(fam)
       expect(info).toHaveProperty('family')
       expect(info).toHaveProperty('weights')
-      expect(typeof info.weights[0]).toBe('number');
+      expect(typeof info?.weights[0]).toBe('number');
       expect(info).toHaveProperty('widths')
-      expect(typeof info.widths[0]).toBe('string');
+      expect(typeof info?.widths[0]).toBe('string');
       expect(info).toHaveProperty('styles')
-      expect(typeof info.styles[0]).toBe('string');
+      expect(typeof info?.styles[0]).toBe('string');
     }
   })
 
@@ -197,11 +197,11 @@ describe("FontLibrary", ()=>{
     expect(() => FontLibrary.use(ttf)).not.toThrow()
     console.log('post', FontLibrary.families)
     expect(FontLibrary.has(name)).toBe(true)
-    expect(FontLibrary.family(name).weights).toContain(400)
+    expect(FontLibrary.family(name)?.weights).toContain(400)
 
     expect(() => FontLibrary.use(alias, ttf)).not.toThrow()
     expect(FontLibrary.has(alias)).toBe(true)
-    expect(FontLibrary.family(alias).weights).toContain(400)
+    expect(FontLibrary.family(alias)?.weights).toContain(400)
 
     FontLibrary.reset()
     expect(FontLibrary.has(name)).toBe(false)
