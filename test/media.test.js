@@ -1,7 +1,9 @@
 // @ts-check
 
+const { log } = require('console')
 const _ = require('lodash'),
       fs = require('fs'),
+      path = require('path'),
       {Image, FontLibrary, loadImage} = require('../lib'),
       simple = require('simple-get')
 
@@ -154,7 +156,7 @@ describe("Image", () => {
 
 
 describe("FontLibrary", ()=>{
-  const findFont = font => `${__dirname}/assets/${font}`
+  const findFont = font => path.normalize(`${__dirname}/assets/${font}`)
 
   test("can list families", ()=>{
     let fams = FontLibrary.families,
@@ -192,6 +194,7 @@ describe("FontLibrary", ()=>{
     let ttf = findFont("AmstelvarAlpha-VF.ttf"),
         name = "AmstelvarAlpha",
         alias = "PseudonymousBosch";
+    console.log("NORM", ttf)
 
     console.log('orig', FontLibrary.families)
     expect(() => FontLibrary.use(ttf)).not.toThrow()
