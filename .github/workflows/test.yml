@@ -44,5 +44,5 @@ jobs:
         npm run build -- --features vulkan,window
 
     - name: Run tests
-      # run: npm test
-      run: node testfonts.js
+      run: npm test
+      # run: node testfonts.js
