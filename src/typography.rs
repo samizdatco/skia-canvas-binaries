@@ -624,6 +624,7 @@ pub fn addFamily(mut cx: FunctionContext) -> JsResult<JsValue> {
   println!("addFamily {:#?}", filenames);
   let mgr = FontMgr::new();
   for (i, filename) in strings_in(&mut cx, &filenames).iter().enumerate(){
+    println!("filename {}", filename);
     let path = Path::new(&filename);
     println!("path {:?}", path);
     let typeface = match fs::read(path){
