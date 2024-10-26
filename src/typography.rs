@@ -481,7 +481,7 @@ impl FontLibrary{
       assets.register_typeface(font.clone(), alias.as_deref());
     }
 
-    dbg!(&self.fonts);
+    println!("{:#?}", &self.fonts);
 
     let mut collection = FontCollection::new();
     collection.set_default_font_manager(FontMgr::new(), None);
