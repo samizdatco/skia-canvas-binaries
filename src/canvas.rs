@@ -28,7 +28,6 @@ impl Canvas{
 
 pub fn new(mut cx: FunctionContext) -> JsResult<BoxedCanvas> {
   let this = RefCell::new(Canvas::new());
-  println!("created");
   Ok(cx.boxed(this))
 }
 
