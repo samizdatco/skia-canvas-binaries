@@ -196,9 +196,7 @@ describe("FontLibrary", ()=>{
         alias = "PseudonymousBosch";
     console.log("NORM", ttf)
 
-    console.log('orig', FontLibrary.families)
     expect(() => FontLibrary.use(ttf)).not.toThrow()
-    console.log('post', FontLibrary.families)
     expect(FontLibrary.has(name)).toBe(true)
     expect(FontLibrary.family(name)?.weights).toContain(400)
 
