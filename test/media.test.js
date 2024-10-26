@@ -4,7 +4,6 @@ const { log } = require('console')
 const _ = require('lodash'),
       fs = require('fs'),
       path = require('path'),
-      {globSync} = require('fast-glob'),
       {Image, FontLibrary, loadImage} = require('../lib'),
       simple = require('simple-get')
 
@@ -157,7 +156,7 @@ describe("Image", () => {
 
 
 describe("FontLibrary", ()=>{
-  const findFont = font => globSync(`${__dirname}/assets/${font}`)[0]
+  const findFont = font => path.join(__dirname, 'assets', font)
 
   test("can list families", ()=>{
     let fams = FontLibrary.families,
