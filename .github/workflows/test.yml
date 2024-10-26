@@ -41,7 +41,7 @@ jobs:
       if: ${{ matrix.os != 'macos-latest' }}
       run: |
         npm ci --ignore-scripts
-        npm run build -- --release --features vulkan,window
+        npm run build -- --features vulkan,window
 
     - name: Run tests
       run: npm test
