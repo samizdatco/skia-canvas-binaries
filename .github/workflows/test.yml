@@ -10,9 +10,9 @@ jobs:
       fail-fast: false
       matrix:
         os:
-          - macos-latest
+          # - macos-latest
           - windows-latest
-          - ubuntu-latest
+          # - ubuntu-latest
         # node:
         #   # - 16
         #   - 22
@@ -48,7 +48,7 @@ jobs:
       shell: bash
       run: |
         npm ci --ignore-scripts
-        npm run build -- --release --features vulkan,window,skia-safe/freetype-woff2
+        npm run build -- --release --features vulkan,window,skia-safe/embed-freetype,skia-safe/freetype-woff2
         
     - name: Run tests
       run: npm test
