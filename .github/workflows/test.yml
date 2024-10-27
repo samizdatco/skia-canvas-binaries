@@ -45,6 +45,7 @@ jobs:
     
     - name: Build for Windows
       if: ${{ matrix.os == 'windows-latest' }}
+      shell: bash
       run: |
         npm ci --ignore-scripts
         npm run build -- --release --features vulkan,window
