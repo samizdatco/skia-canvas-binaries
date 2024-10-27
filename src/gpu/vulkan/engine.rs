@@ -1,5 +1,5 @@
 #![allow(unused_imports)]
-use std::{cell::RefCell, sync::Arc, ptr};
+use std::{cell::RefCell, sync::{Arc, OnceLock}, ptr};
 use serde_json::{json, Value};
 
 use vulkano::{
@@ -19,6 +19,8 @@ thread_local!(
     static VK_CONTEXT: RefCell<Option<VulkanEngine>> = const { RefCell::new(None) };
     static VK_STATUS: RefCell<Value> = const { RefCell::new(Value::Null) };
 );
+
+static IS_SUPPORTED: OnceLock<bool> = OnceLock::new();
 
 #[derive(Debug)]
 #[allow(dead_code)]
@@ -56,12 +58,14 @@ impl VulkanEngine {
 
     pub fn supported() -> bool {
         Self::init();
-        VK_CONTEXT.with_borrow(|cell| cell.is_some())
-            && Self::surface(&ImageInfo::new_n32_premul(
-                ISize::new(100, 100),
-                Some(ColorSpace::new_srgb()),
-            ))
-            .is_some()
+        *IS_SUPPORTED.get_or_init(||
+            VK_CONTEXT.with_borrow(|cell| cell.is_some())
+                && Self::surface(&ImageInfo::new_n32_premul(
+                    ISize::new(100, 100),
+                    Some(ColorSpace::new_srgb()),
+                ))
+                .is_some()
+        )
     }
 
     fn new() -> Result<Self, String> {
@@ -173,20 +177,19 @@ impl VulkanEngine {
 
     pub fn surface(image_info: &ImageInfo) -> Option<Surface> {
         Self::init();
-        VK_CONTEXT.with(|cell| {
-            let local_ctx = cell.borrow();
-            let mut context = local_ctx.as_ref().unwrap().context.clone();
-
-            surfaces::render_target(
-                &mut context,
-                Budgeted::Yes,
-                image_info,
-                Some(4),
-                SurfaceOrigin::BottomLeft,
-                None,
-                true,
-                None,
-            )
+        VK_CONTEXT.with_borrow_mut(|cell| match cell {
+            Some(engine) => 
+                surfaces::render_target(
+                    &mut engine.context,
+                    Budgeted::Yes,
+                    image_info,
+                    Some(4),
+                    SurfaceOrigin::BottomLeft,
+                    None,
+                    true,
+                    None,
+                ),
+            _ => None
         })
     }
 
