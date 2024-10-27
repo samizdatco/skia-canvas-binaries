@@ -48,7 +48,7 @@ jobs:
       shell: bash
       run: |
         npm ci --ignore-scripts
-        npm run build -- --release --features vulkan,window
+        npm run build -- --release --features vulkan,window,skia-safe/freetype-woff2
         
     - name: Run tests
       run: npm test
