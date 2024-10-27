@@ -11,8 +11,8 @@ jobs:
       matrix:
         os:
           # - macos-latest
-          # - windows-latest
-          - ubuntu-latest
+          - windows-latest
+          # - ubuntu-latest
         # node:
         #   # - 16
         #   - 22
@@ -48,7 +48,7 @@ jobs:
       shell: bash
       run: |
         npm ci --ignore-scripts
-        npm run build -- --release --features vulkan,window,skia-safe/embed-freetype,skia-safe/freetype-woff2
+        npm run build -- --release --features vulkan,window
         
     - name: Run tests
       run: npm test

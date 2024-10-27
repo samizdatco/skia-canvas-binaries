@@ -1,13 +1,14 @@
 #![allow(unused_variables)]
 #![allow(unused_mut)]
 #![allow(dead_code)]
-#![allow(unused_imports)]
+// #![allow(unused_imports)]
 #![allow(non_snake_case)]
 use std::sync::Mutex;
 use std::fs;
 use std::ops::Range;
 use std::path::Path;
 use std::collections::HashMap;
+use allsorts::tables::FontTableProvider;
 use neon::prelude::*;
 
 use skia_safe::{Font, FontMgr, FontMetrics, FontArguments, Typeface, Paint, Point, Rect, Path as SkPath};
@@ -19,6 +20,15 @@ use skia_safe::textlayout::{FontCollection, TypefaceFontProvider, TextStyle, Tex
 use crate::FONT_LIBRARY;
 use crate::utils::*;
 use crate::context::State;
+
+#[cfg(target_os = "windows")]
+use allsorts::{
+  binary::read::ReadScope,
+  woff::WoffFont,
+  woff2::Woff2Font,
+  subset::whole_font,
+};
+
 
 //
 // Text layout and metrics
@@ -619,6 +629,7 @@ pub fn family(mut cx: FunctionContext) -> JsResult<JsValue> {
 
   Ok(details.upcast())
 }
+
 pub fn addFamily(mut cx: FunctionContext) -> JsResult<JsValue> {
   let alias = opt_string_arg(&mut cx, 1);
   let filenames = cx.argument::<JsArray>(2)?.to_vec(&mut cx)?;
@@ -631,7 +642,35 @@ pub fn addFamily(mut cx: FunctionContext) -> JsResult<JsValue> {
       Err(why) => {
         return cx.throw_error(format!("{}: \"{}\"", why, path.display()))
       },
-      Ok(bytes) => mgr.new_from_data(&bytes, None)
+      Ok(bytes) => {
+
+        #[cfg(target_os = "windows")]
+        let bytes = match filename.to_ascii_lowercase(){
+          s if s.ends_with(".woff") => {
+            let woff = ReadScope::new(&bytes).read::<WoffFont>().unwrap();
+            if let Ok(otf) = whole_font(&woff, &woff.table_tags().unwrap()){
+              println!("WOFF: {} bytes", otf.len());
+              otf
+            }else{
+              bytes
+            }
+          }
+          s if s.ends_with(".woff2") => {
+            let woff = ReadScope::new(&bytes).read::<Woff2Font>().unwrap();
+            let tp = woff.table_provider(0).unwrap();
+            if let Ok(otf) = whole_font(&tp, &tp.table_tags().unwrap()){
+              println!("WOFF2: {} bytes", otf.len());
+              otf
+            }else{
+              bytes
+            }
+
+          }
+          _ => {bytes}
+        };
+
+        mgr.new_from_data(&bytes, None)
+      }
     };
 
     match typeface {
