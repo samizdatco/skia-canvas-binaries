@@ -41,13 +41,13 @@ jobs:
       if: ${{ matrix.os == 'ubuntu-latest' }}
       run: |
         npm ci --ignore-scripts
-        npm run build -- --features vulkan,window,skia-safe/embed-freetype,skia-safe/freetype-woff2
+        npm run build -- --release --features vulkan,window,skia-safe/embed-freetype,skia-safe/freetype-woff2
     
     - name: Build for Windows
       if: ${{ matrix.os == 'windows-latest' }}
       run: |
         npm ci --ignore-scripts
-        npm run build -- --features vulkan,window
+        npm run build -- --release --features vulkan,window
         
     - name: Run tests
       run: npm test
