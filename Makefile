@@ -9,6 +9,7 @@ PACKAGE_VERSION = $(shell npm run env | grep npm_package_version | cut -d '=' -f
 NPM_VERSION = $(shell npm view skia-canvas version)
 .PHONY: build test visual check clean distclean release run preview
 
+OS=$(shell sh -c 'uname -s 2>/dev/null')
 FEATURES_Darwin = metal,window
 FEATURES_Linux = vulkan,window,skia-safe/embed-freetype,skia-safe/freetype-woff2
 FEATURES_Windows = vulkan,window
@@ -24,6 +25,7 @@ dev: $(NPM)
 	@npm run build
 
 build: $(NPM)
+	echo $(OS)
 	@rm -f $(LIB)
 	@npm run build -- --release --features $(FEATURES)
 
