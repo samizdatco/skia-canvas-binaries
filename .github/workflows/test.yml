@@ -48,9 +48,11 @@ jobs:
       shell: bash
       run: |
         npm ci --ignore-scripts
-        cargo tree
         npm run build -- --release --features vulkan,window
-        ls -l lib/v6/index.node
         
     - name: Run tests
-      run: npm test
+      shell: bash
+      run: |
+        npm test
+        ls -l lib/v6/index.node
+
