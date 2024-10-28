@@ -9,14 +9,23 @@ PACKAGE_VERSION = $(shell npm run env | grep npm_package_version | cut -d '=' -f
 NPM_VERSION = $(shell npm view skia-canvas version)
 .PHONY: build test visual check clean distclean release run preview
 
-build: $(NPM)
+FEATURES_Darwin = metal,window
+FEATURES_Linux = vulkan,window,skia-safe/embed-freetype,skia-safe/freetype-woff2
+FEATURES_Windows = vulkan,window
+FEATURES = $(FEATURES_$(shell sh -c 'uname -s 2>/dev/null'))
+
+$(NPM):
+	npm ci --ignore-scripts
+
+$(LIB): build
+
+dev: $(NPM)
 	@rm -f $(LIB)
 	@npm run build
 
-$(NPM):
-	npm install
-
-$(LIB): build
+build: $(NPM)
+	@rm -f $(LIB)
+	@npm run build -- --release --features $(FEATURES)
 
 test: $(LIB)
 	@$(JEST) --verbose
@@ -66,7 +75,7 @@ with-local-skia:
 	echo 'skia-bindings = { path = "../rust-skia/skia-bindings" }' >> Cargo.toml
 
 # debugging
-run: build
+run: dev
 	@node check.js
 
 preview: run
