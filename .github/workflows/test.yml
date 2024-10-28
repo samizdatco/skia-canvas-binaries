@@ -31,6 +31,8 @@ jobs:
     - name: Build for Mac
       if: ${{ matrix.os == 'macos-latest' }}
       run: |
+        python --version
+        python3 --version
         npm ci --ignore-scripts
         npm run build -- --release --features metal,window
 
