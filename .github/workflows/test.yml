@@ -11,8 +11,8 @@ jobs:
       matrix:
         os:
           - macos-latest
-          # - windows-latest
-          # - ubuntu-latest
+          - windows-latest
+          - ubuntu-latest
 
     steps:
     - name: Checkout repository
@@ -28,9 +28,10 @@ jobs:
       with:
         toolchain: stable
 
-    - name: Downgrade Python (macOS-only)
+    # temporarily necessary while skia_bindings@0.78.2 is looking for the now-removed `pipes` module
+    # can hopefully be removed at the next release…
+    - name: Downgrade Python (depot_tools workaround)
       uses: actions/setup-python@v5
-      if: ${{ matrix.os == 'macos-latest' }}
       with:
         python-version: '3.12' 
 
