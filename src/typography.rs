@@ -1,14 +1,13 @@
 #![allow(unused_variables)]
 #![allow(unused_mut)]
 #![allow(dead_code)]
-// #![allow(unused_imports)]
+#![allow(unused_imports)]
 #![allow(non_snake_case)]
 use std::sync::Mutex;
 use std::fs;
 use std::ops::Range;
 use std::path::Path;
 use std::collections::HashMap;
-use allsorts::tables::FontTableProvider;
 use neon::prelude::*;
 
 use skia_safe::{Font, FontMgr, FontMetrics, FontArguments, Typeface, Paint, Point, Rect, Path as SkPath};
@@ -24,9 +23,10 @@ use crate::context::State;
 #[cfg(target_os = "windows")]
 use allsorts::{
   binary::read::ReadScope,
+  subset::whole_font,
+  tables::FontTableProvider,
   woff::WoffFont,
   woff2::Woff2Font,
-  subset::whole_font,
 };
 
 
@@ -643,31 +643,27 @@ pub fn addFamily(mut cx: FunctionContext) -> JsResult<JsValue> {
         return cx.throw_error(format!("{}: \"{}\"", why, path.display()))
       },
       Ok(bytes) => {
-
         #[cfg(target_os = "windows")]
-        let bytes = match filename.to_ascii_lowercase(){
-          s if s.ends_with(".woff") => {
-            let woff = ReadScope::new(&bytes).read::<WoffFont>().unwrap();
-            if let Ok(otf) = whole_font(&woff, &woff.table_tags().unwrap()){
-              println!("WOFF: {} bytes", otf.len());
-              otf
-            }else{
-              bytes
-            }
+        let bytes = {
+          fn decode_woff(bytes:&Vec<u8>) -> Option<Vec<u8>>{
+            let woff = ReadScope::new(&bytes).read::<WoffFont>().ok()?;
+            let tags = woff.table_tags()?;
+            whole_font(&woff, &tags).ok()
           }
-          s if s.ends_with(".woff2") => {
-            let woff = ReadScope::new(&bytes).read::<Woff2Font>().unwrap();
-            let tp = woff.table_provider(0).unwrap();
-            if let Ok(otf) = whole_font(&tp, &tp.table_tags().unwrap()){
-              println!("WOFF2: {} bytes", otf.len());
-              otf
-            }else{
-              bytes
-            }
-
+          
+          fn decode_woff2(bytes:&Vec<u8>) -> Option<Vec<u8>>{
+            let woff2 = ReadScope::new(&bytes).read::<Woff2Font>().ok()?;
+            let tables = woff2.table_provider(0).ok()?;
+            let tags = tables.table_tags()?;
+            whole_font(&tables, &tags).ok()
           }
-          _ => {bytes}
-        };
+          
+          match filename.to_ascii_lowercase(){
+            name if name.ends_with(".woff") => decode_woff(&bytes),
+            name if name.ends_with(".woff2") => decode_woff2(&bytes),
+            _ => None
+          }
+        }.unwrap_or(bytes);
 
         mgr.new_from_data(&bytes, None)
       }

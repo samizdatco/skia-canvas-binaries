@@ -10,9 +10,9 @@ jobs:
       fail-fast: false
       matrix:
         os:
-          # - macos-latest
+          - macos-latest
           - windows-latest
-          # - ubuntu-latest
+          - ubuntu-latest
         # node:
         #   # - 16
         #   - 22
@@ -50,6 +50,7 @@ jobs:
         npm ci --ignore-scripts
         cargo tree
         npm run build -- --release --features vulkan,window
+        ls -l lib/v6/index.node
         
     - name: Run tests
       run: npm test

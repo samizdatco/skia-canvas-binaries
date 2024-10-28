@@ -150,6 +150,11 @@ describe("Image", () => {
       img.src = FORMAT + '.ico'
       expect(img).toMatchObject(PARSED)
     })
+
+    test("WEBP", () => {
+      img.src = FORMAT + '.webp'
+      expect(img).toMatchObject(PARSED)
+    })
   })
 })
 
@@ -220,17 +225,20 @@ describe("FontLibrary", ()=>{
   })
 
   test("can render woff2 fonts", ()=>{
-    let woff = findFont("Monoton-Regular.woff2"),
-        name = "Monoton"
-    expect(() => FontLibrary.use(woff)).not.toThrow()
-    expect(FontLibrary.has(name)).toBe(true)
+    for (const ext of ['woff', 'woff2']){
+      let woff = findFont("Monoton-Regular." + ext),
+          name = "Monoton"
+      expect(() => FontLibrary.use(woff)).not.toThrow()
+      expect(FontLibrary.has(name)).toBe(true)
+  
+      ctx.font = '256px Monoton'
+      ctx.fillText('G', 128, 256)
+  
+      // look for one of the gaps between the inline strokes of the G
+      let bmp = ctx.getImageData(300, 172, 1, 1)
+      expect(Array.from(bmp.data)).toEqual([0,0,0,0])
+    }
 
-    ctx.font = '256px Monoton'
-    ctx.fillText('G', 128, 256)
-
-    // look for one of the gaps between the inline strokes of the G
-    let bmp = ctx.getImageData(300, 172, 1, 1)
-    expect(Array.from(bmp.data)).toEqual([0,0,0,0])
 
     FontLibrary.reset()
   })
