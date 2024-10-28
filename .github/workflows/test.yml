@@ -28,6 +28,12 @@ jobs:
       with:
         toolchain: stable
 
+    - name: Downgrade Python (macOS-only)
+      uses: actions/setup-python@v5
+      if: ${{ matrix.os == 'macos-latest' }}
+      with:
+        python-version: '3.12' 
+
     - name: Build for Mac
       if: ${{ matrix.os == 'macos-latest' }}
       run: |
