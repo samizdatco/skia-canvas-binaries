@@ -9,14 +9,14 @@ Documentation for the key classes and their attributes are listed below—proper
 
 The library exports a number of classes emulating familiar browser objects including:
 
- - [Canvas][Canvas] 📖 ⧸[extensions][canvas] 🧪
- - [CanvasGradient][CanvasGradient] 📖
- - [CanvasPattern][CanvasPattern] 📖
- - [CanvasRenderingContext2D][CanvasRenderingContext2D] 📖 ⧸[extensions][context] 🧪
- - [DOMMatrix][DOMMatrix] 📖
- - [Image][Image] 📖
- - [ImageData][ImageData] 📖
- - [Path2D][p2d_mdn] 📖 ⧸[extensions][path2d] 🧪
+ - [Canvas][mdn_canvas] ⧸ [extensions][canvas] 🧪
+ - [CanvasGradient][CanvasGradient]
+ - [CanvasPattern][CanvasPattern]
+ - [CanvasRenderingContext2D][CanvasRenderingContext2D] ⧸ [extensions][context] 🧪
+ - [DOMMatrix][DOMMatrix]
+ - [Image][Image]
+ - [ImageData][ImageData]
+ - [Path2D][p2d_mdn] ⧸ [extensions][path2d] 🧪
 
 In addition, the module contains:
 
@@ -27,7 +27,7 @@ In addition, the module contains:
 
 ----
 
-For detailed notes on the extensions Skia Canvas has made to standard object types, see the individual pages.
+For detailed notes on the extensions Skia Canvas has made to standard object types, see the corresponding pages:
 
 import DocCardList from '@theme/DocCardList';
 
@@ -42,7 +42,7 @@ import DocCardList from '@theme/DocCardList';
 [path2d]: path2d.md
 [window]: window.md
 [p2d_mdn]: https://developer.mozilla.org/en-US/docs/Web/API/Path2D
-[Canvas]: https://developer.mozilla.org/en-US/docs/Web/API/Canvas
+[mdn_canvas]: https://developer.mozilla.org/en-US/docs/Web/API/Canvas
 [CanvasGradient]: https://developer.mozilla.org/en-US/docs/Web/API/CanvasGradient
 [CanvasPattern]: https://developer.mozilla.org/en-US/docs/Web/API/CanvasPattern
 [CanvasRenderingContext2D]: https://developer.mozilla.org/en-US/docs/Web/API/CanvasRenderingContext2D

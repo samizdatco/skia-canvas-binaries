@@ -1,3 +1,6 @@
+---
+description: An emulation of the HTML <canvas> element
+---
 # Canvas
 
 The Canvas object is a stand-in for the HTML `<canvas>` element. It defines image dimensions and provides a[rendering context][context] to draw to it. Once you’re ready to save or display what you’ve drawn, the canvas can [save][saveAs] it to a file, or hand it off to you as a [data buffer][toBuffer] or [string][toDataURL_ext] to process manually.
@@ -5,9 +8,9 @@ The Canvas object is a stand-in for the HTML `<canvas>` element. It defines imag
 
 | Image Dimensions               | Rendering Contexts            | Output                                                              |
 | --                             | --                            | --                                                                  |
-| [**width**][canvas_width] 📖   | [**gpu**][canvas_gpu] 🧪      | [**pdf**, **png**, **svg**, **jpg**, **webp**][shorthands] 🧪       |
-| [**height**][canvas_height] 📖 | [**pages**][canvas_pages] 🧪  | [saveAs()][saveAs] / [saveAsSync()][saveAs] 🧪                      |
-|                                | [getContext()][getContext] 📖 | [toBuffer()][toBuffer] / [toBufferSync()][toBuffer] 🧪              |
+| [**width**][canvas_width]      | [**gpu**][canvas_gpu] 🧪      | [**pdf**, **png**, **svg**, **jpg**, **webp**][shorthands] 🧪       |
+| [**height**][canvas_height]    | [**pages**][canvas_pages] 🧪  | [saveAs()][saveAs] / [saveAsSync()][saveAs] 🧪                      |
+|                                | [getContext()][getContext]    | [toBuffer()][toBuffer] / [toBufferSync()][toBuffer] 🧪              |
 |                                | [newPage()][newPage] 🧪       | [toDataURL()][toDataURL_ext] / [toDataURLSync()][toDataURL_ext] 🧪  |
 
 

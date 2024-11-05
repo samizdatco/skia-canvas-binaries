@@ -1,3 +1,6 @@
+---
+description: Image loading helper
+---
 # Utilities
 
 ## `loadImage()`

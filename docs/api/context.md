@@ -1,3 +1,6 @@
+---
+description: The drawing API for a particular Canvas
+---
 # CanvasRenderingContext2D
 
 Most of your interaction with the canvas will actually be directed toward its ‘rendering context’, a supporting object you can acquire by calling the canvas’s [getContext()](https://developer.mozilla.org/en-US/docs/Web/API/HTMLCanvasElement/getContext) and [newPage()][newPage] methods.
@@ -84,7 +87,7 @@ ctx.setLineDash([])
 drawArc(400, "#aaa")
 
 ```
-![custom dash markers](/img/context/lineDashMarker@2x.png)
+![custom dash markers](../assets/lineDashMarker@2x.png)
 
 
 ### `.lineDashFit`
@@ -168,7 +171,7 @@ ctx.fillText("@", w/2, h-40)
 
 The results below show the image generated when the `createProjection()` call is omitted entirely, called (as above) with just a `quad` argument, or called with two different values for the optional `basis` argument:
 
-![Paths and text with a perspective transform](/img/context/projection@2x.png)
+![Paths and text with a perspective transform](../assets/projection@2x.png)
 
 
 ### `transform()` & `setTransform()`
@@ -243,7 +246,7 @@ let dst = new Canvas(350, 150),
 dstCtx.drawImage(src, 0, 0, 150, 150)
 dstCtx.drawCanvas(src, 200, 0, 150, 150)
 ```
-![drawCanvas preserves resolution-independence](/img/context/drawCanvas@2x.png)
+![drawCanvas preserves resolution-independence](../assets/drawCanvas@2x.png)
 
 ### `fillText()` & `strokeText()`
 ```js
@@ -297,7 +300,7 @@ for (let i=0; i<8000; i++){
   ctx.fillRect(x, y, 2, 2)
 }
 ```
-![text converted to a Path2D](/img/context/outlineText@2x.png)
+![text converted to a Path2D](../assets/outlineText@2x.png)
 
 <!-- references_begin -->
 [c2d_font]: #font

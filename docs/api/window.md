@@ -1,3 +1,6 @@
+---
+description: Display a canvas in a window and handle UI events
+---
 # Window
 
 The `Window` class allows you to open a native OS window and draw within its frame. You can create multiple windows (each with their own event-handling and rendering routines) and update them in response to user input.
@@ -244,10 +247,10 @@ The events emitted by the `Window` object are mostly consistent with browser-bas
 
 | Mouse                        | Keyboard                | Window                               | Focus                | Animation          |
 | --                           | --                      | --                                   | --                   | --                 |
-| [mousedown][mousedown] 📖    | [keydown][keydown] 📖   |[fullscreen][fullscreen-event] 🧪  | [blur][blur] 📖      | [setup][setup] 🧪|
-| [mouseup][mouseup] 📖        | [keyup][keyup] 📖       |[move][move-event] 🧪              | [focus][focus] 📖    | [frame][frame] 🧪|
-| [mousemove][mousemove] 📖    | [input][input] 📖       | [resize][resize]                    |                      | [draw][draw] 🧪  |
-| [wheel][wheel] 📖            |
+| [mousedown][mousedown]       | [keydown][keydown]      |[fullscreen][fullscreen-event] 🧪  | [blur][blur]         | [setup][setup] 🧪|
+| [mouseup][mouseup]           | [keyup][keyup]          |[move][move-event] 🧪              | [focus][focus]       | [frame][frame] 🧪|
+| [mousemove][mousemove]       | [input][input]          | [resize][resize]                    |                      | [draw][draw] 🧪  |
+| [wheel][wheel]               |
 
 
 ### `fullscreen`

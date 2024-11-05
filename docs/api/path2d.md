@@ -1,3 +1,6 @@
+---
+description: Bézier path construction & editing
+---
 # Path2D
 
 The `Path2D` class allows you to create paths independent of a given[Canvas][canvas] or[graphics context][context]. These paths can be modified over time and drawn repeatedly (potentially on multiple canvases). `Path2D` objects can also be used as [lineDashMarker][lineDashMarker]s or as the repeating pattern in a [CanvasTexture][createTexture()].
@@ -5,7 +8,7 @@ The `Path2D` class allows you to create paths independent of a given[Canvas][can
 
 | Line Segments                              | Shapes                     | Boolean Ops 🧪           | Filters 🧪                       | Geometry 🧪                  |
 | --                                         | --                         | --                       | --                               | --                           |
-|[**d** 🧪][p2d_d]                             | [addPath()][p2d_addPath]   | [complement()][bool-ops] | [interpolate()][p2d_interpolate] |[**bounds**][p2d_bounds]        |
+| [**d** 🧪][p2d_d]                          | [addPath()][p2d_addPath]   | [complement()][bool-ops] | [interpolate()][p2d_interpolate] |[**bounds**][p2d_bounds]        |
 | [moveTo()][p2d_moveTo]                     | [arc()][p2d_arc]           | [difference()][bool-ops] | [jitter()][p2d_jitter]           |[**edges**][edges]          |
 | [lineTo()][p2d_lineTo]                     | [arcTo()][p2d_arcTo]       | [intersect()][bool-ops]  | [round()][p2d_round]             | [contains()][p2d_contains]   |
 | [bezierCurveTo()][p2d_bezierCurveTo]       | [ellipse()][p2d_ellipse]   | [union()][bool-ops]      | [simplify()][p2d_simplify]       | [points()][p2d_points]       |
@@ -107,7 +110,7 @@ oval.arc(100, 100, 100, 0, 2*Math.PI)
 let rect = new Path2D()
 rect.rect(0, 100, 100, 100)
 ```
-![layered paths](/img/path/operation-none.svg)
+![layered paths](../assets/operation-none.svg)
 
 We can then create a new path by using one of the boolean operations such as:
 ```js
@@ -116,7 +119,7 @@ let knockout = rect.complement(oval),
     footprint = rect.union(oval),
     ...
 ```
-![different combinations](/img/path/operations@2x.png)
+![different combinations](../assets/operations@2x.png)
 
 Note that the `xor` operator is liable to create a path with lines that cross over one another so you’ll get different results when filling it using the [`"evenodd"`][evenodd] winding rule (as shown above) than with [`"nonzero"`][nonzero] (the canvas default).
 
@@ -142,7 +145,7 @@ let left = start.interpolate(end, .25),
     mean = start.interpolate(end, .5),
     right = start.interpolate(end, .75)
 ```
-![merging similar paths](/img/path/effect-interpolate@2x.png)
+![merging similar paths](../assets/effect-interpolate@2x.png)
 
 
 ### `jitter()`
@@ -167,7 +170,7 @@ let jagged = cube.jitter(1, 2),
     reseed = cube.jitter(1, 2, 1337),
     sketchy = cube.jitter(10, 1)
 ```
-![xkcd-style](/img/path/effect-jitter@2x.png)
+![xkcd-style](../assets/effect-jitter@2x.png)
 
 ### `offset()`
 ```js returns="Path2D"
@@ -194,7 +197,7 @@ for (const [x, y] of path.points(10)){
   ctx.fillRect(x, y, 3, 3)
 }
 ```
-![sampling points from a path](/img/path/effect-points@2x.png)
+![sampling points from a path](../assets/effect-points@2x.png)
 
 ### `round()`
 ```js returns="Path2D"
@@ -214,7 +217,7 @@ spikes.lineTo(300, 25)
 
 let snake = spikes.round(80)
 ```
-![no sharp edges](/img/path/effect-round@2x.png)
+![no sharp edges](../assets/effect-round@2x.png)
 
 ### `simplify()`
 ```js returns="Path2D"
@@ -230,7 +233,7 @@ let cross = new Path2D(`
 `)
 let uncrossed = cross.simplify()
 ```
-![different combinations](/img/path/effect-simplify@2x.png)
+![different combinations](../assets/effect-simplify@2x.png)
 
 ### `transform()`
 ```js returns="Path2D"
@@ -258,7 +261,7 @@ let middle = orig.trim(.25, .75),
     right = orig.trim(-.25)
 
 ```
-![trimmed subpaths](/img/path/effect-trim@2x.png)
+![trimmed subpaths](../assets/effect-trim@2x.png)
 
 ### `unwind()`
 ```js returns="Path2D"
@@ -276,7 +279,7 @@ let orig = new Path2D(`
 
 let unwound = orig.unwind()
 ```
-![convert winding rule subpaths](/img/path/effect-unwind@2x.png)
+![convert winding rule subpaths](../assets/effect-unwind@2x.png)
 
 <!-- references_begin -->
 [bool-ops]: #complement-difference-intersect-union-and-xor
