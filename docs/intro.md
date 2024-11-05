@@ -8,7 +8,6 @@ sidebar_position: 1
 <div id="hero">
 
   ![Skia Canvas](./assets/hero@2x.png)
-
   ![Skia Canvas](./assets/hero-dark@2x.png)
 
 </div>
