@@ -41,6 +41,6 @@ jobs:
         
     - name: Run tests
       run: |
-        npm test
+        npm test --verbose
         ls -l lib/v6/index.node
 
