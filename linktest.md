@@ -1,16 +1,7 @@
----
-slug: "/"
-title: "Getting Started"
-hide_title: true
-sidebar_position: 1
----
-
-<div id="hero">
-
-  ![Skia Canvas](./assets/hero@2x.png)
-  ![Skia Canvas](./assets/hero-dark@2x.png)
-
-</div>
+<a href="https://skia-canvas.org"><picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/assets/hero-dark@2x.png">
+  <img alt="Skia Canvas" src="docs/assets/hero@2x.png">
+</picture></a>
 
 Skia Canvas is a browser-less implementation of the HTML Canvas drawing API for Node.js. It is based on Google’s [Skia](https://skia.org) graphics engine and, accordingly, produces very similar results to Chrome’s `<canvas>` element. The library is well suited for use on desktop machines where you can render hardware-accelerated graphics to a window and on the server where it can output a variety of image formats.
 
@@ -19,7 +10,7 @@ While the primary goal of this project is to provide a reliable emulation of the
 In particular, Skia Canvas:
 
   - is fast and compact since rendering takes place on the GPU and all the heavy lifting is done by native code written in Rust and C++
-  - can render to [windows][window] using an OS-native graphics pipeline and provides a browser-like [UI event][win_bind] framework
+  - can render to [windows](#window) using an OS-native graphics pipeline and provides a browser-like [UI event][win_bind] framework
   - generates output in both raster (JPEG & PNG) and vector (PDF & SVG) image formats
   - can save images to [files][saveAs], return them as [Buffers][toBuffer], or encode [dataURL][toDataURL_ext] strings
   - uses native threads and the Node [worker pool](https://github.com/neon-bindings/rfcs/pull/35) for asynchronous rendering and file I/O
@@ -29,17 +20,18 @@ In particular, Skia Canvas:
   - can fill shapes with vector-based [Textures][createTexture()] in addition to bitmap-based [Patterns][createPattern()] and supports line-drawing with custom [markers][lineDashMarker]
   - supports the full set of [CSS filter][filter] image processing operators
   - offers rich typographic control including:
-    - multi-line, [word-wrapped][textwrap] text
-    - line-by-line [text metrics][c2d_measuretext]
-    - small-caps, ligatures, and other opentype features accessible using standard [font-variant][fontvariant] syntax
-    - proportional [letter-spacing][letterSpacing], [word-spacing][wordSpacing], and [leading][c2d_font]
+
+    - multi-line, [word-wrapped](#textwrap) text
+    - line-by-line [text metrics](#measuretextstr-width)
+    - small-caps, ligatures, and other opentype features accessible using standard [font-variant](#fontvariant) syntax
+    - proportional [letter-spacing][letterSpacing], [word-spacing][wordSpacing], and [leading](#font)
     - support for [variable fonts][VariableFonts] and transparent mapping of weight values
-    - use of non-system fonts [loaded][fontlibrary-use] from local files
+    - use of non-system fonts [loaded](#usefamilyname-fontpaths) from local files
 
 ## Installation
 
 If you’re running on a supported platform, installation should be as simple as:
-```bash
+```console
 npm install skia-canvas
 ```
 
@@ -99,7 +91,7 @@ Start by installing:
 
 ## Example Usage
 
-### Generating image files
+#### Generating image files
 
 ```js
 const {Canvas} = require('skia-canvas')
@@ -133,7 +125,7 @@ render()
 canvas.saveAsSync("rainbox.pdf")
 ```
 
-### Multi-page sequences
+#### Multi-page sequences
 
 ```js
 const {Canvas} = require('skia-canvas')
@@ -161,7 +153,7 @@ render()
 
 ```
 
-### Rendering to a window
+#### Rendering to a window
 
 ```js
 const {Window} = require('skia-canvas')
@@ -181,34 +173,3 @@ win.on("draw", e => {
   ctx.fill()
 })
 ```
-
-<!-- references_begin -->
-[bool-ops]: api/path2d.md#complement-difference-intersect-union-and-xor
-[c2d_font]: api/context.md#font
-[c2d_measuretext]: api/context.md#measuretext
-[createProjection()]: api/context.md#createprojection
-[createTexture()]: api/context.md#createtexture
-[fontlibrary-use]: api/font-library.md#use
-[fontvariant]: api/context.md#fontvariant
-[lineDashMarker]: api/context.md#linedashmarker
-[newPage]: api/context.md#newpage
-[p2d_interpolate]: api/path2d.md#interpolate
-[p2d_points]: api/path2d.md#points
-[p2d_round]: api/path2d.md#round
-[p2d_simplify]: api/path2d.md#simplify
-[p2d_trim]: api/path2d.md#trim
-[saveAs]: api/context.md#saveas
-[textwrap]: api/context.md#textwrap
-[toBuffer]: api/canvas.md#tobuffer
-[toDataURL_ext]: api/canvas.md#todataurl
-[win_bind]: api/window.md#on--off--once
-[window]: api/window.md
-[VariableFonts]: https://developer.mozilla.org/en-US/docs/Web/CSS/CSS_Fonts/Variable_Fonts_Guide
-[filter]: https://developer.mozilla.org/en-US/docs/Web/API/CanvasRenderingContext2D/filter
-[letterSpacing]: https://developer.mozilla.org/en-US/docs/Web/API/CanvasRenderingContext2D/letterSpacing
-[wordSpacing]: https://developer.mozilla.org/en-US/docs/Web/API/CanvasRenderingContext2D/wordSpacing
-[createPattern()]: https://developer.mozilla.org/en-US/docs/Web/API/CanvasRenderingContext2D/createPattern
-[rotate()]: https://developer.mozilla.org/en-US/docs/Web/API/CanvasRenderingContext2D/rotate
-[scale()]: https://developer.mozilla.org/en-US/docs/Web/API/CanvasRenderingContext2D/scale
-[translate()]: https://developer.mozilla.org/en-US/docs/Web/API/CanvasRenderingContext2D/translate
-<!-- references_end -->
