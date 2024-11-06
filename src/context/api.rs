@@ -1,23 +1,21 @@
-#![allow(unused_variables)]
-#![allow(unused_mut)]
-#![allow(dead_code)]
-#![allow(unused_imports)]
 #![allow(non_snake_case)]
 use std::f32::consts::PI;
 use std::cell::RefCell;
 use neon::{prelude::*, types::buffer::TypedArray};
-use skia_safe::{Point, Rect, RRect, Matrix, Path, PathDirection::{CW, CCW}, PaintStyle};
-use skia_safe::path::AddPathMode::Append;
-use skia_safe::path::AddPathMode::Extend;
+use skia_safe::{Matrix, PaintStyle, Picture, Point, RRect, Rect, Size, ImageInfo, ColorType, AlphaType};
+use skia_safe::path::{AddPathMode::{Append,Extend}, Direction::{CCW, CW}, Path};
 use skia_safe::textlayout::{TextDirection};
 use skia_safe::PaintStyle::{Fill, Stroke};
 
 use super::{Context2D, BoxedContext2D, Dye};
 use crate::canvas::{Canvas, BoxedCanvas};
 use crate::path::{Path2D, BoxedPath2D};
-use crate::image::{Image, BoxedImage};
+use crate::image::{Image, BoxedImage, Content};
 use crate::filter::Filter;
-use crate::typography::*;
+use crate::typography::{
+  font_arg, decoration_arg, font_features, Spacing, from_width, to_width,
+  from_text_align, to_text_align, from_text_baseline, to_text_baseline
+};
 use crate::utils::*;
 
 //
@@ -94,11 +92,8 @@ pub fn restore(mut cx: FunctionContext) -> JsResult<JsUndefined> {
 pub fn transform(mut cx: FunctionContext) -> JsResult<JsUndefined> {
   let this = cx.argument::<BoxedContext2D>(0)?;
   let mut this = this.borrow_mut();
-  check_argc(&mut cx, 7)?;
 
-  let nums = opt_float_args(&mut cx, 1..7);
-  if let [m11, m12, m21, m22, dx, dy] = nums.as_slice(){
-    let matrix = Matrix::new_all(*m11, *m21, *dx, *m12, *m22, *dy, 0.0, 0.0, 1.0);
+  if let Some(matrix) = opt_matrix_arg(&mut cx, 1) {
     this.with_matrix(|ctm| ctm.pre_concat(&matrix) );
   }
   Ok(cx.undefined())
@@ -704,79 +699,100 @@ pub fn set_miterLimit(mut cx: FunctionContext) -> JsResult<JsUndefined> {
 // Imagery
 //
 
-fn _layout_rects(width:f32, height:f32, nums:&[f32]) -> Option<(Rect, Rect)> {
+fn _layout_rects(intrinsic:Size, nums:&[f32]) -> Result<(Rect, Rect), String> {
   let (src, dst) = match nums.len() {
-    2 => ( Rect::from_xywh(0.0, 0.0, width, height),
-           Rect::from_xywh(nums[0], nums[1], width, height) ),
-    4 => ( Rect::from_xywh(0.0, 0.0, width, height),
-           Rect::from_xywh(nums[0], nums[1], nums[2], nums[3]) ),
+    2 => ( Rect::from_xywh(0.0, 0.0, intrinsic.width, intrinsic.height),
+            Rect::from_xywh(nums[0], nums[1], intrinsic.width, intrinsic.height) ),
+    4 => ( Rect::from_xywh(0.0, 0.0, intrinsic.width, intrinsic.height),
+            Rect::from_xywh(nums[0], nums[1], nums[2], nums[3]) ),
     8 => ( Rect::from_xywh(nums[0], nums[1], nums[2], nums[3]),
-           Rect::from_xywh(nums[4], nums[5], nums[6], nums[7]) ),
-    _ => return None
+            Rect::from_xywh(nums[4], nums[5], nums[6], nums[7]) ),
+    _ => return Err(format!("Expected 2, 4, or 8 coordinates (got {})", nums.len()))
   };
-  Some((src, dst))
+
+  match intrinsic.is_empty(){
+    true => Err(format!("Cannot draw dimensionless image ({}×{})", intrinsic.width, intrinsic.height)),
+    false => Ok((src, dst))
+  }
 }
 
 pub fn drawImage(mut cx: FunctionContext) -> JsResult<JsUndefined> {
   let this = cx.argument::<BoxedContext2D>(0)?;
+  let argc = cx.len() as usize;
   let source = cx.argument::<JsValue>(1)?;
-  let image = {
-    if let Ok(obj) = source.downcast::<BoxedImage, _>(&mut cx){
-      (obj.borrow().image).clone()
-    }else if let Ok(obj) = source.downcast::<BoxedContext2D, _>(&mut cx){
-      obj.borrow().get_image()
+  let nums = float_args(&mut cx, 2..argc)?;
+
+  let content = {
+    if let Ok(img) = source.downcast::<BoxedImage, _>(&mut cx){
+      img.borrow().content.clone()
+    }else if let Ok(ctx) = source.downcast::<BoxedContext2D, _>(&mut cx){
+      Content::from_context(&mut ctx.borrow_mut(), false)
     }else{
-      return Ok(cx.undefined())
+      Content::default()
     }
   };
 
-  let dims = image.as_ref().map(|img|
-    (img.width(), img.height())
-  );
+  if let Content::Bitmap(img) = &content {
+    let bounds_size = content.size();
+    let (mut src, mut dst) = _layout_rects(bounds_size, &nums)
+      .or_else(|err| cx.throw_error(err))?;
 
-  let (width, height) = match dims{
-    Some((w,h)) => (w as f32, h as f32),
-    None => return cx.throw_error("Cannot draw incomplete image (has it finished loading?)")
-  };
+    content.snap_rects_to_bounds(src, dst);
+    let mut this = this.borrow_mut();
+    this.draw_image(&img, &src, &dst);
+  } else if let Content::Vector(pict) = &content {
+    let image = source.downcast::<BoxedImage, _>(&mut cx).unwrap();
+    let fit_to_canvas = image.borrow().autosized;
+    let pict_size = content.size();
 
-  let argc = cx.len() as usize;
-  let nums = float_args(&mut cx, 2..argc)?;
-  match _layout_rects(width, height, &nums){
-    Some((src, dst)) => {
-      // shrink src to lie within the image bounds and adjust dst proportionately
-      let (src, dst) = fit_bounds(width, height, src, dst);
+    let (mut src, mut dst) = _layout_rects(pict_size, &nums)
+      .or_else(|err| cx.throw_error(err))?;
 
-      let mut this = this.borrow_mut();
-      this.draw_image(&image, &src, &dst);
-      Ok(cx.undefined())
-    },
-    None => cx.throw_error(format!("Expected 2, 4, or 8 coordinates (got {})", nums.len()))
+    // for SVG images with no intrinsic size, use the canvas size as a default scale
+    if fit_to_canvas && nums.len() != 4 {
+      let canvas_size = this.borrow().bounds.size();
+      let canvas_min = canvas_size.width.min(canvas_size.height);
+      let pict_min = pict_size.width.min(pict_size.height);
+
+      if nums.len() == 2 {
+        // if the user doesn't specify a size, proportionally scale to fit within canvas
+        let factor = canvas_min / pict_min;
+        dst = Rect::from_point_and_size((dst.x(), dst.y()), dst.size() * factor);
+      } else if nums.len() == 8 {
+        // if clipping out part of the source, map the crop coordinates as if the image is canvas-sized
+        let factor = (pict_size.width / canvas_min, pict_size.height / canvas_min);
+        (src, _) = Matrix::scale(factor).map_rect(src);
+      }
+    }
+
+    content.snap_rects_to_bounds(src, dst);
+    let mut this = this.borrow_mut();
+    this.draw_picture(&pict, &src, &dst);
   }
+
+  Ok(cx.undefined())
 }
 
 pub fn drawCanvas(mut cx: FunctionContext) -> JsResult<JsUndefined> {
+  let argc = cx.len() as usize;
   let this = cx.argument::<BoxedContext2D>(0)?;
   let context = cx.argument::<BoxedContext2D>(1)?;
-
-  let (width, height) = {
-    let bounds = context.borrow().bounds;
-    (bounds.width(), bounds.height())
-  };
-
-  let argc = cx.len() as usize;
   let nums = float_args(&mut cx, 2..argc)?;
-  match _layout_rects(width, height, &nums){
-    Some((src, dst)) => {
-      let pict = {
-        let mut ctx = context.borrow_mut();
-        ctx.get_picture()
-      };
 
-      let mut this = this.borrow_mut();
-      this.draw_picture(&pict, &src, &dst);
-      Ok(cx.undefined())
-    },
-    None => cx.throw_error(format!("Expected 2, 4, or 8 coordinates (got {})", nums.len()))
+  let content = Content::from_context(&mut context.borrow_mut(), true);
+
+  if let Content::Vector(pict) = &content{
+    _layout_rects(content.size(), &nums)
+      .map(|(mut src, mut dst)|{
+        let (src, dst) = content.snap_rects_to_bounds(src, dst);
+        let mut this = this.borrow_mut();
+        this.draw_picture(&pict, &src, &dst);
+        cx.undefined()
+      }).or_else(|err|
+        cx.throw_error(err)
+      )
+  }else{
+    cx.throw_error("Canvas's PictureRecorder failed to generate an image")
   }
 }
 
@@ -820,7 +836,13 @@ pub fn putImageData(mut cx: FunctionContext) -> JsResult<JsUndefined> {
   )};
 
   let buffer: Handle<JsBuffer> = img_data.get(&mut cx, "data")?;
-  let info = Image::info(width, height);
+  let info = ImageInfo::new(
+    (width as i32, height as i32),
+    ColorType::RGBA8888,
+    AlphaType::Unpremul,
+    None
+  );
+
   this.blit_pixels(buffer.as_slice(&cx), &info, &src, &dst);
   Ok(cx.undefined())
 }
@@ -910,12 +932,10 @@ pub fn measureText(mut cx: FunctionContext) -> JsResult<JsArray> {
 pub fn outlineText(mut cx: FunctionContext) -> JsResult<JsValue> {
   let this = cx.argument::<BoxedContext2D>(0)?;
   let text = string_arg(&mut cx, 1, "text")?;
+  let width = opt_float_arg(&mut cx, 2);
   let mut this = this.borrow_mut();
-  if let Some(path) = this.outline_text(&text){
-    Ok(cx.boxed(RefCell::new(Path2D{path})).upcast())
-  }else{
-    Ok(cx.undefined().upcast())
-  }
+  let path = this.outline_text(&text, width);
+  Ok(cx.boxed(RefCell::new(Path2D{path})).upcast())
 }
 
 // -- type properties ---------------------------------------------------------------
@@ -931,6 +951,21 @@ pub fn set_font(mut cx: FunctionContext) -> JsResult<JsUndefined> {
   let mut this = this.borrow_mut();
   if let Some(spec) = font_arg(&mut cx, 1)?{
     this.set_font(spec);
+  }
+  Ok(cx.undefined())
+}
+
+pub fn get_fontStretch(mut cx: FunctionContext) -> JsResult<JsString> {
+  let this = cx.argument::<BoxedContext2D>(0)?;
+  let mut this = this.borrow_mut();
+  Ok(cx.string(from_width(this.state.font_width)))
+}
+
+pub fn set_fontStretch(mut cx: FunctionContext) -> JsResult<JsUndefined> {
+  let this = cx.argument::<BoxedContext2D>(0)?;
+  if let Some(stretch) = opt_string_arg(&mut cx, 1){
+    let mut this = this.borrow_mut();
+    this.set_font_width(to_width(&stretch));
   }
   Ok(cx.undefined())
 }
@@ -998,6 +1033,54 @@ pub fn set_direction(mut cx: FunctionContext) -> JsResult<JsUndefined> {
   Ok(cx.undefined())
 }
 
+pub fn get_letterSpacing(mut cx: FunctionContext) -> JsResult<JsString> {
+  let this = cx.argument::<BoxedContext2D>(0)?;
+  let mut this = this.borrow_mut();
+  Ok(cx.string(this.state.letter_spacing.to_string()))
+}
+
+pub fn set_letterSpacing(mut cx: FunctionContext) -> JsResult<JsUndefined> {
+  let this = cx.argument::<BoxedContext2D>(0)?;
+
+  if cx.argument::<JsValue>(1)?.is_a::<JsNull, _>(&mut cx){
+    return Ok(cx.undefined());
+  }
+
+  let spacing = cx.argument::<JsObject>(1)?;
+  let raw_size = float_for_key(&mut cx, &spacing, "size")?;
+  let unit = string_for_key(&mut cx, &spacing, "unit")?;
+  let px_size = float_for_key(&mut cx, &spacing, "px")?;
+
+  let mut this = this.borrow_mut();
+  if let Some(spacing) = Spacing::parse(raw_size, unit, px_size){
+    let em_size = this.state.char_style.font_size();
+    this.state.char_style.set_letter_spacing(spacing.in_px(em_size));
+    this.state.letter_spacing = spacing;
+  }
+  Ok(cx.undefined())
+}
+
+pub fn get_wordSpacing(mut cx: FunctionContext) -> JsResult<JsString> {
+  let this = cx.argument::<BoxedContext2D>(0)?;
+  let mut this = this.borrow_mut();
+  Ok(cx.string(this.state.word_spacing.to_string()))
+}
+
+pub fn set_wordSpacing(mut cx: FunctionContext) -> JsResult<JsUndefined> {
+  let this = cx.argument::<BoxedContext2D>(0)?;
+  let raw_size = float_arg_or(&mut cx, 1, f32::NAN);
+  let unit = string_arg(&mut cx, 2, "unit")?;
+  let px_size = float_arg_or(&mut cx, 3, f32::NAN);
+
+  let mut this = this.borrow_mut();
+  if let Some(spacing) = Spacing::parse(raw_size, unit, px_size){
+    let em_size = this.state.char_style.font_size();
+    this.state.char_style.set_word_spacing(spacing.in_px(em_size));
+    this.state.word_spacing = spacing;
+  }
+  Ok(cx.undefined())
+}
+
 // -- non-standard typography extensions --------------------------------------------
 
 pub fn get_fontVariant(mut cx: FunctionContext) -> JsResult<JsString> {
@@ -1018,23 +1101,6 @@ pub fn set_fontVariant(mut cx: FunctionContext) -> JsResult<JsUndefined> {
   Ok(cx.undefined())
 }
 
-pub fn get_textTracking(mut cx: FunctionContext) -> JsResult<JsNumber> {
-  let this = cx.argument::<BoxedContext2D>(0)?;
-  let mut this = this.borrow_mut();
-  Ok(cx.number(this.state.text_tracking))
-}
-
-pub fn set_textTracking(mut cx: FunctionContext) -> JsResult<JsUndefined> {
-  let this = cx.argument::<BoxedContext2D>(0)?;
-  let mut this = this.borrow_mut();
-  let tracking = float_arg(&mut cx, 1, "tracking")?;
-
-  let em = this.state.char_style.font_size();
-  this.state.text_tracking = tracking as i32;
-  this.state.char_style.set_letter_spacing(tracking as f32 / 1000.0 * em);
-  Ok(cx.undefined())
-}
-
 pub fn get_textWrap(mut cx: FunctionContext) -> JsResult<JsBoolean> {
   let this = cx.argument::<BoxedContext2D>(0)?;
   let mut this = this.borrow_mut();
@@ -1046,6 +1112,24 @@ pub fn set_textWrap(mut cx: FunctionContext) -> JsResult<JsUndefined> {
   let mut this = this.borrow_mut();
   let flag = bool_arg(&mut cx, 1, "textWrap")?;
   this.state.text_wrap = flag;
+  Ok(cx.undefined())
+}
+
+pub fn get_textDecoration(mut cx: FunctionContext) -> JsResult<JsString> {
+  let this = cx.argument::<BoxedContext2D>(0)?;
+  let mut this = this.borrow_mut();
+  Ok(cx.string(this.state.text_decoration.css.clone()))
+}
+
+pub fn set_textDecoration(mut cx: FunctionContext) -> JsResult<JsUndefined> {
+  let this = cx.argument::<BoxedContext2D>(0)?;
+  if let Ok(arg) = decoration_arg(&mut cx, 1){
+    if let Some(deco_style) = arg{
+      let mut this = this.borrow_mut();
+      this.state.text_decoration = deco_style;
+    }
+  }
+
   Ok(cx.undefined())
 }
 

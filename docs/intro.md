@@ -29,7 +29,6 @@ In particular, Skia Canvas:
   - can fill shapes with vector-based [Textures][createTexture()] in addition to bitmap-based [Patterns][createPattern()] and supports line-drawing with custom [markers][lineDashMarker]
   - supports the full set of [CSS filter][filter] image processing operators
   - offers rich typographic control including:
-
     - multi-line, [word-wrapped][textwrap] text
     - line-by-line [text metrics][c2d_measuretext]
     - small-caps, ligatures, and other opentype features accessible using standard [font-variant][fontvariant] syntax

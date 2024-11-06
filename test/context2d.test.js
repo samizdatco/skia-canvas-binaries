@@ -309,6 +309,10 @@ describe("Context2D", ()=>{
         [1, .5, .25, .125, 0.0625].forEach(mag => {
           mat = new DOMMatrix().scale(mag);
           pat.setTransform(mat);
+          // make sure the alternative matrix syntaxes also work
+          expect(() => {pat.setTransform(mag, 0, 0, mag, 0, 0)}).not.toThrow()
+          expect(() => {pat.setTransform([mag, 0, 0, mag, 0, 0])}).not.toThrow()
+          expect(() => {pat.setTransform({a:mag, b:0, c:0, d:mag, e:0, f:0})}).not.toThrow()
           ctx.fillRect(0,0, w*mag, h*mag);
           isCheckerboard(ctx, w*mag, h*mag);
         })
@@ -378,6 +382,23 @@ describe("Context2D", ()=>{
       ctx.filter = 'blur(5px) invert(56%) sepia(63%) saturate(4837%) hue-rotate(163deg) brightness(96%) contrast(101%)'
       ctx.fillRect(0,0,20,20)
       expect(pixel(10, 10)).toEqual([0, 162, 213, 245])
+    })
+
+    test('shadow', async() => {
+      const sin = Math.sin(1.15*Math.PI)
+      const cos = Math.cos(1.15*Math.PI)
+      ctx.translate(150, 150)
+      ctx.transform(cos, sin, -sin, cos, 0, 0)
+
+      ctx.shadowColor = '#000'
+      ctx.shadowBlur = 5
+      ctx.shadowOffsetX = 10
+      ctx.shadowOffsetY = 10
+      ctx.fillStyle = '#eee'
+      ctx.fillRect(25, 25, 65, 10)
+
+      // ensure that the shadow is actually fuzzy despite the transforms
+      expect(pixel(143, 117)).not.toEqual(BLACK)
     })
 
     test("clip()", () => {
@@ -776,6 +797,13 @@ describe("Context2D", ()=>{
       expect(pixel(WIDTH*.75, HEIGHT/2)).toEqual(GREEN)
       expect(pixel(WIDTH/2, HEIGHT/2)).toEqual(CLEAR)
 
+      ctx.clearRect(0,0,WIDTH,HEIGHT)
+      ctx.drawCanvas(srcCanvas, 1,1,2,2, 0,0,2,2)
+      expect(pixel(0, 0)).toEqual(CLEAR)
+      expect(pixel(0, 1)).toEqual(GREEN)
+      expect(pixel(1, 0)).toEqual(GREEN)
+      expect(pixel(1, 1)).toEqual(GREEN)
+
       let image = await loadAsset('checkers.png')
       expect( () => ctx.drawCanvas(image, 0, 0) ).not.toThrow()
     })
@@ -802,6 +830,86 @@ describe("Context2D", ()=>{
       ctx.fillRect(WIDTH/2, HEIGHT/2, 3, 3)
       expect(pixel(WIDTH/2 + 1, HEIGHT/2 + 1)).toEqual(BLACK)
     })
+
+    describe("transform()", ()=>{
+      const a=0.1, b=0, c=0, d=0.3, e=0, f=0
+  
+      test('with args list', () => {
+        ctx.transform(a, b, c, d, e, f)
+        let matrix = ctx.currentTransform
+        _.each({a, b, c, d, e, f}, (val, term) =>
+          expect(matrix[term]).toBeCloseTo(val)
+        )
+      })
+  
+      test('with DOMMatrix', () => {
+        ctx.transform(new DOMMatrix().scale(0.1, 0.3));
+        let matrix = ctx.currentTransform
+        _.each({a, b, c, d, e, f}, (val, term) =>
+          expect(matrix[term]).toBeCloseTo(val)
+        )
+      })
+  
+      test('with matrix-like object', () => {
+        ctx.transform({a, b, c, d, e, f});
+        let matrix = ctx.currentTransform
+        _.each({a, b, c, d, e, f}, (val, term) =>
+          expect(matrix[term]).toBeCloseTo(val)
+        )
+      })
+  
+      test('with css-style string', () => {
+        // try a range of string inits
+        const transforms = {
+          "matrix(1, 2, 3, 4, 5, 6)": "matrix(1, 2, 3, 4, 5, 6)",
+          "matrix3d(1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1)": "matrix(1, 0, 0, 1, 0, 0)",
+          "rotate(0.5turn)": "matrix(-1, 0, 0, -1, 0, 0)",
+          "rotate3d(1, 2, 3, 10deg)": "matrix3d(0.985892913511, 0.141398603856, -0.089563373741, 0, -0.137057961859, 0.989148395009, 0.052920390614, 0, 0.096074336736, -0.039898464624, 0.994574197504, 0, 0, 0, 0, 1)",
+          "rotateX(10deg)": "matrix3d(1, 0, 0, 0, 0, 0.984807753012, 0.173648177667, 0, 0, -0.173648177667, 0.984807753012, 0, 0, 0, 0, 1)",
+          "rotateY(10deg)": "matrix3d(0.984807753012, 0, -0.173648177667, 0, 0, 1, 0, 0, 0.173648177667, 0, 0.984807753012, 0, 0, 0, 0, 1)",
+          "rotateZ(10deg)": "matrix(0.984807753012, 0.173648177667, -0.173648177667, 0.984807753012, 0, 0)",
+          "translate(12px, 50px)": "matrix(1, 0, 0, 1, 12, 50)",
+          "translate3d(12px, 50px, 3px)": "matrix3d(1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 12, 50, 3, 1)",
+          "translateX(2px)": "matrix(1, 0, 0, 1, 2, 0)",
+          "translateY(3px)": "matrix(1, 0, 0, 1, 0, 3)",
+          "translateZ(2px)": "matrix3d(1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 2, 1)",
+          "scale(2, 0.5)": "matrix(2, 0, 0, 0.5, 0, 0)",
+          "scale3d(2.5, 120%, 0.3)": "matrix3d(2.5, 0, 0, 0, 0, 1.2, 0, 0, 0, 0, 0.3, 0, 0, 0, 0, 1)",
+          "scaleX(2)": "matrix(2, 0, 0, 1, 0, 0)",
+          "scaleY(0.5)": "matrix(1, 0, 0, 0.5, 0, 0)",
+          "scaleZ(0.3)": "matrix3d(1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0.3, 0, 0, 0, 0, 1)",
+          "skew(30deg, 20deg)": "matrix(1, 0.363970234266, 0.577350269190, 1, 0, 0)",
+          "skewX(30deg)": "matrix(1, 0, 0.577350269190, 1, 0, 0)",
+          "skewY(1.07rad)": "matrix(1, 1.827028196535, 0, 1, 0, 0)",
+          "translate(10px, 20px) matrix(1, 2, 3, 4, 5, 6)": "matrix(1, 2, 3, 4, 15, 26)",
+          "translate(5px, 6px) scale(2) translate(7px,8px)": "matrix(2, 0, 0, 2, 19, 22)",
+          "rotate(30deg) rotate(-.1turn) rotate(.444rad)": "matrix(0.942994450354, 0.332808453321, -0.332808453321, 0.942994450354, 0, 0)",
+          "none": "matrix(1, 0, 0, 1, 0, 0)",
+          "unset": "matrix(1, 0, 0, 1, 0, 0)",
+        }
+      
+        for (const input in transforms){
+          let matrix = new DOMMatrix(input),
+              roundtrip = new DOMMatrix(matrix.toString())
+          expect(matrix.toString()).toEqual(transforms[input])
+          expect(roundtrip.toString()).toEqual(transforms[input])
+        }
+
+        // check that the context can also take a string
+        ctx.transform(`scale(${a}, ${d})`);
+        let matrix = ctx.currentTransform
+        _.each({a, b, c, d, e, f}, (val, term) =>
+          expect(matrix[term]).toBeCloseTo(val)
+        )
+      })
+
+      test('rejects invalid args', () => {
+        expect( () => ctx.transform(0, 0, 0)).toThrow("Invalid transform matrix")
+        expect( () => ctx.transform("nonesuch")).toThrow("Invalid transform matrix")
+      })
+  
+    })
+  
   })
 
 
@@ -995,4 +1103,6 @@ describe("Context2D", ()=>{
 
     });
   })
+
+
 })

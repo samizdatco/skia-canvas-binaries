@@ -5,21 +5,25 @@
 use std::cell::RefCell;
 use std::sync::{Arc, Mutex, MutexGuard};
 use neon::prelude::*;
-use skia_safe::{Canvas as SkCanvas, Surface, Paint, Path, PathOp, Image, ImageInfo, Contains,
-                Matrix, Rect, Point, IPoint, Size, ISize, Color, Color4f, ColorType, Data,
-                PaintStyle, BlendMode, AlphaType, ClipOp, PictureRecorder, Picture, Drawable,
-                image::CachingHint, images, image_filters, dash_path_effect, path_1d_path_effect};
-use skia_safe::textlayout::{ParagraphStyle, TextStyle};
-use skia_safe::canvas::SrcRectConstraint::Strict;
-use skia_safe::path::FillType;
-use skia_safe::path_utils::fill_path_with_paint;
+use skia_safe::{
+  Canvas as SkCanvas, Surface, Paint, Path, PathOp, Image, ImageInfo, Contains,
+  Rect, Point, IPoint, Size, ISize, Color, Color4f, ColorType, ColorSpace, Data,
+  PaintStyle, BlendMode, AlphaType, ClipOp, PictureRecorder, Picture, Drawable,
+  image::CachingHint, images, image_filters, dash_path_effect, path_1d_path_effect,
+  matrix::{ Matrix, TypeMask },
+  textlayout::{ParagraphStyle, TextStyle},
+  canvas::SrcRectConstraint::Strict,
+  path_utils::fill_path_with_paint,
+  font_style::{FontStyle, Weight, Width, Slant},
+  path::FillType,
+};
 
 pub mod api;
 pub mod page;
 
 use crate::FONT_LIBRARY;
 use crate::utils::*;
-use crate::typography::*;
+use crate::typography::{Typesetter, FontSpec, Baseline, Spacing, DecorationStyle};
 use crate::filter::{Filter, ImageFilter, FilterQuality};
 use crate::gradient::{CanvasGradient, BoxedCanvasGradient};
 use crate::pattern::{CanvasPattern, BoxedCanvasPattern};
@@ -69,10 +73,13 @@ pub struct State{
   font: String,
   font_variant: String,
   font_features: Vec<String>,
+  font_width: Width,
   char_style: TextStyle,
   graf_style: ParagraphStyle,
   text_baseline: Baseline,
-  text_tracking: i32,
+  letter_spacing: Spacing,
+  word_spacing: Spacing,
+  text_decoration: DecorationStyle,
   text_wrap: bool,
 }
 
@@ -115,20 +122,29 @@ impl Default for State {
       font: "10px sans-serif".to_string(),
       font_variant: "normal".to_string(),
       font_features:vec![],
+      font_width: Width::NORMAL,
       char_style,
       graf_style,
       text_baseline: Baseline::Alphabetic,
-      text_tracking: 0,
+      letter_spacing: Spacing::default(),
+      word_spacing: Spacing::default(),
+      text_decoration: DecorationStyle::default(),
       text_wrap: false
     }
   }
 }
 
 impl State{
-  pub fn typography(&self) -> (TextStyle, ParagraphStyle, Baseline, bool) {
+  pub fn typography(&self) -> (TextStyle, ParagraphStyle, DecorationStyle, Baseline, bool) {
     (
-      self.char_style.clone(),
+      {
+        let mut style = self.char_style.clone();
+        style.set_word_spacing(self.word_spacing.in_px(style.font_size()));
+        style.set_letter_spacing(self.letter_spacing.in_px(style.font_size()));
+        style
+      },
       self.graf_style.clone(),
+      self.text_decoration.clone(),
       self.text_baseline,
       self.text_wrap
     )
@@ -204,6 +220,16 @@ impl Context2D{
   pub fn render_to_canvas<F>(&self, paint:&Paint, f:F)
     where F:Fn(&SkCanvas, &Paint)
   {
+    let render_shadow = |canvas:&SkCanvas, paint:&Paint|{
+      if let Some(shadow_paint) = self.paint_for_shadow(paint){
+        canvas.save();
+        canvas.set_matrix(&Matrix::translate(self.state.shadow_offset).into());
+        canvas.concat(&self.state.matrix);
+        f(canvas, &shadow_paint);
+        canvas.restore();
+      }
+    };
+
     match self.state.global_composite_operation{
       BlendMode::SrcIn | BlendMode::SrcOut |
       BlendMode::DstIn | BlendMode::DstOut |
@@ -216,19 +242,11 @@ impl Context2D{
         layer_recorder.begin_recording(self.bounds, None);
         if let Some(layer) = layer_recorder.recording_canvas() {
           // draw the dropshadow (if applicable)
-          if let Some(shadow_paint) = self.paint_for_shadow(&layer_paint){
-            layer.save();
-            layer.set_matrix(&Matrix::translate(self.state.shadow_offset).into());
-            layer.concat(&self.state.matrix);
-            f(layer, &shadow_paint);
-            layer.restore();
-          }
-
+          render_shadow(layer, &layer_paint);
           // draw normally
           layer.set_matrix(&self.state.matrix.into());
           f(layer, &layer_paint);
         }
-
 
         // transfer the picture contents to the canvas in a single operation, applying the blend
         // mode to the whole canvas (regardless of the bounds of the text/path being drawn)
@@ -247,14 +265,8 @@ impl Context2D{
       },
       _ => {
         self.with_canvas(|canvas| {
-          if let Some(shadow_paint) = self.paint_for_shadow(paint){
-            canvas.save();
-            canvas.set_matrix(&Matrix::translate(self.state.shadow_offset).into());
-            canvas.concat(&self.state.matrix);
-            f(canvas, &shadow_paint);
-            canvas.restore();
-          }
-
+          // draw the dropshadow (if applicable)
+          render_shadow(canvas, paint);
           // draw with the normal paint
           f(canvas, paint);
         });
@@ -405,35 +417,33 @@ impl Context2D{
     }
   }
 
-  pub fn draw_picture(&mut self, picture:&Option<Picture>, src_rect:&Rect, dst_rect:&Rect){
+  pub fn draw_picture(&mut self, picture:&Picture, src_rect:&Rect, dst_rect:&Rect){
     let paint = self.paint_for_image();
-    let size = ISize::new(dst_rect.width() as i32, dst_rect.height() as i32);
     let mag = Point::new(dst_rect.width()/src_rect.width(), dst_rect.height()/src_rect.height());
     let mut matrix = Matrix::new_identity();
     matrix.pre_scale( (mag.x, mag.y), None )
-    .pre_translate((dst_rect.x()/mag.x - src_rect.x(), dst_rect.y()/mag.y - src_rect.y()));
+      .pre_translate((dst_rect.x()/mag.x - src_rect.x(), dst_rect.y()/mag.y - src_rect.y()));
 
-    if let Some(picture) = picture{
-      self.render_to_canvas(&paint, |canvas, paint| {
-        // only use paint if we need it for alpha, blend, shadow, or effect since otherwise
-        // the SVG exporter will omit the picture altogether
-        let paint = match (paint.as_blend_mode(), paint.alpha(), paint.image_filter()) {
-          (Some(BlendMode::SrcOver), 255, None) => None,
-          _ => Some(paint)
-        };
-        canvas.draw_picture(picture, Some(&matrix), paint);
-      });
-    }
+    self.render_to_canvas(&paint, |canvas, paint| {
+      // only use paint if we need it for alpha, blend, shadow, or effect since otherwise
+      // the SVG exporter will omit the picture altogether
+      let paint = match (paint.as_blend_mode(), paint.alpha(), paint.image_filter()) {
+        (Some(BlendMode::SrcOver), 255, None) => None,
+        _ => Some(paint)
+      };
+      canvas.save();
+      canvas.clip_rect(dst_rect, ClipOp::Intersect, true);
+      canvas.draw_picture(&picture, Some(&matrix), paint);
+      canvas.restore();
+    });
   }
 
-  pub fn draw_image(&mut self, img:&Option<Image>, src_rect:&Rect, dst_rect:&Rect){
+  pub fn draw_image(&mut self, image:&Image, src_rect:&Rect, dst_rect:&Rect){
     let paint = self.paint_for_image();
-    if let Some(image) = &img {
-      self.render_to_canvas(&paint, |canvas, paint| {
-        let sampling = self.state.image_filter.sampling();
-        canvas.draw_image_rect_with_sampling_options(image, Some((src_rect, Strict)), dst_rect, sampling, paint);
-      });
-    }
+    self.render_to_canvas(&paint, |canvas, paint| {
+      let sampling = self.state.image_filter.sampling();
+      canvas.draw_image_rect_with_sampling_options(image, Some((src_rect, Strict)), dst_rect, sampling, paint);
+    });
   }
 
   pub fn get_page(&self) -> Page {
@@ -480,22 +490,29 @@ impl Context2D{
     }
   }
 
-  pub fn set_font(&mut self, spec: FontSpec){
+  pub fn set_font(&mut self, mut spec: FontSpec){
     let mut library = FONT_LIBRARY.lock().unwrap();
-    if let Some(new_style) = library.update_style(&self.state.char_style, &spec){
+    if let Some(mut new_style) = library.update_style(&self.state.char_style, &spec){
       self.state.font = spec.canonical;
       self.state.font_variant = spec.variant.to_string();
+      self.state.font_width = spec.width;
       self.state.char_style = new_style;
     }
   }
 
   pub fn set_font_variant(&mut self, variant:&str, features:&[(String, i32)]){
-    let mut library = FONT_LIBRARY.lock().unwrap();
-    let new_style = library.update_features(&self.state.char_style, features);
+    for (feat, val) in features{
+      self.state.char_style.add_font_feature(feat, *val);
+    }
     self.state.font_variant = variant.to_string();
-    self.state.char_style = new_style;
   }
 
+  pub fn set_font_width(&mut self, width:Width){
+    let style = self.state.char_style.font_style();
+    let font_style =  FontStyle::new(style.weight(), width, style.slant());
+    self.state.char_style.set_font_style(font_style);
+    self.state.font_width = width;
+  }
 
   pub fn draw_text(&mut self, text: &str, x: f32, y: f32, width: Option<f32>, style:PaintStyle){
     let paint = self.paint_for_drawing(style);
@@ -511,8 +528,8 @@ impl Context2D{
     Typesetter::new(&self.state, text, width).metrics()
   }
 
-  pub fn outline_text(&self, text:&str) -> Option<Path>{
-    Typesetter::new(&self.state, text, None).path()
+  pub fn outline_text(&self, text:&str, width:Option<f32>) -> Path{
+    Typesetter::new(&self.state, text, width).path()
   }
 
   pub fn color_with_alpha(&self, src:&Color) -> Color{
@@ -536,7 +553,7 @@ impl Context2D{
             false => {
               let mut traced_path = Path::default();
               fill_path_with_paint(path, &paint, &mut traced_path, None, None);
-              traced_path      
+              traced_path
             }
           };
           path_1d_path_effect::new(
@@ -563,15 +580,33 @@ impl Context2D{
   }
 
   pub fn paint_for_shadow(&self, base_paint:&Paint) -> Option<Paint> {
-    let State {shadow_color, shadow_blur, shadow_offset, ..} = self.state;
+    let State {shadow_color, mut shadow_blur, shadow_offset, ..} = self.state;
     if shadow_color.a() == 0 || (shadow_blur == 0.0 && shadow_offset.is_zero()){
       return None
     }
 
-    let sigma_x = shadow_blur / (2.0 * self.state.matrix.scale_x());
-    let sigma_y = shadow_blur / (2.0 * self.state.matrix.scale_y());
+    // Per spec, sigma is exactly half the blur radius:
+    // https://www.w3.org/TR/css-backgrounds-3/#shadow-blur
+    shadow_blur *= 0.5;
+    let mut sigma = Point::new(shadow_blur, shadow_blur);
+    // Apply scaling from the current transform matrix to blur radius, if there is any of either.
+    if self.state.matrix.get_type().contains(TypeMask::SCALE) && !almost_zero(shadow_blur) {
+      // Decompose the matrix to just the scaling factors (matrix.scale_x/y() methods just return M11/M22 values)
+      if let Some(scale) = self.state.matrix.decompose_scale(None) {
+        if almost_zero(scale.width) {
+          sigma.x = 0.0;
+        } else {
+          sigma.x /= scale.width as f32;
+        }
+        if almost_zero(scale.height) {
+          sigma.y = 0.0;
+        } else {
+          sigma.y /= scale.height as f32;
+        }
+      }
+    }
     let mut paint = base_paint.clone();
-    paint.set_image_filter(image_filters::drop_shadow_only((0.0, 0.0), (sigma_x, sigma_y), shadow_color, None, None, None));
+    paint.set_image_filter(image_filters::drop_shadow_only((0.0, 0.0), (sigma.x, sigma.y), shadow_color, ColorSpace::new_srgb(), None, None));
     Some(paint)
   }
 

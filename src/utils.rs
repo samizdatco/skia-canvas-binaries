@@ -44,6 +44,10 @@ pub fn almost_equal(a: f32, b: f32) -> bool{
   (a-b).abs() < 0.00001
 }
 
+pub fn almost_zero(a: f32) -> bool{
+  a.abs() < 0.00001
+}
+
 pub fn to_degrees(radians: f32) -> f32{
   radians / PI * 180.0
 }
@@ -74,6 +78,30 @@ pub fn check_argc(cx: &mut FunctionContext, argc:i32) -> NeonResult<()>{
 //   let sym = symbol_ctor.call(cx, global, vec![symbol_label])?;
 //   Ok(sym)
 // }
+
+//
+// plain objects
+//
+
+pub fn opt_object_arg<'a>(cx: &mut FunctionContext<'a>, idx:usize) -> Option<Handle<'a, JsObject>>{
+  match cx.argument_opt(idx as i32) {
+    Some(arg) => match arg.downcast::<JsObject, _>(cx) {
+      Ok(obj) => Some(obj),
+      Err(_e) => None
+    },
+    None => None
+  }
+}
+
+
+
+pub fn opt_object_for_key<'a>(cx: &mut FunctionContext<'a>, obj: &Handle<'a, JsObject>, attr:&str) -> Option<Handle<'a, JsObject>>{
+  let key = cx.string(attr);
+  if let Some(val) = obj.get::<JsValue, _, _>(cx, key).ok(){
+    return val.downcast::<JsObject, _>(cx).ok()
+  }
+  None
+}
 
 //
 // strings
@@ -224,7 +252,7 @@ pub fn opt_float_arg(cx: &mut FunctionContext, idx: usize) -> Option<f32>{
   None
 }
 
-pub fn float_arg_or(cx: &mut FunctionContext, idx: usize, default:f64) -> f32{
+pub fn float_arg_or(cx: &mut FunctionContext, idx: usize, default:f32) -> f32{
   match opt_float_arg(cx, idx){
     Some(v) => v,
     None => default as f32
@@ -691,38 +719,3 @@ pub fn from_engine(engine:RenderingEngine) -> String{
 //                             Exclusion, Hue, Saturation, Color, Luminosity, or Modulate")
 //   }
 // }
-
-
-//
-// Image Rects
-//
-
-pub fn fit_bounds(width: f32, height: f32, src: Rect, dst: Rect) -> (Rect, Rect) {
-  let mut src = src;
-  let mut dst = dst;
-  let scale_x = dst.width() / src.width();
-  let scale_y = dst.height() / src.height();
-
-  if src.left < 0.0 {
-    dst.left += -src.left * scale_x;
-    src.left = 0.0;
-  }
-
-  if src.top < 0.0 {
-    dst.top += -src.top * scale_y;
-    src.top = 0.0;
-  }
-
-  if src.right > width{
-    dst.right -= (src.right - width) * scale_x;
-    src.right = width;
-  }
-
-  if src.bottom > height{
-    dst.bottom -= (src.bottom - height) * scale_y;
-    src.bottom = height;
-  }
-
-  (src, dst)
-}
-

@@ -1,11 +1,9 @@
 /// <reference lib="dom"/>
 /// <reference types="node" />
 
-export class DOMMatrix extends globalThis.DOMMatrix {}
 export class DOMPoint extends globalThis.DOMPoint {}
 export class DOMRect extends globalThis.DOMRect {}
 export class CanvasGradient extends globalThis.CanvasGradient {}
-export class CanvasPattern extends globalThis.CanvasPattern {}
 export class CanvasTexture {}
 
 //
@@ -14,9 +12,79 @@ export class CanvasTexture {}
 
 export function loadImage(src: string | Buffer): Promise<Image>
 export class ImageData extends globalThis.ImageData {}
-export class Image extends globalThis.Image {
+export class Image {
+  constructor(width?: number, height?: number)
   get src(): string
   set src(src: string | Buffer)
+  get width(): number
+  get height(): number
+  onload: ((this: Image, image: Image) => any) | null;
+  onerror: ((this: Image, error: Error) => any) | null;
+  complete: boolean
+  decode(): Promise<Image>
+}
+
+//
+// DOMMatrix
+//
+
+interface DOMMatrix {
+  a: number, b: number, c: number, d: number, e: number, f: number,
+  m11: number, m12: number, m13: number, m14: number,
+  m21: number, m22: number, m23: number, m24: number,
+  m31: number, m32: number, m33: number, m34: number,
+  m41: number, m42: number, m43: number, m44: number,
+  
+  flipX(): DOMMatrix
+  flipY(): DOMMatrix
+  inverse(): DOMMatrix
+  invertSelf(): DOMMatrix
+  
+  multiply(other?: DOMMatrixInit): DOMMatrix
+  multiplySelf(other?: DOMMatrixInit): DOMMatrix
+  preMultiplySelf(other?: DOMMatrixInit): DOMMatrix
+  
+  rotate(rotX?: number, rotY?: number, rotZ?: number): DOMMatrix
+  rotateSelf(rotX?: number, rotY?: number, rotZ?: number): DOMMatrix
+  rotateAxisAngle(x?: number, y?: number, z?: number, angle?: number): DOMMatrix
+  rotateAxisAngleSelf(x?: number, y?: number, z?: number, angle?: number): DOMMatrix
+  rotateFromVector(x?: number, y?: number): DOMMatrix
+  rotateFromVectorSelf(x?: number, y?: number): DOMMatrix
+  
+  scale(scaleX?: number, scaleY?: number, scaleZ?: number, originX?: number, originY?: number, originZ?: number): DOMMatrix
+  scaleSelf(scaleX?: number, scaleY?: number, scaleZ?: number, originX?: number, originY?: number, originZ?: number): DOMMatrix
+  scale3d(scale?: number, originX?: number, originY?: number, originZ?: number): DOMMatrix
+  scale3dSelf(scale?: number, originX?: number, originY?: number, originZ?: number): DOMMatrix
+  
+  skew(sx?: number, sy?:number): DOMMatrix
+  skewSelf(sx?: number, sy?:number): DOMMatrix
+  skewX(sx?: number): DOMMatrix
+  skewXSelf(sx?: number): DOMMatrix
+  skewY(sy?: number): DOMMatrix
+  skewYSelf(sy?: number): DOMMatrix
+  
+  translate(tx?: number, ty?: number, tz?: number): DOMMatrix
+  translateSelf(tx?: number, ty?: number, tz?: number): DOMMatrix
+  
+  setMatrixValue(transformList: string): DOMMatrix
+  transformPoint(point?: DOMPointInit): DOMPoint
+
+  toFloat32Array(): Float32Array
+  toFloat64Array(): Float64Array
+  toJSON(): any
+  toString(): string
+  clone(): DOMMatrix
+}
+
+type FixedLenArray<T, L extends number> = T[] & { length: L };
+type Matrix = string | DOMMatrix | { a: number, b: number, c: number, d: number, e: number, f: number } | FixedLenArray<number, 6> | FixedLenArray<number, 16>
+
+declare var DOMMatrix: {
+  prototype: DOMMatrix
+  new(init?: Matrix): DOMMatrix
+  fromFloat32Array(array32: Float32Array): DOMMatrix
+  fromFloat64Array(array64: Float64Array): DOMMatrix
+  fromMatrix(other?: DOMMatrixInit): DOMMatrix
 }
 
 //
@@ -52,11 +120,6 @@ export class Canvas {
   constructor(width?: number, height?: number)
   static contexts: WeakMap<Canvas, readonly CanvasRenderingContext2D[]>
 
-  /**
-   * @deprecated Use the saveAsSync, toBufferSync, and toDataURLSync methods
-   * instead of setting the async property to false
-   */
-  async: boolean
   width: number
   height: number
 
@@ -80,6 +143,15 @@ export class Canvas {
   get jpg(): Promise<Buffer>
   get png(): Promise<Buffer>
   get webp(): Promise<Buffer>
+}
+
+//
+// CanvasPattern
+//
+
+export class CanvasPattern{
+  setTransform(transform: Matrix): void;
+  setTransform(a: number, b: number, c: number, d: number, e: number, f: number): void
 }
 
 //
@@ -131,26 +203,42 @@ type QuadOrRect = [x1:number, y1:number, x2:number, y2:number, x3:number, y3:num
 
 type CornerRadius = number | DOMPoint
 
+interface CanvasTransform extends Omit<globalThis.CanvasTransform, "transform" | "setTransform">{}
+
+interface CanvasTextDrawingStyles extends Omit<globalThis.CanvasTextDrawingStyles, "fontKerning" | "fontVariantCaps" | "textRendering">{}
+
+type FontVariantSetting = "normal" |
+/* alternates */ "historical-forms" |
+/* caps */ "small-caps" | "all-small-caps" | "petite-caps" | "all-petite-caps" | "unicase" | "titling-caps" |
+/* numeric */ "lining-nums" | "oldstyle-nums" | "proportional-nums" | "tabular-nums" | "diagonal-fractions" | "stacked-fractions" | "ordinal" | "slashed-zero" |
+/* ligatures */ "common-ligatures" | "no-common-ligatures" | "discretionary-ligatures" | "no-discretionary-ligatures" | "historical-ligatures" | "no-historical-ligatures" | "contextual" | "no-contextual" |
+/* east-asian */ "jis78" | "jis83" | "jis90" | "jis04" | "simplified" | "traditional" | "full-width" | "proportional-width" | "ruby" |
+/* position */ "super" | "sub";
+
 export interface CanvasRenderingContext2D extends CanvasCompositing, CanvasDrawImage, CanvasDrawPath, CanvasFillStrokeStyles, CanvasFilters, CanvasImageData, CanvasImageSmoothing, CanvasPath, CanvasPathDrawingStyles, CanvasRect, CanvasShadowStyles, CanvasState, CanvasText, CanvasTextDrawingStyles, CanvasTransform, CanvasUserInterface {
-  readonly canvas: Canvas;
-  fontVariant: string;
-  textTracking: number;
-  textWrap: boolean;
-  lineDashMarker: Path2D | null;
-  lineDashFit: "move" | "turn" | "follow";
+  readonly canvas: Canvas
+  fontVariant: FontVariantSetting
+  textWrap: boolean
+  textDecoration: string
+  lineDashMarker: Path2D | null
+  lineDashFit: "move" | "turn" | "follow"
+
+  setTransform(transform?: Matrix): void
+  setTransform(a: number, b: number, c: number, d: number, e: number, f: number): void
+
+  transform(transform: Matrix): void
+  transform(a: number, b: number, c: number, d: number, e: number, f: number): void
 
   get currentTransform(): DOMMatrix
-  set currentTransform(matrix: DOMMatrix)
+  set currentTransform(matrix: Matrix)
   createProjection(quad: QuadOrRect, basis?: QuadOrRect): DOMMatrix
 
   conicCurveTo(cpx: number, cpy: number, x: number, y: number, weight: number): void
   roundRect(x: number, y: number, width: number, height: number, radii: number | CornerRadius[]): void
   // getContextAttributes(): CanvasRenderingContext2DSettings;
 
-  fillText(text: string, x: number, y:number, maxWidth?: number): void
-  strokeText(text: string, x: number, y:number, maxWidth?: number): void
   measureText(text: string, maxWidth?: number): TextMetrics
-  outlineText(text: string): Path2D
+  outlineText(text: string, maxWidth?: number): Path2D
 
   reset(): void
 }
@@ -198,7 +286,8 @@ export class Path2D extends globalThis.Path2D {
   points(step?: number): readonly [x: number, y: number][]
   round(radius: number): Path2D
   simplify(rule?: "nonzero" | "evenodd"): Path2D
-  transform(...args: [matrix: DOMMatrix] | [a: number, b: number, c: number, d: number, e: number, f: number]): Path2D;
+  transform(transform: Matrix): Path2D;
+  transform(a: number, b: number, c: number, d: number, e: number, f: number): Path2D;
   trim(start: number, end: number, inverted?: boolean): Path2D;
   trim(start: number, inverted?: boolean): Path2D;
 
