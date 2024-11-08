@@ -1,11 +1,21 @@
 <a href="https://skia-canvas.org">
 
 <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="docs/assets/hero-dark@2x.png">
-    <img alt="Skia Canvas" src="docs/assets/hero@2x.png">
+  <source media="(prefers-color-scheme: dark)" srcset="docs/assets/hero-dark@2x.png">
+  <img alt="Skia Canvas" src="docs/assets/hero@2x.png">
 </picture>
 
 </a>
+
+---
+
+<div align="center">
+  <a href="http://skia-canvas.org/getting-started">Getting Started</a> <span>&nbsp;&nbsp;•&nbsp;&nbsp;</span>
+  <a href="http://skia-canvas.org/api">Documentation</a> <span>&nbsp;&nbsp;•&nbsp;&nbsp;</span>
+  <a href="http://skia-canvas.org/releases">Release Notes</a>
+</div>
+
+---
 
 Skia Canvas is a browser-less implementation of the HTML Canvas drawing API for Node.js. It is based on Google’s [Skia](https://skia.org) graphics engine and, accordingly, produces very similar results to Chrome’s `<canvas>` element. The library is well suited for use on desktop machines where you can render hardware-accelerated graphics to a window and on the server where it can output a variety of image formats.
 
@@ -24,7 +34,6 @@ In particular, Skia Canvas:
   - can fill shapes with vector-based [Textures][createTexture()] in addition to bitmap-based [Patterns][createPattern()] and supports line-drawing with custom [markers][lineDashMarker]
   - supports the full set of [CSS filter][filter] image processing operators
   - offers rich typographic control including:
-
     - multi-line, [word-wrapped](#textwrap) text
     - line-by-line [text metrics](#measuretextstr-width)
     - small-caps, ligatures, and other opentype features accessible using standard [font-variant](#fontvariant) syntax

@@ -49,7 +49,7 @@ impl VulkanEngine {
                                 "device": "CPU-based renderer (Fallback)",
                                 "error": msg,
                             })
-                        );                        
+                        );
                     }
                 }
             }
@@ -80,6 +80,30 @@ impl VulkanEngine {
         )
         .or(Err("Could not create Vulkan instance"))?;
 
+
+        let devices = instance
+            .enumerate_physical_devices()
+            .or(Err("Vulkan: No physical devices found"))?;
+
+        for device in devices{
+            let api = device.api_version();
+            let props = device.properties();
+            let device_name = props.device_name.clone();
+            let device_type = props.device_type;
+            let driver_id = props.driver_id;
+            let driver_info = props.driver_info.clone();
+
+            println!("Vulkan version: {}", api);
+            println!("Device: {} ({:?})", device_name, device_type);
+            println!("Driver: {:?} {:?}", driver_id, driver_info);
+            println!("Queues:");
+            let queue_props = device.queue_family_properties();
+            for (i, queue) in queue_props.iter().enumerate(){
+                let flags = format!("{:?}", queue.queue_flags);
+                println!("- {}: {}", i, flags);
+            }
+        }
+
         let (physical_device, queue_family_index) = instance
             .enumerate_physical_devices()
             .or(Err("Vulkan: No physical devices found"))?
@@ -109,13 +133,12 @@ impl VulkanEngine {
 
         Self::set_status(json!({
             "renderer": mode,
-            "device": gpu_type.map(|t| format!("{} GPU ({})", 
+            "device": gpu_type.map(|t| format!("{} GPU ({})",
                 t, physical_device.properties().device_name)
             ),
             "api": "Vulkan",
-            "error": Value::Null,
         }));
-   
+
         let (device, mut queues) = Device::new(
             physical_device.clone(),
             DeviceCreateInfo {
@@ -129,6 +152,17 @@ impl VulkanEngine {
         .or(Err("Failed to create Vulkan device"))?;
 
         let queue = queues.next().ok_or("Failed to create Vulkan graphics queue")?;
+
+        println!("chosen queue:");
+        dbg!(&queue);
+
+        if queues.len() > 0{
+            println!("other queues:");
+            for queue in queues{
+                dbg!(&queue);
+            }
+        }
+
 
         let context = {
             let get_proc = |of| unsafe {
@@ -178,7 +212,7 @@ impl VulkanEngine {
     pub fn surface(image_info: &ImageInfo) -> Option<Surface> {
         Self::init();
         VK_CONTEXT.with_borrow_mut(|cell| match cell {
-            Some(engine) => 
+            Some(engine) =>
                 surfaces::render_target(
                     &mut engine.context,
                     Budgeted::Yes,
