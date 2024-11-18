@@ -1,14 +1,52 @@
 FROM node:buster-slim
 
+ENV PATH="/usr/local/bin:$PATH" \
+    SKIA_NINJA_COMMAND="/usr/bin/ninja"
+
+# basics
 RUN apt-get update && \
     apt-get install -y -q \
-    python2 python3 perl git clang lldb lld \
-    build-essential software-properties-common \
-    libssl-dev libfontconfig-dev \
-    ninja-build
+        perl build-essential software-properties-common \
+        libssl-dev libfontconfig-dev
 
-RUN add-apt-repository "deb http://deb.debian.org/debian buster-backports main" && \
+# upgrade curl and add deps for building git & skia
+RUN add-apt-repository "deb http://archive.debian.org/debian buster-backports main" && \
     apt-get update && apt-get install -t buster-backports -y -q \
-    curl
+        curl wget libghc-zlib-dev libcurl4-gnutls-dev gettext ninja-build
 
-ENV SKIA_NINJA_COMMAND="/usr/bin/ninja"
+# upgrade git to 2.47
+ARG GIT_VERSION=2.47.0
+ARG GIT_URL=https://github.com/git/git/archive/refs/tags/v$GIT_VERSION.tar.gz
+RUN curl -sL $GIT_URL | tar xz -C /opt && \
+    cd /opt/git-$GIT_VERSION && \
+    make && make prefix=/usr/local install
+
+# downgrade to the libcurl version that doesn't make git throw HTTP2 errors:
+# https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=987187
+RUN apt-get -t buster reinstall -y --allow-downgrades libcurl3-gnutls=7.64.0-4+deb10u2 && \
+    apt-mark hold libcurl3-gnutls
+
+
+
+# ------------- workflow dependencies -------------
+
+
+
+# upgrade clang to v18
+# MAYBE REPLACE WITH: https://github.com/KyleMayes/install-llvm-action
+ARG LLVM_VERSION=18
+COPY install-llvm.sh .
+RUN bash install-llvm.sh $LLVM_VERSION
+
+# install gh
+# MAYBE REPLACE WITH: https://github.com/dev-hanz-ops/install-gh-cli-action
+ARG GH_VERSION=2.55.0
+ARG GH_URL=https://github.com/cli/cli/releases/download/v$GH_VERSION/gh_${GH_VERSION}_linux_amd64.tar.gz
+RUN curl -sL $GH_URL | tar xz --strip-components=2 -C /usr/local/bin
+
+# install rust
+# REPLACE WITH: dtolnay/rust-toolchain@stable
+RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --profile minimal
+
+# WORKDIR /opt/skia-canvas
+WORKDIR /code
