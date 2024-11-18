@@ -5,9 +5,10 @@
 use std::cell::RefCell;
 use neon::{prelude::*, types::buffer::TypedArray};
 use skia_safe::{
-  Image as SkImage, ImageInfo, ISize, ColorType, AlphaType, Data, Size,
-  FontMgr, Picture, PictureRecorder, Rect, image::images, svg,
-  wrapper::PointerWrapper // for SVG Dom access, temporary until next skia-safe update
+  Image as SkImage, ImageInfo, ISize, ColorType, ColorSpace, AlphaType, Data, Size,
+  FontMgr, Picture, PictureRecorder, Rect, image::images,
+  svg::{self, Length, LengthUnit},
+  // wrapper::PointerWrapper // for SVG Dom access, temporary until next skia-safe update
 };
 use crate::utils::*;
 use crate::context::Context2D;
@@ -31,7 +32,8 @@ impl Default for Image{
 pub enum Content{
   Bitmap(SkImage),
   Vector(Picture),
-  Loading
+  Loading,
+  Broken,
 }
 
 impl Default for Content{
@@ -58,6 +60,13 @@ impl Content{
     }.unwrap_or_default()
   }
 
+  pub fn from_image_data(image_data:ImageData) -> Self{
+    let info = image_data.image_info();
+    images::raster_from_data(&info, &image_data.buffer, info.min_row_bytes())
+      .map(|image| Content::Bitmap(image) )
+      .unwrap_or_default()
+  }
+
   pub fn size(&self) -> Size {
     match &self {
       Content::Bitmap(img) => img.dimensions().into(),
@@ -66,9 +75,16 @@ impl Content{
     }
   }
 
-  pub fn is_drawable(&self) -> bool {
+  pub fn is_complete(&self) -> bool {
     match &self{
       Content::Loading => false,
+      _ => true
+    }
+  }
+
+  pub fn is_drawable(&self) -> bool {
+    match &self{
+      Content::Loading | Content::Broken => false,
       _ => true
     }
   }
@@ -105,6 +121,35 @@ impl Content{
   }
 }
 
+
+#[derive(Debug)]
+pub struct ImageData{
+  pub width: f32,
+  pub height: f32,
+  pub buffer: Data,
+  color_type: ColorType,
+  color_space: ColorSpace,
+}
+
+impl ImageData{
+  pub fn new(buffer:Data, width:f32, height:f32, color_type:String, color_space:String) -> Self{
+    let color_type = to_color_type(&color_type);
+    let color_space = to_color_space(&color_space);
+    Self{ buffer, width, height, color_type, color_space }
+  }
+
+  pub fn image_info(&self) -> ImageInfo{
+    ImageInfo::new(
+      (self.width as _, self.height as _),
+      self.color_type,
+      AlphaType::Unpremul,
+      self.color_space.clone()
+    )
+  }
+}
+
+
+
 //
 // -- Javascript Methods --------------------------------------------------------------------------
 //
@@ -133,56 +178,48 @@ pub fn set_src(mut cx: FunctionContext) -> JsResult<JsUndefined> {
 pub fn set_data(mut cx: FunctionContext) -> JsResult<JsBoolean> {
   let this = cx.argument::<BoxedImage>(0)?;
   let mut this = this.borrow_mut();
-
   let buffer = cx.argument::<JsBuffer>(1)?;
   let data = Data::new_copy(buffer.as_slice(&cx));
 
-  // First try decoding the data as a bitmap
-  // If it's not recognized, try parsing as SVG and create a picture if it is valid
+  // First try decoding the data as a bitmap, if invalid try parsing as SVG
   if let Some(image) = images::deferred_from_encoded_data(&data, None){
     this.content = Content::Bitmap(image);
   }else if let Ok(mut dom) = svg::Dom::from_bytes(&data, FONT_LIBRARY.lock().unwrap().font_mgr()){
-    // Get the intrinsic size of the `svg` root element as specified in the width/height attributes, if any.
-    // So far skia-safe doesn't provide direct access to the needed methods, so we have to go direct to the source.
-    let i_size = unsafe { *dom.inner().containerSize() };  // skia_bindings::SkSize
-    // let i_size = dom.inner().fContainerSize;  // "safe" but this is using a private member of the C++ class (somehow... skia-"safe" :-P )
-    // TODO: Switch to these once available in skia-safe 0.79+
-    // let mut root = dom.root();
-    // let i_size = root.intrinsic_size();
+    let mut root = dom.root();
 
-    // Set a flag to indicate that the image doesn't have its own intrinsic size.
-    // This may be used at drawing time if user doesn't specify a size in `drawImage()`,
-    // in which case the the canvas' size will be used as the image size.
-    // This is a "complication" to match Chrome's behavior... one could argue that it should
-    // just be drawn at the default size (set below). Which is what FF does (though that has its own anomalies).
-    let mut bounds = Rect::from_wh(i_size.fWidth, i_size.fHeight);
-    this.autosized = bounds.is_empty();
+    let mut size = root.intrinsic_size();
+    if size.is_empty(){
+      // flag that image lacks an intrinsic size so it will be drawn to match the canvas size
+      // if dimensions aren't provided in the drawImage() call
+      this.autosized = true;
 
-    // Check if width/height are valid attribute values in the root `<svg>` element.
-    // If w/h aren't specified in an SVG (which is not uncommon), both Chrome and FF will:
-    //  - If only one dimension is missing then use the same size for both;
-    //  - If both are missing then assign a default of 150 (which seems arbitrary but I guess as good as any);
-    // `Dom::containerSize()` will return zero for both width and height if _either_ attribute is missing from `<svg>`.
-    // This seems a bit suspicious (as in may change in future?), so in the interest of paranoia let's check them individually.
-    // TODO: See if we can get actual width/height attribute values from DOM with skia-safe 0.79+
-    (bounds.right, bounds.bottom) = match (bounds.width(), bounds.height()){
-      (0.0, 0.0) => (150.0, 150.0),
-      (width, 0.0) => (width, width),
-      (0.0, height) => (height, height),
-      (width, height) => (width, height)
+      // If width or height attributes aren't defined on the root `<svg>` element, they will be reported as "100%".
+      // If only one is defined, use it for both dimensions, and if both are missing use the aspect ratio to scale the
+      // width vs a fixed height of 150 (i.e., Chrome's behavior)
+      let Length{ value:width, unit:w_unit } = root.width();
+      let Length{ value:height, unit:h_unit } = root.height();
+      size = match ((width, w_unit), (height, h_unit)){
+        // NB: only unitless numeric lengths are currently being handled; values in em, cm, in, etc. are ignored,
+        // but perhaps they should be converted to px?
+        ((100.0, LengthUnit::Percentage), (height, LengthUnit::Number)) => (*height, *height).into(),
+        ((width, LengthUnit::Number),     (100.0,  LengthUnit::Percentage)) => (*width, *width).into(),
+        _ => {
+          let aspect = root.view_box().map(|vb| vb.width()/vb.height()).unwrap_or(1.0);
+          (150.0 * aspect, 150.0).into()
+        }
+      };
     };
-    dom.set_container_size(bounds.size());
 
-    // Save the image as a Picture so it can be scaled properly later.
+    // Save the SVG contents as a Picture (to be drawn later)
+    let bounds = Rect::from_size(size);
     let mut compositor = PictureRecorder::new();
-    compositor.begin_recording(bounds, None);
-    if let Some(canvas) = compositor.recording_canvas() {
-      dom.render(canvas);
-    }
-
+    dom.set_container_size(bounds.size());
+    dom.render(compositor.begin_recording(bounds, None));
     if let Some(picture) = compositor.finish_recording_as_picture(Some(&bounds)){
       this.content = Content::Vector(picture);
     }
+  }else{
+    this.content = Content::Broken
   }
 
   Ok(cx.boolean(this.content.is_drawable()))
@@ -203,5 +240,25 @@ pub fn get_height(mut cx: FunctionContext) -> JsResult<JsValue> {
 pub fn get_complete(mut cx: FunctionContext) -> JsResult<JsBoolean> {
   let this = cx.argument::<BoxedImage>(0)?;
   let this = this.borrow();
-  Ok(cx.boolean(this.content.is_drawable()))
+  Ok(cx.boolean(this.content.is_complete()))
+}
+
+pub fn pixels(mut cx: FunctionContext) -> JsResult<JsValue> {
+  let this = cx.argument::<BoxedImage>(0)?;
+  let mut this = this.borrow_mut();
+  let (color_type, color_space) = image_data_settings_arg(&mut cx, 1);
+
+  let info = ImageInfo::new(this.content.size().to_floor(), color_type, AlphaType::Unpremul, color_space);
+  let mut pixels = cx.buffer(info.bytes_per_pixel() * (info.width() * info.height()) as usize)?;
+
+  match &this.content{
+    Content::Bitmap(image) => {
+      match image.read_pixels(&info, pixels.as_mut_slice(&mut cx), info.min_row_bytes(), (0,0), skia_safe::image::CachingHint::Allow){
+        true => Ok(pixels.upcast()),
+        false => Ok(cx.undefined().upcast())
+      }
+
+    }
+    _ => Ok(cx.undefined().upcast())
+  }
 }

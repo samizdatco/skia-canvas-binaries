@@ -27,6 +27,13 @@ pub static FONT_LIBRARY: Lazy<Mutex<FontLibrary>> = Lazy::new(FontLibrary::share
 #[neon::main]
 fn main(mut cx: ModuleContext) -> NeonResult<()> {
 
+  // initialize thread pool w/ non-default size if requested
+  if let Ok(value) = std::env::var("SKIA_CANVAS_THREADS"){
+    if let Ok(num) = value.parse::<usize>(){
+      rayon::ThreadPoolBuilder::new().num_threads(num).build_global().unwrap();
+    }
+  }
+
   // -- Image -------------------------------------------------------------------------------------
 
   cx.export_function("Image_new", image::new)?;
@@ -36,6 +43,7 @@ fn main(mut cx: ModuleContext) -> NeonResult<()> {
   cx.export_function("Image_get_width", image::get_width)?;
   cx.export_function("Image_get_height", image::get_height)?;
   cx.export_function("Image_get_complete", image::get_complete)?;
+  cx.export_function("Image_pixels", image::pixels)?;
 
   // -- Path2D ------------------------------------------------------------------------------------
 
@@ -80,6 +88,7 @@ fn main(mut cx: ModuleContext) -> NeonResult<()> {
   // -- CanvasPattern -----------------------------------------------------------------------------
 
   cx.export_function("CanvasPattern_from_image", pattern::from_image)?;
+  cx.export_function("CanvasPattern_from_image_data", pattern::from_image_data)?;
   cx.export_function("CanvasPattern_from_canvas", pattern::from_canvas)?;
   cx.export_function("CanvasPattern_setTransform", pattern::setTransform)?;
   cx.export_function("CanvasPattern_repr", pattern::repr)?;
@@ -110,8 +119,6 @@ fn main(mut cx: ModuleContext) -> NeonResult<()> {
   cx.export_function("Canvas_get_height", canvas::get_height)?;
   cx.export_function("Canvas_set_height", canvas::set_height)?;
 
-  cx.export_function("Canvas_get_async", canvas::get_async)?;
-  cx.export_function("Canvas_set_async", canvas::set_async)?;
   cx.export_function("Canvas_save", canvas::save)?;
   cx.export_function("Canvas_saveSync", canvas::saveSync)?;
   cx.export_function("Canvas_toBuffer", canvas::toBuffer)?;

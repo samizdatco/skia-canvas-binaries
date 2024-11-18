@@ -10,9 +10,12 @@ jobs:
       fail-fast: false
       matrix:
         os:
-          # - macos-latest
-          # - windows-latest
+          - macos-latest
+          - windows-latest
           - ubuntu-latest
+        node:
+          - 16
+          - 22
 
     steps:
     - name: Checkout repository
@@ -21,27 +24,27 @@ jobs:
     - name: Use Node.js ${{ matrix.node-version }}
       uses: actions/setup-node@v4
       with:
-        node-version: 22
+        node-version: ${{ matrix.node-version }}
 
     - name: Use Rust
       uses: dtolnay/rust-toolchain@stable
       with:
         toolchain: stable
 
-    # temporarily necessary while skia_bindings@0.78.2 is looking for the now-removed `pipes` module
-    # can hopefully be removed at the next release…
+    - name: Use ninja
+      uses: seanmiddleditch/gha-setup-ninja@master
+
+    # temporarily necessary while skia_bindings 0.78.2 is looking for the `pipes` module which
+    # was renamed in Python 3.13 (can hopefully be removed at the next release…)
     - name: Downgrade Python (depot_tools workaround)
       uses: actions/setup-python@v5
       with:
         python-version: '3.12'
 
     - name: Build module
-      shell: bash
       run: make optimized
 
     - name: Run tests
-      run: node testvulkan.js
-      # run: |
-      #   npm test --verbose
-      #   ls -l lib/v6/index.node
+      run: |
+        npm test --verbose
 

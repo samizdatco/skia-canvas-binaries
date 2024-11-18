@@ -68,11 +68,11 @@ impl Path2D{
       // of note, can't use addArc or addOval because they close the arc, which
       // the spec says not to do (unless the user explicitly calls closePath).
       // This throws off points being in/out of the arc.
-  
+
       // rounding degrees to 4 decimals eliminates ambiguity from f32 imprecision dealing with radians
       let mut sweep_deg = (to_degrees(end_angle - start_angle) * 10000.0).round() / 10000.0;
       let mut start_deg = (to_degrees(start_angle) * 10000.0).round() / 10000.0;
-  
+
       // draw 360° ellipses in two 180° segments; trying to draw the full ellipse at once draws nothing.
       if sweep_deg >= 360.0 - EPSILON  {
         self.path.arc_to(oval, start_deg, 180.0, false);
@@ -505,7 +505,7 @@ pub fn edges(mut cx: FunctionContext) -> JsResult<JsArray> {
 
     if let Some(edge) = from_verb(verb){
       let cmd = cx.string(edge);
-      let segment = JsArray::new(&mut cx, 1 + points.len() as u32);
+      let segment = JsArray::new(&mut cx, 1 + points.len());
       segment.set(&mut cx, 0, cmd)?;
 
       let at_point = if points.len()>1{ 1 }else{ 0 };
@@ -526,7 +526,7 @@ pub fn edges(mut cx: FunctionContext) -> JsResult<JsArray> {
     }
   }
 
-  let verbs = JsArray::new(&mut cx, edges.len() as u32);
+  let verbs = JsArray::new(&mut cx, edges.len());
   for (i, segment) in edges.iter().enumerate(){
     verbs.set(&mut cx, i as u32, *segment)?;
   }

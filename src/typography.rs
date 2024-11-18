@@ -73,6 +73,12 @@ impl Typesetter{
       &self.text_decoration.for_layout(&char_style, paint.color())
     );
 
+    // prevent SkParagraph from faking of the font style if the match isn't the requested weight/slant
+    let fams:Vec<String> = char_style.font_families().iter().map(|s| s.to_string()).collect();
+    if let Some(matched) = self.typefaces.clone().find_typefaces(&fams, char_style.font_style()).first(){
+      char_style.set_font_style(matched.font_style());
+    }
+
     let mut paragraph_builder = ParagraphBuilder::new(&self.graf_style, &self.typefaces);
     paragraph_builder.push_style(&char_style);
     paragraph_builder.add_text(&self.text);
@@ -174,7 +180,7 @@ impl FontSpec{
   }
 }
 
-pub fn font_arg(cx: &mut FunctionContext, idx: i32) -> NeonResult<Option<FontSpec>> {
+pub fn font_arg(cx: &mut FunctionContext, idx: usize) -> NeonResult<Option<FontSpec>> {
   let arg = cx.argument::<JsValue>(idx)?;
   if arg.is_a::<JsNull, _>(cx){ return Ok(None) }
 
@@ -337,7 +343,7 @@ pub fn get_alignment_factor(graf_style:&ParagraphStyle) -> f32 {
   }
 }
 
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, Debug)]
 pub enum Baseline{ Top, Hanging, Middle, Alphabetic, Ideographic, Bottom }
 
 pub fn to_text_baseline(mode_name:&str) -> Option<Baseline>{
@@ -445,6 +451,11 @@ pub fn decoration_arg(cx: &mut FunctionContext, idx: usize) -> NeonResult<Option
         }
     };
 
+    // if the setting is invalid, it should just be ignored
+    if css.is_empty() || color.is_none(){ return Ok(None) }
+
+    // As of skia_safe 0.78.2, `Gaps` mode is too buggy, with random breaks in places that don't have
+    // descenders. It would be nice to enable this in a future release once it stabilizes…
     let mode = TextDecorationMode::Through;
 
     let decoration = Decoration{ ty, style, mode, ..Decoration::default() };

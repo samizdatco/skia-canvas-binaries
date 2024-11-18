@@ -1,6 +1,7 @@
 .DS_Store
 _arc
 .vscode
+.nova
 .env
 node_modules
 native/artifacts.json

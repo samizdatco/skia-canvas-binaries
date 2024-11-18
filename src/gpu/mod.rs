@@ -22,20 +22,18 @@ struct Engine { }
 #[cfg(not(any(feature = "vulkan", feature = "metal")))]
 impl Engine {
     pub fn supported() -> bool { false }
-    pub fn surface(_: &ImageInfo) -> Option<Surface> { None }
+    pub fn with_surface<T, F>(_: &ImageInfo, _:Option<usize>, _:F)  -> Result<T, String>
+        where F:FnOnce(&mut Surface) -> Result<T, String>
+    {
+        Err("Compiled without GPU support".to_string())
+    }
     pub fn status() -> Value { serde_json::json!({
         "renderer": "CPU",
         "api": Value::Null,
         "device": "CPU-based renderer (compiled without GPU support)",
         "error": Value::Null,
     })}
-} 
-
-#[cfg(feature = "metal")]
-pub use crate::gpu::metal::autoreleasepool as runloop;
-#[cfg(not(feature = "metal"))]
-#[allow(dead_code)]
-pub fn runloop<T, F: FnOnce() -> T>(f: F) -> T { f() }
+}
 
 #[derive(Copy, Clone, Debug)]
 pub enum RenderingEngine{
@@ -58,10 +56,14 @@ impl RenderingEngine{
         }
     }
 
-    pub fn get_surface(&self, image_info: &ImageInfo) -> Option<Surface> {
+    pub fn with_surface<T,F>(&self, image_info: &ImageInfo, msaa:Option<usize>, f:F) -> Result<T, String>
+        where F:FnOnce(&mut Surface) -> Result<T, String>
+    {
         match self {
-            Self::GPU => Engine::surface(image_info),
+            Self::GPU => Engine::with_surface(image_info, msaa, f),
             Self::CPU => surfaces::raster(image_info, None, None)
+                .ok_or(format!("Could not allocate new {}×{} bitmap", image_info.width(), image_info.height()))
+                .and_then(|mut surface|f(&mut surface))
         }
     }
 
@@ -86,6 +88,6 @@ impl RenderingEngine{
                 }
                 Some(msg.join(": "))
             }
-        }   
+        }
     }
 }
