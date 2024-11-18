@@ -5,6 +5,11 @@ on:
 jobs:
   server:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+      attestations: write
+      id-token: write
     strategy:
       matrix:
         libc: [glibc, musl]
@@ -23,13 +28,20 @@ jobs:
       uses: docker/login-action@v3
       with:
         registry: ghcr.io
-        username: ${{ github.repository_owner }}
-        password: ${{ secrets.CR_PAT }}
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Extract metadata (tags, labels) for Docker
+      id: meta
+      uses: docker/metadata-action@v5
+      with:
+        images: ghcr.io/${{ github.repository }}-${{ matrix.libc }}
 
     - name: Build and push
       uses: docker/build-push-action@v6
       with:
-        tags: ghcr.io/${{ github.repository }}-${{ matrix.libc }}:latest
+        tags: ${{ steps.meta.outputs.tags }}
+        labels: ${{ steps.meta.outputs.labels }}
         context: arch/${{ matrix.libc }}
         platforms: linux/amd64,linux/arm64
         push: true
