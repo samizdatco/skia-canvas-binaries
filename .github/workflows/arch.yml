@@ -5,11 +5,6 @@ on:
 jobs:
   server:
     runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      packages: write
-      attestations: write
-      id-token: write
     strategy:
       matrix:
         libc: [glibc, musl]
@@ -29,7 +24,7 @@ jobs:
       with:
         registry: ghcr.io
         username: ${{ github.actor }}
-        password: ${{ secrets.GITHUB_TOKEN }}
+        password: ${{ secrets.CR_PAT }}
 
     - name: Extract metadata (tags, labels) for Docker
       id: meta
