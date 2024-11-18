@@ -3,6 +3,8 @@ FROM node:buster-slim
 ENV PATH="/usr/local/bin:$PATH" \
     SKIA_NINJA_COMMAND="/usr/bin/ninja"
 
+ARG DEBIAN_FRONTEND=noninteractive
+
 # basics
 RUN apt-get update && \
     apt-get install -y -q \
@@ -11,7 +13,7 @@ RUN apt-get update && \
 
 # upgrade curl and add deps for building git & skia
 RUN add-apt-repository "deb http://archive.debian.org/debian buster-backports main" && \
-    apt-get update && apt-get install -t buster-backports -y -q \
+    apt-get update && apt-get install -y -q -t buster-backports\
         curl wget libghc-zlib-dev libcurl4-gnutls-dev gettext ninja-build
 
 # upgrade git to 2.47
@@ -23,7 +25,7 @@ RUN curl -sL $GIT_URL | tar xz -C /opt && \
 
 # downgrade to the libcurl version that doesn't make git throw HTTP2 errors:
 # https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=987187
-RUN apt-get -t buster reinstall -y --allow-downgrades libcurl3-gnutls=7.64.0-4+deb10u2 && \
+RUN apt-get reinstall -y -q -t buster --allow-downgrades libcurl3-gnutls=7.64.0-4+deb10u2 && \
     apt-mark hold libcurl3-gnutls
 
 
