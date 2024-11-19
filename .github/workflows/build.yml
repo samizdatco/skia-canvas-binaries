@@ -7,46 +7,29 @@ on:
 
 jobs:
   linux-x86:
-    # runs-on: ubuntu-latest
-    runs-on: [self-hosted, linux, X64]
+    runs-on: ${{ matrix.arch }}
     strategy:
       fail-fast: false
       matrix:
-        # libc: [glibc, musl]
-        libc: [musl]
+        libc: [glibc, musl]
+        arch:
+        - ubuntu-latest
+        - [self-hosted, linux, X64]
+
     container:
       image: ${{ format('ghcr.io/{0}-{1}:latest', github.repository, matrix.libc) }}
       options: --user github
 
     steps:
-    # - name: Use Node.js
-    #   uses: actions/setup-node@v4
-    #   with:
-    #     node-version: 16
-    #     cache: npm
-
-    # - name: Install rust
-    #   run: |
-    #     curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --profile minimal
-    #     echo "$HOME/.cargo/bin" >> $GITHUB_PATH
-
     - name: Use Rust
       uses: dtolnay/rust-toolchain@stable
       with:
         toolchain: stable
 
-    # - name: Use Ninja
-    #   uses: seanmiddleditch/gha-setup-ninja@master
-
     - name: Use GitHub CLI
       uses: dev-hanz-ops/install-gh-cli-action@v0.2.0
       with:
         version: 2.60.1
-
-    # - name: Install LLVM and Clang
-    #   uses: KyleMayes/install-llvm-action@v2
-    #   with:
-    #     version: "18.1.8"
 
     - name: Checkout skia-canvas
       uses: actions/checkout@v4
