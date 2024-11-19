@@ -21,11 +21,11 @@ RUN apk add --update --no-cache --repository http://dl-cdn.alpinelinux.org/alpin
 
 # # install rust
 # REPLACE WITH: dtolnay/rust-toolchain@stable
-RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --profile minimal && \
-    mkdir -p /root/.cargo/registry && \
-    chown -R github /root/.cargo/registry
+# RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --profile minimal && \
+#     mkdir -p /root/.cargo/registry && \
+#     chown -R github /root/.cargo/registry
 
-ENV PATH="/root/.cargo/bin:${PATH}"
+# ENV PATH="/root/.cargo/bin:${PATH}"
 
 # # install gh
 # # MAYBE REPLACE WITH: https://github.com/dev-hanz-ops/install-gh-cli-action
@@ -35,4 +35,4 @@ ENV PATH="/root/.cargo/bin:${PATH}"
 
 # USER github
 
-WORKDIR /code
+# WORKDIR /code

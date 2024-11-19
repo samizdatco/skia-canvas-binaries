@@ -35,6 +35,8 @@ jobs:
         tags: ghcr.io/${{ github.repository }}-${{ matrix.libc }}:latest
         context: arch/${{ matrix.libc }}
         platforms: linux/amd64,linux/arm64
+        cache-from: type=gha
+        cache-to: type=gha,mode=max
         push: true
 
   # pi:
