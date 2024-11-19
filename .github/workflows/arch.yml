@@ -9,8 +9,7 @@ jobs:
     permissions: write-all
     strategy:
       matrix:
-        # libc: [glibc, musl]
-        libc: [musl]
+        libc: [glibc, musl]
 
     steps:
     - name: Checkout

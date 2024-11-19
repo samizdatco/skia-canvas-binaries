@@ -7,10 +7,12 @@ ENV RUSTFLAGS="-C target-feature=-crt-static" \
     SKIA_GN_COMMAND="/usr/bin/gn" \
     SKIA_NINJA_COMMAND="/usr/bin/ninja"
 
+# basics
 RUN apk update && apk add --update --no-cache \
     bash curl git python3 perl build-base g++ llvm clang \
     musl-dev openssl-dev fontconfig-dev fontconfig ttf-dejavu
 
+# add ninja & gn for building skia
 RUN apk add --update --no-cache --repository http://dl-cdn.alpinelinux.org/alpine/v3.16/community gn
 RUN apk add --update --no-cache --repository http://dl-cdn.alpinelinux.org/alpine/edge/community ninja-build
 
