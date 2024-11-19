@@ -59,6 +59,7 @@ jobs:
         unset GN_EXE
         unset SKIA_GN_COMMAND
         unset SKIA_NINJA_COMMAND
+        export
         make optimized
 
     - name: Package module
