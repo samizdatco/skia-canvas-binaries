@@ -20,6 +20,10 @@ jobs:
       uses: actions/setup-node@v4
       with:
         node-version: 16
+      run: |
+        id
+        ls -al /github/home/*
+        ls -al /github/*/.*
 
     - name: Use Rust
       uses: dtolnay/rust-toolchain@stable
@@ -31,6 +35,7 @@ jobs:
 
     - name: Use GitHub CLI
       uses: dev-hanz-ops/install-gh-cli-action@v0.2.0
+      version: 2.60.1
 
     # - name: Install LLVM and Clang
     #   uses: KyleMayes/install-llvm-action@v2
@@ -43,8 +48,8 @@ jobs:
     - name: Build module
       run: |
         id
-        ls -al /github /github/*
-        ls -al /github/*/*
+        ls -al /github/home/*
+        ls -al /github/*/.*
         make optimized
 
     - name: Package module
