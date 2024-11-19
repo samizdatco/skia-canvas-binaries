@@ -38,7 +38,8 @@ jobs:
 
     - name: Use GitHub CLI
       uses: dev-hanz-ops/install-gh-cli-action@v0.2.0
-      version: 2.60.1
+      with:
+        version: 2.60.1
 
     # - name: Install LLVM and Clang
     #   uses: KyleMayes/install-llvm-action@v2
