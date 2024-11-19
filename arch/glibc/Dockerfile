@@ -21,7 +21,7 @@ ARG GIT_VERSION=2.47.0
 ARG GIT_URL=https://github.com/git/git/archive/refs/tags/v$GIT_VERSION.tar.gz
 RUN curl -sL $GIT_URL | tar xz -C /opt && \
     cd /opt/git-$GIT_VERSION && \
-    make && make prefix=/usr/local install
+    make -j 8 && make prefix=/usr/local install
 
 # downgrade to the libcurl version that doesn't make git throw HTTP2 errors:
 # https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=987187
