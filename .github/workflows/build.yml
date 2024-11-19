@@ -14,7 +14,6 @@ jobs:
         libc: [glibc, musl]
     container:
       image: ${{ format('ghcr.io/{0}-{1}:latest', github.repository, matrix.libc) }}
-      options: --user root
 
     steps:
     - name: Use Node.js ${{ matrix.node-version }}

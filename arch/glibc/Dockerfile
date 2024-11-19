@@ -48,5 +48,8 @@ RUN bash install-llvm.sh $LLVM_VERSION
 # # REPLACE WITH: dtolnay/rust-toolchain@stable
 # RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --profile minimal
 
+RUN useradd -u 1001 -M github
+USER 1001
+
 # WORKDIR /opt/skia-canvas
 WORKDIR /code
