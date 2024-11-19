@@ -5,7 +5,7 @@ on:
 jobs:
   server:
     runs-on: ubuntu-latest
-      permissions: write-all
+    permissions: write-all
     strategy:
       matrix:
         libc: [glibc, musl]
