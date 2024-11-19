@@ -34,15 +34,6 @@ jobs:
       with:
         toolchain: stable
 
-    - run: |
-        export
-        whoami
-        id
-        ls -l $CARGO_HOME
-        mkdir -p $CARGO_HOME/registry
-        chown -R github $CARGO_HOME/registry
-        ls -l $CARGO_HOME
-
     # - name: Use Ninja
     #   uses: seanmiddleditch/gha-setup-ninja@master
 
@@ -61,6 +52,7 @@ jobs:
 
     - name: Build module
       run: |
+        mkdir -p $CARGO_HOME/registry
         make optimized
 
     - name: Package module
