@@ -26,10 +26,10 @@ jobs:
     #     curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --profile minimal
     #     echo "$HOME/.cargo/bin" >> $GITHUB_PATH
 
-    - name: Use Rust
-      uses: dtolnay/rust-toolchain@stable
-      with:
-        toolchain: stable
+    # - name: Use Rust
+    #   uses: dtolnay/rust-toolchain@stable
+    #   with:
+    #     toolchain: stable
 
     # - name: Use Ninja
     #   uses: seanmiddleditch/gha-setup-ninja@master

@@ -18,11 +18,16 @@ RUN apk update && apk add --update --no-cache \
 RUN apk add --update --no-cache --repository http://dl-cdn.alpinelinux.org/alpine/v3.16/community gn
 RUN apk add --update --no-cache --repository http://dl-cdn.alpinelinux.org/alpine/edge/community ninja-build
 
+# install rust
+# REPLACE WITH: dtolnay/rust-toolchain@stable
+RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --profile minimal
+ENV PATH="/root/.cargo/bin:${PATH}"
 
-# # install rust
-# # REPLACE WITH: dtolnay/rust-toolchain@stable
-# RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --profile minimal
-# ENV PATH="/root/.cargo/bin:${PATH}"
+# install gh
+# MAYBE REPLACE WITH: https://github.com/dev-hanz-ops/install-gh-cli-action
+ARG GH_VERSION=2.55.0
+ARG GH_URL=https://github.com/cli/cli/releases/download/v$GH_VERSION/gh_${GH_VERSION}_linux_amd64.tar.gz
+RUN curl -sL $GH_URL | tar xz --strip-components=2 -C /usr/local/bin
 
 RUN adduser --uid 1001 --no-create-home --disabled-password --gecos "" github
 # USER 1001
