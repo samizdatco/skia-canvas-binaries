@@ -54,6 +54,11 @@ jobs:
       run: |
         mkdir -p $CARGO_HOME/registry
         chown -R github $CARGO_HOME/registry
+        unset CC
+        unset CXX
+        unset GN_EXE
+        unset SKIA_GN_COMMAND
+        unset SKIA_NINJA_COMMAND
         make optimized
 
     - name: Package module
