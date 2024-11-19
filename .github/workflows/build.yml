@@ -121,7 +121,7 @@ jobs:
       fail-fast: false
       matrix:
         arch: [x86, arm64]
-    runs-on: ${{ matrix.arch == 'x86' && 'macos-13' || 'macos-latest' }}
+    runs-on: ${{ matrix.arch == 'x86' && 'macos-13' || 'macos-14' }}
 
     steps:
     - name: Checkout repository
@@ -142,7 +142,7 @@ jobs:
 
     - name: Build module
       env:
-        MACOSX_DEPLOYMENT_TARGET: 10.13
+        MACOSX_DEPLOYMENT_TARGET: 10.14
       run: make optimized
 
     - name: Package module
