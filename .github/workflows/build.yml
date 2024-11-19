@@ -42,6 +42,9 @@ jobs:
 
     - name: Build module
       run: |
+        id
+        ls -al /github /github/*
+        ls -al /github/*/*
         make optimized
 
     - name: Package module

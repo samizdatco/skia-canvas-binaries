@@ -14,9 +14,9 @@ RUN apk update && apk add --update --no-cache \
 
 # ------------- workflow dependencies -------------
 
-# # replace with seanmiddleditch/gha-setup-ninja
-# RUN apk add --update --no-cache --repository http://dl-cdn.alpinelinux.org/alpine/v3.16/community gn
-# RUN apk add --update --no-cache --repository http://dl-cdn.alpinelinux.org/alpine/edge/community ninja-build
+# replace with seanmiddleditch/gha-setup-ninja
+RUN apk add --update --no-cache --repository http://dl-cdn.alpinelinux.org/alpine/v3.16/community gn
+RUN apk add --update --no-cache --repository http://dl-cdn.alpinelinux.org/alpine/edge/community ninja-build
 
 
 # # install rust
