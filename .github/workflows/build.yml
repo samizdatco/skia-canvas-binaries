@@ -52,7 +52,7 @@ jobs:
 
     - name: Build module
       run: |
-        run which node
+        which node
         npm --version
         node --version
         make optimized
