@@ -24,7 +24,7 @@ RUN apk add --update --no-cache --repository http://dl-cdn.alpinelinux.org/alpin
 # RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --profile minimal
 # ENV PATH="/root/.cargo/bin:${PATH}"
 
-RUN adduser -u 1001 -H github
+RUN adduser --uid 1001 --no-create-home --disabled-password --gecos "" github
 USER 1001
 
 WORKDIR /code
