@@ -52,7 +52,7 @@ jobs:
     - name: Build module
       run: |
         id
-        ls -al /github/home/*
+        ls -al /github/*
         ls -al /github/*/.*
         make optimized
 
