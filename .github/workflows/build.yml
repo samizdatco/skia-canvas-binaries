@@ -62,6 +62,8 @@ jobs:
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       run: |
+        gh --version
+        gh -h
         npm run upload
 
 
@@ -169,7 +171,10 @@ jobs:
     - name: Add to release
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      run: npm run upload
+      run: |
+        gh --version
+        gh -h
+        npm run upload
 
   windows-x86:
     runs-on: windows-latest
@@ -202,5 +207,7 @@ jobs:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       run: |
         npm config set script-shell bash
+        gh --version
+        gh -h
         npm run upload
 
