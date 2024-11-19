@@ -32,8 +32,6 @@ RUN apt-get reinstall -y -q -t buster --allow-downgrades libcurl3-gnutls=7.64.0-
 
 # ------------- workflow dependencies -------------
 
-
-
 # upgrade clang to v18
 # MAYBE REPLACE WITH: https://github.com/KyleMayes/install-llvm-action
 ARG LLVM_VERSION=18

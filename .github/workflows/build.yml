@@ -26,8 +26,8 @@ jobs:
       with:
         toolchain: stable
 
-    - name: Use Ninja
-      uses: seanmiddleditch/gha-setup-ninja@master
+    # - name: Use Ninja
+    #   uses: seanmiddleditch/gha-setup-ninja@master
 
     - name: Use GitHub CLI
       uses: dev-hanz-ops/install-gh-cli-action@v0.2.0
