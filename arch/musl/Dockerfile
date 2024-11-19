@@ -10,3 +10,6 @@ ENV RUSTFLAGS="-C target-feature=-crt-static" \
 RUN apk update && apk add --update --no-cache \
     bash curl git python3 perl build-base g++ llvm clang \
     musl-dev openssl-dev fontconfig-dev fontconfig ttf-dejavu
+
+RUN apk add --update --no-cache --repository http://dl-cdn.alpinelinux.org/alpine/v3.16/community gn
+RUN apk add --update --no-cache --repository http://dl-cdn.alpinelinux.org/alpine/edge/community ninja-build
