@@ -40,15 +40,15 @@ ARG LLVM_VERSION=18
 COPY install-llvm.sh .
 RUN bash install-llvm.sh $LLVM_VERSION
 
-# install gh
-# MAYBE REPLACE WITH: https://github.com/dev-hanz-ops/install-gh-cli-action
-ARG GH_VERSION=2.55.0
-ARG GH_URL=https://github.com/cli/cli/releases/download/v$GH_VERSION/gh_${GH_VERSION}_linux_amd64.tar.gz
-RUN curl -sL $GH_URL | tar xz --strip-components=2 -C /usr/local/bin
+# # install gh
+# # MAYBE REPLACE WITH: https://github.com/dev-hanz-ops/install-gh-cli-action
+# ARG GH_VERSION=2.55.0
+# ARG GH_URL=https://github.com/cli/cli/releases/download/v$GH_VERSION/gh_${GH_VERSION}_linux_amd64.tar.gz
+# RUN curl -sL $GH_URL | tar xz --strip-components=2 -C /usr/local/bin
 
-# install rust
-# REPLACE WITH: dtolnay/rust-toolchain@stable
-RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --profile minimal
+# # install rust
+# # REPLACE WITH: dtolnay/rust-toolchain@stable
+# RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --profile minimal
 
 # WORKDIR /opt/skia-canvas
 WORKDIR /code
