@@ -16,7 +16,6 @@ jobs:
         libc: [musl]
     container:
       image: ${{ format('ghcr.io/{0}-{1}:latest', github.repository, matrix.libc) }}
-      options: --user root
 
     steps:
     # - name: Use Node.js
@@ -34,6 +33,13 @@ jobs:
       uses: dtolnay/rust-toolchain@stable
       with:
         toolchain: stable
+
+    - run: |
+        export
+        whoami
+        id
+        ls -l $CARGO_HOME
+        ls -l $CARGO_HOME/*
 
     # - name: Use Ninja
     #   uses: seanmiddleditch/gha-setup-ninja@master
@@ -53,9 +59,6 @@ jobs:
 
     - name: Build module
       run: |
-        whoami
-        id
-        export
         make optimized
 
     - name: Package module
