@@ -21,10 +21,10 @@ jobs:
       with:
         node-version: 16
 
-    # - name: Use Rust
-    #   uses: dtolnay/rust-toolchain@stable
-    #   with:
-    #     toolchain: stable
+    - name: Use Rust
+      uses: dtolnay/rust-toolchain@stable
+      with:
+        toolchain: stable
 
     - name: Use Ninja
       uses: seanmiddleditch/gha-setup-ninja@master
