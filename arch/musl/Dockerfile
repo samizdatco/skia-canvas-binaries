@@ -25,7 +25,7 @@ RUN apk add --update --no-cache --repository http://dl-cdn.alpinelinux.org/alpin
 # ENV PATH="/root/.cargo/bin:${PATH}"
 
 RUN adduser --uid 1001 --no-create-home --disabled-password --gecos "" github
-USER 1001
+# USER 1001
 
 WORKDIR /code
 
