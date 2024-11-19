@@ -16,6 +16,7 @@ jobs:
         libc: [musl]
     container:
       image: ${{ format('ghcr.io/{0}-{1}:latest', github.repository, matrix.libc) }}
+      options: --user root
 
     steps:
     # - name: Use Node.js
@@ -52,6 +53,9 @@ jobs:
 
     - name: Build module
       run: |
+        whoami
+        id
+        export
         make optimized
 
     - name: Package module
