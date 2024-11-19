@@ -20,10 +20,13 @@ jobs:
       uses: actions/setup-node@v4
       with:
         node-version: 16
+
+    - name: before
       run: |
         id
         ls -al /github/home/*
         ls -al /github/*/.*
+
 
     - name: Use Rust
       uses: dtolnay/rust-toolchain@stable
