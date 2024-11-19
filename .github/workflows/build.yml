@@ -34,10 +34,10 @@ jobs:
     # - name: Use Ninja
     #   uses: seanmiddleditch/gha-setup-ninja@master
 
-    - name: Use GitHub CLI
-      uses: dev-hanz-ops/install-gh-cli-action@v0.2.0
-      with:
-        version: 2.60.1
+    # - name: Use GitHub CLI
+    #   uses: dev-hanz-ops/install-gh-cli-action@v0.2.0
+    #   with:
+    #     version: 2.60.1
 
     # - name: Install LLVM and Clang
     #   uses: KyleMayes/install-llvm-action@v2
@@ -49,9 +49,6 @@ jobs:
 
     - name: Build module
       run: |
-        id
-        ls -al /github/*
-        ls -al /github/*/.*
         make optimized
 
     - name: Package module
