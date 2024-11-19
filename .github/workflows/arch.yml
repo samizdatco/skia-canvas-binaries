@@ -5,14 +5,12 @@ on:
 jobs:
   build-container:
     # runs-on: ubuntu-latest
-    runs-on:
-      - self-hosted
-      - linux
-      - X64
+    runs-on: [self-hosted, linux, X64]
     permissions: write-all
     strategy:
       matrix:
-        libc: [glibc, musl]
+        # libc: [glibc, musl]
+        libc: [musl]
 
     steps:
     - name: Checkout

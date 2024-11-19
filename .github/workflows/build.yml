@@ -11,33 +11,34 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        libc: [glibc, musl]
+        # libc: [glibc, musl]
+        libc: [musl]
     container:
       image: ${{ format('ghcr.io/{0}-{1}:latest', github.repository, matrix.libc) }}
 
     steps:
-    # - name: Use Node.js ${{ matrix.node-version }}
-    #   uses: actions/setup-node@v4
-    #   with:
-    #     node-version: 16
+    - name: Use Node.js ${{ matrix.node-version }}
+      uses: actions/setup-node@v4
+      with:
+        node-version: 16
 
     # - name: Install rust
     #   run: |
     #     curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --profile minimal
     #     echo "$HOME/.cargo/bin" >> $GITHUB_PATH
 
-    # - name: Use Rust
-    #   uses: dtolnay/rust-toolchain@stable
-    #   with:
-    #     toolchain: stable
+    - name: Use Rust
+      uses: dtolnay/rust-toolchain@stable
+      with:
+        toolchain: stable
 
-    # - name: Use Ninja
-    #   uses: seanmiddleditch/gha-setup-ninja@master
+    - name: Use Ninja
+      uses: seanmiddleditch/gha-setup-ninja@master
 
-    # - name: Use GitHub CLI
-    #   uses: dev-hanz-ops/install-gh-cli-action@v0.2.0
-    #   with:
-    #     version: 2.60.1
+    - name: Use GitHub CLI
+      uses: dev-hanz-ops/install-gh-cli-action@v0.2.0
+      with:
+        version: 2.60.1
 
     # - name: Install LLVM and Clang
     #   uses: KyleMayes/install-llvm-action@v2
@@ -131,74 +132,82 @@ jobs:
   #       cd skia-canvas
   #       npm run upload
 
-  mac:
-    strategy:
-      fail-fast: false
-      matrix:
-        arch: [x86, arm64]
-    runs-on: ${{ matrix.arch == 'x86' && 'macos-13' || 'macos-14' }}
 
-    steps:
-    - name: Checkout repository
-      uses: actions/checkout@v4
 
-    - name: Use Node.js
-      uses: actions/setup-node@v4
-      with:
-        node-version: 16
 
-    - name: Use Rust
-      uses: dtolnay/rust-toolchain@stable
-      with:
-        toolchain: stable
 
-    - name: Use Ninja
-      uses: seanmiddleditch/gha-setup-ninja@master
 
-    - name: Build module
-      env:
-        MACOSX_DEPLOYMENT_TARGET: 10.14
-      run: make optimized
 
-    - name: Package module
-      run: npm test && npm run package
 
-    - name: Add to release
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      run: |
-        npm run upload
 
-  windows-x86:
-    runs-on: windows-latest
+  # mac:
+  #   strategy:
+  #     fail-fast: false
+  #     matrix:
+  #       arch: [x86, arm64]
+  #   runs-on: ${{ matrix.arch == 'x86' && 'macos-13' || 'macos-14' }}
 
-    steps:
-    - name: Checkout repository
-      uses: actions/checkout@v4
+  #   steps:
+  #   - name: Checkout repository
+  #     uses: actions/checkout@v4
 
-    - name: Use Node.js
-      uses: actions/setup-node@v4
-      with:
-        node-version: 16
+  #   - name: Use Node.js
+  #     uses: actions/setup-node@v4
+  #     with:
+  #       node-version: 16
 
-    - name: Use Rust
-      uses: dtolnay/rust-toolchain@stable
-      with:
-        toolchain: stable
+  #   - name: Use Rust
+  #     uses: dtolnay/rust-toolchain@stable
+  #     with:
+  #       toolchain: stable
 
-    - name: Use Ninja
-      uses: seanmiddleditch/gha-setup-ninja@master
+  #   - name: Use Ninja
+  #     uses: seanmiddleditch/gha-setup-ninja@master
 
-    - name: Build module
-      run: make optimized
+  #   - name: Build module
+  #     env:
+  #       MACOSX_DEPLOYMENT_TARGET: 10.14
+  #     run: make optimized
 
-    - name: Package module
-      run: npm test && npm run package
+  #   - name: Package module
+  #     run: npm test && npm run package
 
-    - name: Add to release
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      run: |
-        npm config set script-shell bash
-        npm run upload
+  #   - name: Add to release
+  #     env:
+  #       GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+  #     run: |
+  #       npm run upload
+
+  # windows-x86:
+  #   runs-on: windows-latest
+
+  #   steps:
+  #   - name: Checkout repository
+  #     uses: actions/checkout@v4
+
+  #   - name: Use Node.js
+  #     uses: actions/setup-node@v4
+  #     with:
+  #       node-version: 16
+
+  #   - name: Use Rust
+  #     uses: dtolnay/rust-toolchain@stable
+  #     with:
+  #       toolchain: stable
+
+  #   - name: Use Ninja
+  #     uses: seanmiddleditch/gha-setup-ninja@master
+
+  #   - name: Build module
+  #     run: make optimized
+
+  #   - name: Package module
+  #     run: npm test && npm run package
+
+  #   - name: Add to release
+  #     env:
+  #       GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+  #     run: |
+  #       npm config set script-shell bash
+  #       npm run upload
 
