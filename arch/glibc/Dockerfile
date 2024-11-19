@@ -3,8 +3,6 @@ FROM node:buster-slim
 ENV PATH="/usr/local/bin:$PATH" \
     SKIA_NINJA_COMMAND="/usr/bin/ninja"
 
-ARG DEBIAN_FRONTEND=noninteractive
-
 # basics
 RUN apt-get update && \
     apt-get install -y -q \
@@ -28,28 +26,25 @@ RUN curl -sL $GIT_URL | tar xz -C /opt && \
 RUN apt-get reinstall -y -q -t buster --allow-downgrades libcurl3-gnutls=7.64.0-4+deb10u2 && \
     apt-mark hold libcurl3-gnutls
 
-
-
-# ------------- workflow dependencies -------------
-
 # upgrade clang to v18
-# MAYBE REPLACE WITH: https://github.com/KyleMayes/install-llvm-action
 ARG LLVM_VERSION=18
 COPY install-llvm.sh .
 RUN bash install-llvm.sh $LLVM_VERSION
 
-# install gh
-# MAYBE REPLACE WITH: https://github.com/dev-hanz-ops/install-gh-cli-action
-ARG GH_VERSION=2.55.0
-ARG GH_URL=https://github.com/cli/cli/releases/download/v$GH_VERSION/gh_${GH_VERSION}_linux_amd64.tar.gz
-RUN curl -sL $GH_URL | tar xz --strip-components=2 -C /usr/local/bin
+# ------------- workflow dependencies -------------
 
-# install rust
-# REPLACE WITH: dtolnay/rust-toolchain@stable
-RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --profile minimal
+# # install gh
+# # MAYBE REPLACE WITH: https://github.com/dev-hanz-ops/install-gh-cli-action
+# ARG GH_VERSION=2.55.0
+# ARG GH_URL=https://github.com/cli/cli/releases/download/v$GH_VERSION/gh_${GH_VERSION}_linux_amd64.tar.gz
+# RUN curl -sL $GH_URL | tar xz --strip-components=2 -C /usr/local/bin
+
+# # install rust
+# # REPLACE WITH: dtolnay/rust-toolchain@stable
+# RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --profile minimal
 
 RUN useradd -u 1001 -M github
-USER 1001
+# USER 1001
 
 # WORKDIR /opt/skia-canvas
-WORKDIR /code
+# WORKDIR /code
