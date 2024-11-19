@@ -24,6 +24,7 @@ RUN apk add --update --no-cache --repository http://dl-cdn.alpinelinux.org/alpin
 RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --profile minimal && \
     mkdir -p /root/.cargo/registry && \
     chown -R github /root/.cargo/registry
+
 ENV PATH="/root/.cargo/bin:${PATH}"
 
 # # install gh
