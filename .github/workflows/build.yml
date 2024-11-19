@@ -20,10 +20,10 @@ jobs:
       image: ${{ format('ghcr.io/{0}-{1}:latest', github.repository, matrix.libc) }}
 
     steps:
-    - name: Use Node.js ${{ matrix.node-version }}
-      uses: actions/setup-node@v4
-      with:
-        node-version: 16
+    # - name: Use Node.js ${{ matrix.node-version }}
+    #   uses: actions/setup-node@v4
+    #   with:
+    #     node-version: 16
 
     # - name: Install rust
     #   run: |
