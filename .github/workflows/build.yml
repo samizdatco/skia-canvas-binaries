@@ -7,7 +7,11 @@ on:
 
 jobs:
   linux-x86:
-    runs-on: ubuntu-latest
+    # runs-on: ubuntu-latest
+    runs-on:
+      - self-hosted
+      - linux
+      - X64
     strategy:
       fail-fast: false
       matrix:
