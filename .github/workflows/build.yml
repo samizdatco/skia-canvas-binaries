@@ -16,6 +16,15 @@ jobs:
       image: ${{ format('ghcr.io/{0}-{1}:latest', github.repository, matrix.libc) }}
 
     steps:
+    - name: hello container
+      run: |
+         whoami
+         echo "----"
+         ls -la $GITHUB_ENV
+         echo "----"
+         ls -la $HOME
+         echo "----"
+         cat /etc/passwd
     - name: Use Node.js ${{ matrix.node-version }}
       uses: actions/setup-node@v4
       with:
