@@ -15,9 +15,9 @@ RUN adduser --uid 1001 --no-create-home --disabled-password --gecos "" github
 
 # ------------- workflow dependencies -------------
 
-# replace with seanmiddleditch/gha-setup-ninja
-RUN apk add --update --no-cache --repository http://dl-cdn.alpinelinux.org/alpine/v3.16/community gn
-RUN apk add --update --no-cache --repository http://dl-cdn.alpinelinux.org/alpine/edge/community ninja-build
+# # replace with seanmiddleditch/gha-setup-ninja
+# RUN apk add --update --no-cache --repository http://dl-cdn.alpinelinux.org/alpine/v3.16/community gn
+# RUN apk add --update --no-cache --repository http://dl-cdn.alpinelinux.org/alpine/edge/community ninja-build
 
 # # install rust
 # REPLACE WITH: dtolnay/rust-toolchain@stable

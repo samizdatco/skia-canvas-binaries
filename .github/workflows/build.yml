@@ -42,10 +42,10 @@ jobs:
       with:
         version: 2.60.1
 
-    # - name: Install LLVM and Clang
-    #   uses: KyleMayes/install-llvm-action@v2
-    #   with:
-    #     version: "18.0"
+    - name: Install LLVM and Clang
+      uses: KyleMayes/install-llvm-action@v2
+      with:
+        version: "18.0"
 
     - name: Checkout skia-canvas
       uses: actions/checkout@v4
@@ -53,6 +53,7 @@ jobs:
     - name: Build module
       run: |
         mkdir -p $CARGO_HOME/registry
+        chown -R github $CARGO_HOME/registry
         make optimized
 
     - name: Package module
