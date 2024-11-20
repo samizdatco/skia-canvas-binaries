@@ -19,7 +19,7 @@ RUN apk add --update --no-cache --repository http://dl-cdn.alpinelinux.org/alpin
 
 # install gh
 ARG GH_VERSION=2.55.0
-ARG GH_URL=https://github.com/cli/cli/releases/download/v$GH_VERSION/gh_${GH_VERSION}_linux_${TARGETARCH}.tar.gz
+ARG GH_URL=https://github.com/cli/cli/releases/download/v$GH_VERSION/gh_${GH_VERSION}_linux_$TARGETARCH.tar.gz
 RUN curl -sL $GH_URL | tar xz --strip-components=2 -C /usr/local/bin
 
 RUN adduser --uid 1001 --no-create-home --disabled-password --gecos "" github
