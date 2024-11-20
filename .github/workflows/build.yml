@@ -59,24 +59,19 @@ jobs:
       run: |
         rm -rf "$GITHUB_WORKSPACE"
         mkdir -p "$GITHUB_WORKSPACE"
-    # - name: Use Rust
-    #   uses: dtolnay/rust-toolchain@stable
-    #   with:
-    #     toolchain: stable
+
     - name: Install rust
       run: |
         curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --profile minimal
         echo "$HOME/.cargo/bin" >> $GITHUB_PATH
 
-    # - name: Checkout skia-canvas
-    #   uses: actions/checkout@v4
     - name: Checkout skia-canvas
       env:
         SERVER: ${{ github.server_url }}
         REPO: ${{ github.repository }}
         REF: ${{ github.ref_name }}
       run: |
-        git clone --depth 1 --branch $REF ${SERVER}/${REPO} skia-canvas .
+        git clone --depth 1 --branch $REF ${SERVER}/${REPO} .
 
     - name: Build module
       run: |
