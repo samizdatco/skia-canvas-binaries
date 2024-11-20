@@ -10,17 +10,17 @@ ENV RUSTFLAGS="-C target-feature=-crt-static" \
 
 # basics
 RUN apk update && apk add --update --no-cache \
-    bash curl git python3 perl build-base g++ llvm clang \
+    bash curl git python3 perl build-base g++ linux-headers llvm clang \
     musl-dev openssl-dev fontconfig-dev fontconfig ttf-dejavu
 
 # add ninja & gn for building skia
 RUN apk add --update --no-cache --repository http://dl-cdn.alpinelinux.org/alpine/v3.16/community gn
 RUN apk add --update --no-cache --repository http://dl-cdn.alpinelinux.org/alpine/edge/community ninja-build
 
-
-RUN export ASM="/usr/include/c++/10.3.1/aarch64-alpine-linux-musl/asm" && \
-    mkdir -p ${ASM} && \
-    touch ${ASM}/hwcap.h
+# the embedded zlib includes this
+# RUN export ASM="/usr/include/c++/10.3.1/aarch64-alpine-linux-musl/asm" && \
+#     mkdir -p ${ASM} && \
+#     touch ${ASM}/hwcap.h
 
 # install gh
 ARG GH_VERSION=2.55.0
