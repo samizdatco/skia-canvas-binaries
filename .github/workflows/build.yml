@@ -6,15 +6,12 @@ on:
       - "v*"
 
 jobs:
-  linux:
-    runs-on: ${{ matrix.arch }}
+  linux-x86:
+    runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
         libc: [glibc, musl]
-        arch:
-        # - ubuntu-latest
-        - [self-hosted, linux, ARM64]
 
     container:
       image: ${{ format('ghcr.io/{0}-{1}:latest', github.repository, matrix.libc) }}
@@ -45,6 +42,49 @@ jobs:
       run: |
         npm run upload
 
+  linux-arm64:
+    runs-on: [self-hosted, linux, ARM64]
+    strategy:
+      fail-fast: false
+      matrix:
+        # libc: [glibc, musl]
+        libc: [musl]
+
+    container:
+      image: ${{ format('ghcr.io/{0}-{1}:latest', github.repository, matrix.libc) }}
+      options: --user github
+
+    steps:
+    # - name: Use Rust
+    #   uses: dtolnay/rust-toolchain@stable
+    #   with:
+    #     toolchain: stable
+    - name: Install rust
+      run: |
+        curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --profile minimal
+        echo "$HOME/.cargo/bin" >> $GITHUB_PATH
+
+    # - name: Checkout skia-canvas
+    #   uses: actions/checkout@v4
+    - name: Checkout skia-canvas
+      run: |
+        git clone --depth 1 --branch ${github.ref_name} ${{github.repositoryUrl}}
+
+    - name: Build module
+      run: |
+        mkdir -p $CARGO_HOME/registry
+        chown -R github $CARGO_HOME/registry
+        make optimized
+
+    - name: Package module
+      run: |
+        npm test && npm run package
+
+    - name: Add to release
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      run: |
+        npm run upload
 
   # linux-arm64:
   #   runs-on:
