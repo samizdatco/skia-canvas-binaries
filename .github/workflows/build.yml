@@ -68,7 +68,7 @@ jobs:
     #   uses: actions/checkout@v4
     - name: Checkout skia-canvas
       run: |
-        git clone --depth 1 --branch ${github.ref_name} ${{github.repositoryUrl}}
+        git clone --depth 1 --branch ${{ github.ref_name }} ${{ github.repositoryUrl }}
 
     - name: Build module
       run: |
