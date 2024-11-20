@@ -14,7 +14,7 @@ jobs:
         libc: [glibc, musl]
         arch:
         # - ubuntu-latest
-        - [self-hosted, ARM64, macOS]
+        - [self-hosted, Linux, ARM64]
 
     container:
       image: ${{ format('ghcr.io/{0}-{1}:latest', github.repository, matrix.libc) }}
