@@ -55,6 +55,10 @@ jobs:
       options: --user github
 
     steps:
+    - name: Prepare workspace
+      run: |
+        rm -rf "$GITHUB_WORKSPACE"
+        mkdir -p "$GITHUB_WORKSPACE"
     # - name: Use Rust
     #   uses: dtolnay/rust-toolchain@stable
     #   with:
