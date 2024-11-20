@@ -76,8 +76,6 @@ jobs:
 
     - name: Build module
       run: |
-        mkdir -p $CARGO_HOME/registry
-        chown -R github $CARGO_HOME/registry
         make optimized
 
     - name: Package module
