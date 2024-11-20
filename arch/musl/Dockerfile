@@ -1,4 +1,5 @@
 FROM node:16-alpine3.14
+ARG TARGETARCH
 
 ENV RUSTFLAGS="-C target-feature=-crt-static" \
     CC="clang" \

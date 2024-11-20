@@ -1,4 +1,5 @@
 FROM node:buster-slim
+ARG TARGETARCH
 
 ENV PATH="/usr/local/bin:$PATH" \
     SKIA_NINJA_COMMAND="/usr/bin/ninja"
