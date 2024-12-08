@@ -19,7 +19,7 @@ jobs:
 
     steps:
     - name: Enable long paths
-      if: ${{ matrix.os == "windows-latest" }}
+      if: ${{ matrix.os == 'windows-latest' }}
       run: |
         git config --system core.longpaths true
 
