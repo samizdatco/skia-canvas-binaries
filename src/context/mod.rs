@@ -10,7 +10,7 @@ use skia_safe::{
   PaintStyle, BlendMode, ClipOp, PictureRecorder, Picture,
   images, image_filters, dash_path_effect, path_1d_path_effect,
   matrix::{ Matrix, TypeMask },
-  textlayout::{ParagraphStyle, TextStyle},
+  textlayout::{ParagraphStyle, TextStyle, StrutStyle},
   canvas::SrcRectConstraint::Strict,
   path_utils::fill_path_with_paint,
   font_style::{FontStyle, Width},
@@ -73,8 +73,8 @@ pub struct State{
 
   font: String,
   font_variant: String,
-  font_features: Vec<String>,
   font_width: Width,
+  font_hinting: bool,
   char_style: TextStyle,
   graf_style: ParagraphStyle,
   text_baseline: Baseline,
@@ -82,6 +82,7 @@ pub struct State{
   word_spacing: Spacing,
   text_decoration: DecorationStyle,
   text_wrap: bool,
+  line_height: Option<f32>,
 }
 
 impl Default for State {
@@ -122,33 +123,60 @@ impl Default for State {
 
       font: "10px sans-serif".to_string(),
       font_variant: "normal".to_string(),
-      font_features:vec![],
       font_width: Width::NORMAL,
+      font_hinting: false,
       char_style,
       graf_style,
       text_baseline: Baseline::Alphabetic,
       letter_spacing: Spacing::default(),
       word_spacing: Spacing::default(),
       text_decoration: DecorationStyle::default(),
-      text_wrap: false
+      text_wrap: false,
+      line_height: None,
     }
   }
 }
 
 impl State{
   pub fn typography(&self) -> (TextStyle, ParagraphStyle, DecorationStyle, Baseline, bool) {
-    (
-      {
-        let mut style = self.char_style.clone();
-        style.set_word_spacing(self.word_spacing.in_px(style.font_size()));
-        style.set_letter_spacing(self.letter_spacing.in_px(style.font_size()));
-        style
-      },
-      self.graf_style.clone(),
-      self.text_decoration.clone(),
-      self.text_baseline,
-      self.text_wrap
-    )
+    let mut char_style = self.char_style.clone(); // use font size & style to calculate spacing
+    char_style.set_word_spacing(self.word_spacing.in_px(char_style.font_size()));
+    char_style.set_letter_spacing(self.letter_spacing.in_px(char_style.font_size()));
+    char_style.set_baseline_shift(self.text_baseline.get_offset(&char_style));
+
+    let mut graf_style = self.graf_style.clone(); // inherit align & ltr/rtl settings
+    let font_families = char_style.font_families(); // consult proper metrics for height & leading defaults
+
+    if self.text_wrap{
+      // handle multi-line spacing
+      let mut strut_style = StrutStyle::new();
+      strut_style
+        .set_font_families(&font_families.iter().collect::<Vec<_>>())
+        .set_font_style(char_style.font_style())
+        .set_font_size(char_style.font_size())
+        .set_force_strut_height(true)
+        .set_strut_enabled(true);
+
+      // if lineHeight is unspecified leave letterspacing at -1 to use font's default spacing,
+      // otherwise adjust strut's height & leading appropriately
+      if let Some(height) = self.line_height{
+        strut_style
+          .set_leading((height - 1.0).max(0.0))
+          .set_height(height.min(1.0))
+          .set_height_override(true);
+      }
+
+      graf_style.set_strut_style(strut_style);
+    }else{
+      // omit anything that doesn't fit on a single line
+      graf_style.set_max_lines(Some(1));
+    }
+
+    if !self.font_hinting{
+      graf_style.turn_hinting_off();
+    }
+
+    ( char_style, graf_style, self.text_decoration.clone(), self.text_baseline, self.text_wrap )
   }
 
   fn dye(&self, style:PaintStyle) -> &Dye{
@@ -356,7 +384,10 @@ impl Context2D{
   }
 
   pub fn clip_path(&mut self, path: Option<Path>, rule:FillType){
-    let mut clip = path.unwrap_or_else(|| self.path.clone()) ;
+    let mut clip = match path{
+      Some(path) => path.with_transform(&self.state.matrix),
+      None => self.path.clone()
+    };
     clip.set_fill_type(rule);
 
     self.state.clip = match &self.state.clip {
@@ -458,7 +489,7 @@ impl Context2D{
     self.recorder.lock().unwrap().get_page().get_picture(None)
   }
 
-  pub fn get_pixels(&mut self, origin: impl Into<IPoint>, info:ImageInfo, engine:RenderingEngine) -> Result<Data, String>{
+  pub fn get_pixels(&mut self, origin: impl Into<IPoint>, info:ImageInfo, engine:RenderingEngine) -> Result<Vec<u8>, String>{
     self.recorder.lock().unwrap().get_pixels(origin, &info, engine)
   }
 
@@ -487,6 +518,7 @@ impl Context2D{
       self.state.font_variant = spec.variant.to_string();
       self.state.font_width = spec.width;
       self.state.char_style = new_style;
+      self.state.line_height = spec.line_height;
     }
   }
 
@@ -521,12 +553,6 @@ impl Context2D{
 
   pub fn outline_text(&self, text:&str, width:Option<f32>) -> Path{
     Typesetter::new(&self.state, text, width).path()
-  }
-
-  pub fn color_with_alpha(&self, src:&Color) -> Color{
-    let mut color:Color4f = (*src).into();
-    color.a *= self.state.global_alpha;
-    color.to_color()
   }
 
   pub fn paint_for_drawing(&mut self, style:PaintStyle) -> Paint{

@@ -1,6 +1,7 @@
 #![allow(clippy::upper_case_acronyms)]
-use skia_safe::{ImageInfo, Surface, surfaces};
+use skia_safe::{ImageInfo, Image, Rect, Matrix, Color, Surface, surfaces};
 use serde_json::Value;
+use crate::context::page::Page;
 
 #[cfg(feature = "metal")]
 mod metal;
@@ -13,9 +14,9 @@ pub use crate::gpu::metal::MetalRenderer as Renderer;
 #[cfg(feature = "vulkan")]
 mod vulkan;
 #[cfg(feature = "vulkan")]
-use crate::gpu::vulkan::VulkanEngine as Engine;
+use crate::gpu::vulkan::engine::VulkanEngine as Engine;
 #[cfg(all(feature = "vulkan", feature = "window"))]
-pub use crate::gpu::vulkan::VulkanRenderer as Renderer;
+pub use crate::gpu::vulkan::renderer::VulkanRenderer as Renderer;
 
 #[cfg(not(any(feature = "vulkan", feature = "metal")))]
 struct Engine { }
@@ -90,4 +91,67 @@ impl RenderingEngine{
             }
         }
     }
+}
+
+pub struct RenderCache {
+    image: Option<Image>,
+    content: Rect,
+    page: Page,
+    matte: Color,
+    dpr: f32,
+    state: RenderState,
+}
+
+impl Default for RenderCache{
+    fn default() -> Self {
+        Self{image:None, content:Rect::new_empty(), page:Page::default(), dpr:0.0, matte:Color::TRANSPARENT, state:RenderState::Clean}
+    }
+}
+
+impl RenderCache{
+    pub fn validate(&mut self, page:&Page, matte:Color, dpr:f32, clip:Rect) -> Option<(&Image, &Rect, Rect)>{
+        if self.state == RenderState::Dirty{
+            self.clear();
+        }
+
+        let is_valid =
+            self.page.id == page.id &&
+            self.page.rev == page.rev &&
+            self.matte == matte &&
+            self.dpr == dpr;
+
+        match is_valid{
+            true => self.image.as_ref().map(|img| {
+                let (dst, _) = Matrix::scale((dpr, dpr)).map_rect(clip);
+                (img, &self.content, dst)
+            }),
+            false => None
+        }
+    }
+
+    pub fn depth(&self) -> usize {
+        self.page.layers.len()
+    }
+
+    pub fn update(&mut self, image:Image, page:&Page, matte:Color, dpr:f32, content:Rect){
+        if self.state==RenderState::Resizing{
+            // mark the framebuffer as needing a full redraw and skip updating cached image during resize
+            self.state = RenderState::Dirty;
+        }else{
+            let state = RenderState::Clean;
+            let (content, _) = skia_safe::Matrix::scale((dpr, dpr)).map_rect(content);
+            *self = Self{image: Some(image), page:page.clone(), matte, dpr, content, state};
+        }
+    }
+
+    pub fn clear(&mut self){
+        *self = Self::default();
+    }
+}
+
+#[derive(Debug, PartialEq, Clone, Copy)]
+pub enum RenderState{
+    Clean,
+    Dirty,
+    Resizing
 }

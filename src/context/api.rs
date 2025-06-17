@@ -13,8 +13,9 @@ use crate::path::{Path2D, BoxedPath2D};
 use crate::image::{BoxedImage, Content};
 use crate::filter::Filter;
 use crate::typography::{
-  font_arg, decoration_arg, font_features, Spacing, from_width, to_width,
-  from_text_align, to_text_align, from_text_baseline, to_text_baseline
+  font_arg, decoration_arg, font_features, from_width, to_width,
+  from_text_align, to_text_align, from_text_baseline, to_text_baseline,
+  Spacing, opt_spacing_arg
 };
 use crate::utils::*;
 
@@ -246,7 +247,10 @@ pub fn roundRect(mut cx: FunctionContext) -> JsResult<JsUndefined> {
     let radii:Vec<Point> = nums[4..].chunks(2).map(|xy| Point::new(xy[0], xy[1])).collect();
     let rrect = RRect::new_rect_radii(rect, &[radii[0], radii[1], radii[2], radii[3]]);
     let direction = if w.signum() == h.signum(){ CW }else{ CCW };
-    this.path.add_rrect(rrect, Some((direction, 0)));
+
+    let matrix = this.state.matrix;
+    let path = Path::rrect(rrect, Some(direction));
+    this.path.add_path(&path.with_transform(&matrix), (0,0), Extend);
   }
 
   Ok(cx.undefined())
@@ -811,7 +815,7 @@ pub fn getImageData(mut cx: FunctionContext) -> JsResult<JsBuffer> {
 
   let info = ImageInfo::new((width as _, height as _), color_type, AlphaType::Unpremul, color_space);
   let data = this.borrow_mut().get_pixels((x, y), info, engine).or_else(|e| cx.throw_error(format!("get_pixels failed: {}", e)))?;
-  let buffer = JsBuffer::from_slice(&mut cx, data.as_bytes())?;
+  let buffer = JsBuffer::from_slice(&mut cx, &data)?;
 
   Ok(buffer)
 }
@@ -1037,18 +1041,9 @@ pub fn get_letterSpacing(mut cx: FunctionContext) -> JsResult<JsString> {
 
 pub fn set_letterSpacing(mut cx: FunctionContext) -> JsResult<JsUndefined> {
   let this = cx.argument::<BoxedContext2D>(0)?;
-
-  if cx.argument::<JsValue>(1)?.is_a::<JsNull, _>(&mut cx){
-    return Ok(cx.undefined());
-  }
-
-  let spacing = cx.argument::<JsObject>(1)?;
-  let raw_size = float_for_key(&mut cx, &spacing, "size")?;
-  let unit = string_for_key(&mut cx, &spacing, "unit")?;
-  let px_size = float_for_key(&mut cx, &spacing, "px")?;
-
   let mut this = this.borrow_mut();
-  if let Some(spacing) = Spacing::parse(raw_size, unit, px_size){
+
+  if let Some(spacing) = opt_spacing_arg(&mut cx, 1)?{
     let em_size = this.state.char_style.font_size();
     this.state.char_style.set_letter_spacing(spacing.in_px(em_size));
     this.state.letter_spacing = spacing;
@@ -1064,12 +1059,9 @@ pub fn get_wordSpacing(mut cx: FunctionContext) -> JsResult<JsString> {
 
 pub fn set_wordSpacing(mut cx: FunctionContext) -> JsResult<JsUndefined> {
   let this = cx.argument::<BoxedContext2D>(0)?;
-  let raw_size = float_arg_or(&mut cx, 1, f32::NAN);
-  let unit = string_arg(&mut cx, 2, "unit")?;
-  let px_size = float_arg_or(&mut cx, 3, f32::NAN);
-
   let mut this = this.borrow_mut();
-  if let Some(spacing) = Spacing::parse(raw_size, unit, px_size){
+
+  if let Some(spacing) = opt_spacing_arg(&mut cx, 1)?{
     let em_size = this.state.char_style.font_size();
     this.state.char_style.set_word_spacing(spacing.in_px(em_size));
     this.state.word_spacing = spacing;
@@ -1078,6 +1070,20 @@ pub fn set_wordSpacing(mut cx: FunctionContext) -> JsResult<JsUndefined> {
 }
 
 // -- non-standard typography extensions --------------------------------------------
+
+pub fn get_fontHinting(mut cx: FunctionContext) -> JsResult<JsBoolean> {
+  let this = cx.argument::<BoxedContext2D>(0)?;
+  let this = this.borrow_mut();
+  Ok(cx.boolean(this.state.font_hinting))
+}
+
+pub fn set_fontHinting(mut cx: FunctionContext) -> JsResult<JsUndefined> {
+  let this = cx.argument::<BoxedContext2D>(0)?;
+  let mut this = this.borrow_mut();
+  let flag = bool_arg(&mut cx, 1, "fontHinting")?;
+  this.state.font_hinting = flag;
+  Ok(cx.undefined())
+}
 
 pub fn get_fontVariant(mut cx: FunctionContext) -> JsResult<JsString> {
   let this = cx.argument::<BoxedContext2D>(0)?;

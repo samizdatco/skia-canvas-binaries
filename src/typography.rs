@@ -9,9 +9,7 @@ use neon::prelude::*;
 use skia_safe::{FontMetrics, Typeface, Paint, Point, Rect, Path as SkPath, Color};
 use skia_safe::font_style::{FontStyle, Weight, Width, Slant};
 use skia_safe::textlayout::{
-    FontCollection, TextStyle, TextAlign, TextDirection,
-    Decoration, TextDecoration, TextDecorationMode, TextDecorationStyle,
-    ParagraphStyle, Paragraph, ParagraphBuilder,
+    Decoration, FontCollection, FontFamilies, Paragraph, ParagraphBuilder, ParagraphStyle, TextAlign, TextDecoration, TextDecorationMode, TextDecorationStyle, TextDirection, TextStyle
 };
 use crate::FONT_LIBRARY;
 use crate::utils::*;
@@ -36,32 +34,13 @@ pub struct Typesetter{
 impl Typesetter{
   pub fn new(state:&State, text: &str, width:Option<f32>) -> Self {
     let mut library = FONT_LIBRARY.lock().unwrap();
-    let (char_style, mut graf_style, text_decoration, baseline, wrap) = state.typography();
+    let (mut char_style, graf_style, text_decoration, baseline, wrap) = state.typography();
     let typefaces = library.collect_fonts(&char_style);
     let width = width.unwrap_or(GALLEY);
     let text = match wrap{
       true => text.to_string(),
-      false => {
-        graf_style.set_max_lines(1);
-        text.replace("\n", " ")
-      }
+      false => text.replace("\n", " ")
     };
-
-    if wrap {
-      // make sure line-breaks use the current leading
-      let mut strut_style = graf_style.strut_style().clone();
-      let (leading, size) = if char_style.height() < 1.0 {
-        ( strut_style.leading(), char_style.font_size() * char_style.height() )
-      }else{
-        ( char_style.height() - 1.0, char_style.font_size() )
-      };
-      strut_style
-        .set_strut_enabled(true)
-        .set_force_strut_height(true)
-        .set_font_size(size)
-        .set_leading(leading);
-      graf_style.set_strut_style(strut_style);
-    }
 
     Typesetter{text, width, baseline, typefaces, char_style, graf_style, text_decoration}
   }
@@ -73,7 +52,7 @@ impl Typesetter{
       &self.text_decoration.for_layout(&char_style, paint.color())
     );
 
-    // prevent SkParagraph from faking of the font style if the match isn't the requested weight/slant
+    // prevent SkParagraph from faking the font style if the match isn't the requested weight/slant
     let fams:Vec<String> = char_style.font_families().iter().map(|s| s.to_string()).collect();
     if let Some(matched) = self.typefaces.clone().find_typefaces(&fams, char_style.font_style()).first(){
       char_style.set_font_style(matched.font_style());
@@ -86,64 +65,85 @@ impl Typesetter{
     let mut paragraph = paragraph_builder.build();
     paragraph.layout(self.width);
 
-    let metrics = self.char_style.font_metrics();
-    let shift = get_baseline_offset(&metrics, self.baseline);
-    let offset = (
-      self.width * get_alignment_factor(&self.graf_style),
-      shift - paragraph.alphabetic_baseline(),
+    let offset = Point::new(
+      self.alignment_offset(),
+      -paragraph.alphabetic_baseline(),
     );
 
-    (paragraph, offset.into())
+    (paragraph, offset)
   }
 
   pub fn metrics(&self) -> Vec<Vec<f32>>{
-    let (paragraph, _) = self.layout(&Paint::default());
+    let (mut paragraph, origin) = self.layout(&Paint::default());
+
+    let shift = self.char_style.baseline_shift();
+    let hang = Baseline::Hanging.get_offset(&self.char_style) - shift;
+    let norm = Baseline::Alphabetic.get_offset(&self.char_style) - shift;
+    let ideo = Baseline::Ideographic.get_offset(&self.char_style) - shift;
+
     let font_metrics = self.char_style.font_metrics();
-    let offset = get_baseline_offset(&font_metrics, self.baseline);
-    let hang = get_baseline_offset(&font_metrics, Baseline::Hanging) - offset;
-    let norm = get_baseline_offset(&font_metrics, Baseline::Alphabetic) - offset;
-    let ideo = get_baseline_offset(&font_metrics, Baseline::Ideographic) - offset;
     let ascent = norm - font_metrics.ascent;
     let descent = font_metrics.descent - norm;
-    let alignment = get_alignment_factor(&self.graf_style) * self.width;
 
-    if paragraph.line_number() == 0 {
-      return vec![vec![0.0, 0.0, 0.0, 0.0, 0.0, ascent, descent, ascent, descent, hang, norm, ideo]]
-    }
+    // shift line metrics to correct for additional top-leading provided by strut (if any)
+    let half_leading = self.graf_style.strut_style().leading().max(0.0) * self.char_style.font_size() / 2.0;
+    let line_origin = (origin.x, origin.y - half_leading);
 
-    // find the bounds and text-range for each individual line
-    let origin = paragraph.get_line_metrics()[0].baseline;
-    let line_rects:Vec<(Rect, Range<usize>, f32)> = paragraph.get_line_metrics().iter().map(|line|{
-      let baseline = line.baseline - origin;
-      let rect = Rect::new(line.left as f32, (baseline - line.ascent) as f32,
-                          (line.left + line.width) as f32, (baseline + line.descent) as f32);
-      let range = string_idx_range(&self.text, line.start_index,
-        if self.width==GALLEY{ line.end_index }else{ line.end_excluding_whitespaces }
-      );
-      (rect.with_offset((alignment, offset)), range, baseline as f32 + offset)
+    // shift glyph-path metrics to account for distance between lineHeight and ascender
+    let headroom = font_metrics.ascent + paragraph.alphabetic_baseline();
+    let rect_origin = Point::new(origin.x, origin.y + shift - headroom);
+
+    // find the bounds, text-range, and baseline offset for each individual line and
+    // accumulate the whole run's bounds
+    let mut bounds = Rect::new_empty();
+    let lines:Vec<(Rect, Range<usize>, f32)> = (0..paragraph.line_number()).filter_map(|i|{
+      // measure the glyph bounds
+      let (skipped, path) = paragraph.get_path_at(i);
+      let mut used_rect = path.bounds().with_offset(rect_origin);
+
+      // measure the full line (including ascent & descent whether occupied or not)
+      let line = paragraph.get_line_metrics_at(i)?;
+      let mut line_rect = Rect::new(
+        line.left as f32,
+        (line.baseline - line.ascent) as f32,
+        (line.left + line.width) as f32,
+        (line.baseline + line.descent) as f32
+      ).with_offset(line_origin);
+
+      // use horizontal bounds from line_rect and vertical from used_rect
+      line_rect.top = used_rect.top;
+      line_rect.bottom = used_rect.bottom;
+
+      // build up union of line_rects to find the bounds for the whole text run
+      bounds = match bounds.is_empty(){
+        false => Rect::join2(bounds, line_rect),
+        true => line_rect,
+      };
+
+      // find the character range of the line's content in the source string
+      let line_end = if self.width==GALLEY{ line.end_index }else{ line.end_excluding_whitespaces };
+      let range = string_idx_range(&self.text, line.start_index, line_end);
+
+      Some((used_rect, range, line.baseline as f32 + origin.y - half_leading))
     }).collect();
 
-    // take their union to find the bounds for the whole text run
-    let (bounds, chars) = line_rects.iter().fold((Rect::new_empty(), 0), |(union, indices), (rect, range, _)|
-      (Rect::join2(union, rect), range.end)
-    );
-
     // return a list-of-lists whose first entry is the whole-run font metrics and subsequent entries are
-    // line-rect/range values (with the js side responsible for restructuring the whole bundle)
+    // per-line used_rect/range values (with the js side responsible for restructuring the whole bundle)
     let mut results = vec![vec![
-      bounds.width(), bounds.left, bounds.right, -bounds.top, bounds.bottom,
-      ascent, descent, ascent, descent, hang, norm, ideo
+      -bounds.left, bounds.right, -bounds.top, bounds.bottom,
+      ascent, descent, hang, norm, ideo
     ]];
-    line_rects.iter().for_each(|(rect, range, baseline)|{
-      results.push(vec![rect.left, rect.top, rect.width(), rect.height(),
-                        *baseline, range.start as f32, range.end as f32])
-    });
+    for (used_rect, range, baseline) in lines{
+      results.push(vec![used_rect.left, used_rect.top, used_rect.width(), used_rect.height(),
+                        baseline, range.start as f32, range.end as f32])
+    }
     results
   }
 
   pub fn path(&mut self) -> SkPath {
     let (mut paragraph, mut offset) = self.layout(&Paint::default());
-    offset.y -= self.char_style.font_metrics().ascent + paragraph.alphabetic_baseline();
+    let headroom = self.char_style.font_metrics().ascent + paragraph.alphabetic_baseline();
+    offset.y -= headroom - self.baseline.get_offset(&self.char_style);
 
     let mut path = SkPath::new();
     for idx in 0..paragraph.line_number(){
@@ -151,6 +151,26 @@ impl Typesetter{
       path.add_path(&line, offset, None);
     };
     path
+  }
+
+  fn alignment_offset(&self) -> f32{
+    // convert start/end to left/right depending on writing system
+    let gravity = match (self.graf_style.text_direction(), self.graf_style.text_align()){
+      (TextDirection::LTR, TextAlign::Start) | (TextDirection::RTL, TextAlign::End) => TextAlign::Left,
+      (TextDirection::LTR, TextAlign::End) | (TextDirection::RTL, TextAlign::Start) => TextAlign::Right,
+      (_, alignment) => alignment,
+    };
+
+    // `alignment_factor` shifts the entire line to left/right/center align it
+    // `spacing_step` compensates for the letterspacing Paragraph adds before the line's first character
+    let (alignment_factor, spacing_step) = match gravity{
+      TextAlign::Left | TextAlign::Justify => (0.0, -0.5),
+      TextAlign::Center => (-0.5, 0.5),
+      TextAlign::Right => (-1.0, 1.0),
+      _ => (0.0, 0.0) // start & end have already been remapped
+    };
+
+    alignment_factor * self.width + spacing_step * self.char_style.letter_spacing()
   }
 }
 
@@ -161,7 +181,7 @@ impl Typesetter{
 pub struct FontSpec{
   pub families: Vec<String>,
   pub size: f32,
-  pub leading: f32,
+  pub line_height: Option<f32>,
   pub weight: Weight,
   pub width: Width,
   pub slant: Slant,
@@ -189,16 +209,16 @@ pub fn font_arg(cx: &mut FunctionContext, idx: usize) -> NeonResult<Option<FontS
   let canonical = string_for_key(cx, &font_desc, "canonical")?;
   let variant = string_for_key(cx, &font_desc, "variant")?;
   let size = float_for_key(cx, &font_desc, "size")?;
-  let leading = float_for_key(cx, &font_desc, "lineHeight")?;
-
   let weight = Weight::from(float_for_key(cx, &font_desc, "weight")? as i32);
   let slant = to_slant(string_for_key(cx, &font_desc, "style")?.as_str());
   let width = to_width(string_for_key(cx, &font_desc, "stretch")?.as_str());
+  let line_height = opt_float_for_key(cx, &font_desc, "lineHeight")
+    .map(|pt_size| pt_size / size);
 
   let feat_obj:Handle<JsObject> = font_desc.get(cx, "features")?;
   let features = font_features(cx, &feat_obj)?;
 
-  Ok(Some(FontSpec{ families, size, leading, weight, slant, width, features, variant, canonical}))
+  Ok(Some(FontSpec{ families, size, line_height, weight, slant, width, features, variant, canonical}))
 }
 
 pub fn font_features(cx: &mut FunctionContext, obj: &Handle<JsObject>) -> NeonResult<Vec<(String, i32)>>{
@@ -307,7 +327,7 @@ pub fn to_text_align(mode_name:&str) -> Option<TextAlign>{
     "left" => TextAlign::Left,
     "right" => TextAlign::Right,
     "center" => TextAlign::Center,
-    // "justify" => TextAlign::Justify,
+    "justify" => TextAlign::Justify,
     "start" => TextAlign::Start,
     "end" => TextAlign::End,
     _ => return None
@@ -324,23 +344,6 @@ pub fn from_text_align(mode:TextAlign) -> String{
     TextAlign::Start => "start",
     TextAlign::End => "end",
   }.to_string()
-}
-
-pub fn get_alignment_factor(graf_style:&ParagraphStyle) -> f32 {
-  match graf_style.text_direction() {
-    TextDirection::LTR => match graf_style.text_align() {
-      TextAlign::Left | TextAlign::Start => 0.0,
-      TextAlign::Right | TextAlign::End => -1.0,
-      TextAlign::Center => -0.5,
-      TextAlign::Justify => 0.0 // unsupported
-    },
-    TextDirection::RTL => match graf_style.text_align() {
-      TextAlign::Left | TextAlign::End => 0.0,
-      TextAlign::Right | TextAlign::Start => -1.0,
-      TextAlign::Center => -0.5,
-      TextAlign::Justify => 0.0 // unsupported
-    }
-  }
 }
 
 #[derive(Copy, Clone, Debug)]
@@ -370,14 +373,21 @@ pub fn from_text_baseline(mode:Baseline) -> String{
   }.to_string()
 }
 
-pub fn get_baseline_offset(metrics: &FontMetrics, mode:Baseline) -> f32 {
-  match mode{
-    Baseline::Top => -metrics.ascent,
-    Baseline::Hanging => metrics.cap_height,
-    Baseline::Middle => metrics.cap_height / 2.0,
-    Baseline::Alphabetic => 0.0,
-    Baseline::Ideographic => -metrics.descent,
-    Baseline::Bottom => -metrics.descent,
+impl Baseline{
+  pub fn get_offset(&self, style:&TextStyle) -> f32 {
+    let FontMetrics{mut ascent, mut descent, ..} = style.font_metrics();
+    ascent -= style.baseline_shift();  // offsets are defined relative to the alphabetic baseline, so
+    descent -= style.baseline_shift(); // compensate for any other textBaseline setting
+
+    // see TextMetrics::GetFontBaseline from Chromium for reference:
+    // https://github.com/chromium/chromium/blob/main/third_party/blink/renderer/core/html/canvas/text_metrics.cc#L34
+    match self {
+      Baseline::Top => -ascent,
+      Baseline::Hanging => -ascent * 0.8,
+      Baseline::Middle => -(ascent + descent) / 2.0,
+      Baseline::Alphabetic => 0.0,
+      Baseline::Bottom | Baseline::Ideographic => -descent,
+    }
   }
 }
 
@@ -441,12 +451,7 @@ pub fn decoration_arg(cx: &mut FunctionContext, idx: usize) -> NeonResult<Option
     let size = match inherit.as_str(){
       "from-font" => None,
       _ => match opt_object_for_key(cx, &deco, "thickness"){
-          Some(thickness) => {
-            let raw_size = float_for_key(cx, &thickness, "size")?;
-            let unit = string_for_key(cx, &thickness, "unit")?;
-            let px_size = float_for_key(cx, &thickness, "px")?;
-            Spacing::parse(raw_size, unit, px_size)
-          }
+          Some(thickness) => Spacing::from_obj(cx, &thickness)?,
           _ => None
         }
     };
@@ -465,7 +470,9 @@ pub fn decoration_arg(cx: &mut FunctionContext, idx: usize) -> NeonResult<Option
   }
 }
 
-
+//
+// Em-relative lengths (for text spacing & decoration thickness)
+//
 #[derive(Clone, Debug)]
 pub struct Spacing{
   raw_size: f32,
@@ -480,6 +487,13 @@ impl Default for Spacing{
 }
 
 impl Spacing{
+  pub fn from_obj(cx: &mut FunctionContext, spacing:&Handle<JsObject>) -> NeonResult<Option<Self>>{
+    let raw_size = float_for_key(cx, &spacing, "size")?;
+    let unit = string_for_key(cx, &spacing, "unit")?;
+    let px_size = float_for_key(cx, &spacing, "px")?;
+    Ok(Self::parse(raw_size, unit, px_size))
+  }
+
   pub fn parse(raw_size:f32, unit:String, px_size:f32) -> Option<Self>{
     let main_size = match unit.as_str(){
       "em" | "rem" => raw_size,
@@ -504,3 +518,12 @@ impl Spacing{
   }
 }
 
+pub fn opt_spacing_arg<'a>(cx: &mut FunctionContext<'a>, idx:usize) -> NeonResult<Option<Spacing>>{
+  match cx.argument::<JsValue>(idx)?.is_a::<JsNull, _>(cx){
+    true => Ok(None),
+    false => {
+      let spacing = cx.argument::<JsObject>(idx)?;
+      Spacing::from_obj(cx, &spacing)
+    }
+  }
+}

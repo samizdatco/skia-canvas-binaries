@@ -217,6 +217,8 @@ fn main(mut cx: ModuleContext) -> NeonResult<()> {
   cx.export_function("CanvasRenderingContext2D_set_letterSpacing", ctx::set_letterSpacing)?;
   cx.export_function("CanvasRenderingContext2D_get_wordSpacing", ctx::get_wordSpacing)?;
   cx.export_function("CanvasRenderingContext2D_set_wordSpacing", ctx::set_wordSpacing)?;
+  cx.export_function("CanvasRenderingContext2D_get_fontHinting", ctx::get_fontHinting)?;
+  cx.export_function("CanvasRenderingContext2D_set_fontHinting", ctx::set_fontHinting)?;
   cx.export_function("CanvasRenderingContext2D_get_fontVariant", ctx::get_fontVariant)?;
   cx.export_function("CanvasRenderingContext2D_set_fontVariant", ctx::set_fontVariant)?;
   cx.export_function("CanvasRenderingContext2D_get_fontStretch", ctx::get_fontStretch)?;
@@ -245,11 +247,13 @@ fn main(mut cx: ModuleContext) -> NeonResult<()> {
   // -- Window -----------------------------------------------------------------------------------
 
   #[cfg(feature = "window")] {
-    cx.export_function("App_launch", gui::launch)?;
+    cx.export_function("App_register", gui::register)?;
+    cx.export_function("App_activate", gui::activate)?;
     cx.export_function("App_quit", gui::quit)?;
     cx.export_function("App_closeWindow", gui::close)?;
     cx.export_function("App_openWindow", gui::open)?;
     cx.export_function("App_setRate", gui::set_rate)?;
+    cx.export_function("App_setMode", gui::set_mode)?;
   }
 
   Ok(())
