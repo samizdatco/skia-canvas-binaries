@@ -13,6 +13,8 @@ use skia_safe::gpu::{
 use objc::rc::autoreleasepool;
 use serde_json::{json, Value};
 
+use crate::context::page::ExportOptions;
+
 thread_local!( static MTL_CONTEXT: RefCell<Option<MetalContext>> = const { RefCell::new(None) }; );
 static MTL_CONTEXT_LIFESPAN:Duration = Duration::from_secs(5);
 static MTL_STATUS: OnceLock<Value> = OnceLock::new();
@@ -76,32 +78,37 @@ impl MetalEngine {
         });
     }
 
-    pub fn with_surface<T, F>(image_info: &ImageInfo, msaa:Option<usize>, f:F) -> Result<T, String>
-        where F:FnOnce(&mut Surface) -> Result<T, String>
+    pub fn with_context<T, F>(f:F) -> Result<T, String>
+        where F:FnOnce(&mut MetalContext) -> Result<T, String>
     {
         match MetalEngine::supported() {
             false => Err("Metal API not supported".to_string()),
             true => MTL_CONTEXT.with_borrow_mut(|local_ctx|
                 autoreleasepool(||
+                    // lazily initialize this thread's context...
                     local_ctx
-                        // lazily initialize this thread's context...
                         .take()
                         .or_else(|| MetalContext::new() )
                         .ok_or("Metal initialization failed".to_string())
                         .and_then(|ctx|{
-                            let ctx = local_ctx.insert(ctx);
-                            // ...then create the surface with it...
-                            ctx.surface(image_info, msaa)
+                            f(local_ctx.insert(ctx))
                         })
-                        .and_then(|mut surface|
-                            // ... finally let the callback use it
-                            f(&mut surface)
-                        )
                 )
             )
         }
     }
+
+    pub fn with_direct_context<F>(f:F)
+        where F:FnOnce(Option<&mut DirectContext>)
+    {
+        Self::with_context(|ctx| Ok(f(Some(&mut ctx.context))) ).ok();
+    }
+
+    pub fn make_surface(image_info: &ImageInfo, opts:&ExportOptions) -> Result<Surface, String>{
+        Self::with_context(|ctx| ctx.surface(image_info, opts) )
+    }
 }
+
 pub struct MetalContext {
     device: Device,
     context: DirectContext,
@@ -130,23 +137,15 @@ impl MetalContext{
         })
     }
 
-    fn surface(&mut self, image_info: &ImageInfo, msaa:Option<usize>) -> Result<Surface, String> {
-        let samples = msaa.unwrap_or_else(||
-            if self.msaa.contains(&4){ 4 } // 4x is a good default if available
-            else{ *self.msaa.last().unwrap() }
-        );
-        if !self.msaa.contains(&samples){
-            return Err(format!("{}x MSAA not supported by GPU (options: {:?})", samples, self.msaa));
-        }
-
+    fn surface(&mut self, image_info: &ImageInfo, opts:&ExportOptions) -> Result<Surface, String> {
         self.last_use = self.last_use.max(Instant::now());
         surfaces::render_target(
             &mut self.context,
             Budgeted::Yes,
             image_info,
-            Some(samples),
+            Some(opts.msaa_from(&self.msaa)?),
             SurfaceOrigin::BottomLeft,
-            None,
+            Some(&opts.surface_props()),
             false,
             None
         ).ok_or(
@@ -166,7 +165,7 @@ impl MetalContext{
 
 #[cfg(feature = "window")]
 use {
-    skia_safe::{Matrix, Color, Paint, canvas::SrcRectConstraint},
+    skia_safe::{Matrix, Color, Paint, SurfaceProps, canvas::SrcRectConstraint},
     raw_window_metal::Layer,
     core_graphics_types::geometry::CGSize,
     objc::{msg_send, sel, sel_impl, runtime::{self, Object}},
@@ -242,12 +241,12 @@ impl MetalRenderer{
         self.cache.state = Resizing;
     }
 
-    pub fn draw(&mut self, page:Page, matrix:Matrix, matte:Color){
+    pub fn draw(&mut self, page:Page, matrix:Matrix, props:SurfaceProps, matte:Color){
         let (clip, _) = matrix.map_rect(page.bounds);
         let dpr = self.window.scale_factor() as f32;
         let sync = self.cache.state == Resizing;
 
-        let frame = self.backend.render_to_layer(&self.layer, &self.window, sync, |canvas| {
+        let frame = self.backend.render_to_layer(&self.layer, &self.window, sync, &props, |canvas| {
             // draw raster background
             canvas.clear(matte);
             if let Some((image, src, dst)) = self.cache.validate(&page, matte, dpr, clip){
@@ -291,7 +290,7 @@ impl MetalBackend {
         Self { skia_ctx, queue }
     }
 
-    fn render_to_layer<F>(&mut self, layer:&MetalLayer, window:&Window, sync:bool, f:F) -> Result<Image, String>
+    fn render_to_layer<F>(&mut self, layer:&MetalLayer, window:&Window, sync:bool, props:&SurfaceProps, f:F) -> Result<Image, String>
         where F:FnOnce(&skia_safe::Canvas)
     {
         let drawable = layer
@@ -318,7 +317,7 @@ impl MetalBackend {
             SurfaceOrigin::TopLeft,
             ColorType::BGRA8888,
             None,
-            None,
+            Some(props),
         ).ok_or("MetalBackend: could not create render target")?;
 
         // pass the suface's canvas to the user-provided callback

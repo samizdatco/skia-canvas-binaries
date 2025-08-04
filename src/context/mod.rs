@@ -1,12 +1,9 @@
-#![allow(unused_imports)]
-#![allow(unused_variables)]
 #![allow(dead_code)]
 use std::cell::RefCell;
-use std::sync::{Arc, Mutex, MutexGuard};
 use neon::prelude::*;
 use skia_safe::{
-  Canvas as SkCanvas, Paint, Path, PathOp, Image, ImageInfo, Contains,
-  Rect, Point, IPoint, Size, Color, Color4f, ColorSpace, Data,
+  Canvas as SkCanvas, Paint, Path, PathOp, Image, Contains,
+  Rect, IRect, Point, Size, Color, Color4f, ColorSpace,
   PaintStyle, BlendMode, ClipOp, PictureRecorder, Picture,
   images, image_filters, dash_path_effect, path_1d_path_effect,
   matrix::{ Matrix, TypeMask },
@@ -20,8 +17,8 @@ use skia_safe::{
 pub mod api;
 pub mod page;
 
-use crate::FONT_LIBRARY;
 use crate::utils::*;
+use crate::font_library::FontLibrary;
 use crate::typography::{Typesetter, FontSpec, Baseline, Spacing, DecorationStyle};
 use crate::filter::{Filter, ImageFilter, FilterQuality};
 use crate::gradient::{CanvasGradient, BoxedCanvasGradient};
@@ -29,20 +26,17 @@ use crate::pattern::{CanvasPattern, BoxedCanvasPattern};
 use crate::texture::{CanvasTexture, BoxedCanvasTexture};
 use crate::image::ImageData;
 use crate::gpu::RenderingEngine;
-use page::{PageRecorder, Page};
+use page::{PageRecorder, Page, ExportOptions};
 
 const BLACK:Color = Color::BLACK;
 const TRANSPARENT:Color = Color::TRANSPARENT;
 
 pub type BoxedContext2D = JsBox<RefCell<Context2D>>;
 impl Finalize for Context2D {}
-unsafe impl Send for Context2D {
-  // PictureRecorder is non-threadsafe
-}
 
 pub struct Context2D{
   pub bounds: Rect,
-  recorder: Arc<Mutex<PageRecorder>>,
+  recorder: RefCell<PageRecorder>,
   state: State,
   stack: Vec<State>,
   path: Path,
@@ -199,7 +193,7 @@ impl Context2D{
 
     Context2D{
       bounds,
-      recorder: Arc::new(Mutex::new(PageRecorder::new(bounds))),
+      recorder: RefCell::new(PageRecorder::new(bounds)),
       path: Path::new(),
       stack: vec![],
       state: State::default(),
@@ -213,19 +207,10 @@ impl Context2D{
     }
   }
 
-  pub fn width(&self) -> f32{
-    self.bounds.width()
-  }
-
-  pub fn height(&self) -> f32{
-    self.bounds.height()
-  }
-
-  pub fn with_recorder<F>(&self, f:F)
-    where F:FnOnce(MutexGuard<PageRecorder>)
+  pub fn with_recorder<'a, F>(&'a self, f:F)
+    where F:FnOnce(std::cell::RefMut<'a, PageRecorder>)
   {
-    let recorder = self.recorder.lock().unwrap();
-    f(recorder);
+    f(self.recorder.borrow_mut());
   }
 
   pub fn with_canvas<F>(&self, f:F)
@@ -347,6 +332,13 @@ impl Context2D{
     }
   }
 
+  pub fn scoot(&mut self, point:Point){
+    // update initial point if first drawing command isn't a moveTo
+    if self.path.is_empty(){
+      self.path.move_to(point);
+    }
+  }
+
   pub fn draw_path(&mut self, path:Option<Path>, style:PaintStyle, rule:Option<FillType>){
     let mut path = path.unwrap_or_else(|| {
       // the current path has already incorporated its transform state
@@ -355,27 +347,60 @@ impl Context2D{
     });
     path.set_fill_type(rule.unwrap_or(FillType::Winding));
 
+    // if path will fill the whole canvas and paint/blend are fully opaque...
+    if matches!(style, PaintStyle::Fill | PaintStyle::StrokeAndFill) &&
+      matches!(&self.state.global_composite_operation, BlendMode::SrcOver | BlendMode::Src | BlendMode::Clear) &&
+      self.state.fill_style.is_opaque() &&
+      self.state.global_alpha == 1.0 &&
+      self.state.clip.is_none() &&
+      path.conservatively_contains_rect(self.bounds)
+    {
+      // ...erase existing vector content layers (but preserve CTM & clip path)
+      self.with_recorder(|mut recorder|{
+        recorder.set_bounds(self.bounds);
+        recorder.set_matrix(self.state.matrix);
+        recorder.set_clip(&self.state.clip);
+      });
+    }
+
     let paint = self.paint_for_drawing(style);
-    let texture = self.state.texture(style);
-
     self.render_to_canvas(&paint, |canvas, paint| {
-      if let Some(tile) = texture{
-        canvas.save();
-        let spacing = tile.spacing();
-        let offset = (-spacing.0/2.0, -spacing.1/2.0);
-        let mut stencil = Path::default();
-        fill_path_with_paint(&path, paint, &mut stencil, None, None);
-        let stencil_frame = &Path::rect(stencil.bounds().with_offset(offset).with_outset(spacing), None);
+      if let Some(tile) = self.state.texture(style){
+        // SKIA PATH EFFECT BUG WORKAROUND:
+        //
+        // Simply mixing the PathEffect into the paint and drawing totally misjudges the boundaries of the
+        // path being filled/stroked. Instead we'll create a path with the texture and a path with the
+        // desired outline separately, then draw their overlap
 
+        // paint containing the PathEffect
         let mut tile_paint = paint.clone();
         tile.mix_into(&mut tile_paint, self.state.global_alpha);
-        let mut tile_path = Path::default();
-        fill_path_with_paint(stencil_frame, &tile_paint, &mut tile_path, None, None);
 
-        let mut fill_paint = paint.clone();
-        fill_paint.set_style(PaintStyle::Fill);
-        if let Some(fill_path) = stencil.op(&tile_path, PathOp::Intersect){
-          canvas.draw_path(&fill_path, &fill_paint);
+        // outline strokes on user path (if paint style is stroke) so we can use a fill operation below
+        let mut stencil = Path::default();
+        fill_path_with_paint(&path, paint, &mut stencil, None, None);
+
+        // construct a rectangle significantly larger than the path + stroke area (1.5x seems to work?)
+        let expanded_bounds = stencil.bounds().with_outset(tile.spacing() * 1.5);
+        let enclosing_frame = Path::rect(expanded_bounds, None);
+
+        if tile.use_clip(){
+          // apply the user path as a clipping mask and fill the whole enclosing rect with tile pattern
+          canvas.save();
+          canvas.clip_path(&stencil, Some(ClipOp::Intersect), Some(true));
+          canvas.draw_path(&enclosing_frame, &tile_paint);
+          canvas.restore();
+        }else{
+          // create a path merging the the tile pattern outlines and the enclosing rectangle
+          let mut textured_frame = Path::default();
+          fill_path_with_paint(&enclosing_frame, &tile_paint, &mut textured_frame, None, None);
+
+          // intersect the rectangular texture with the user path and fill with flat color
+          let mut fill_paint = paint.clone();
+          fill_paint.set_style(PaintStyle::Fill);
+          if let Some(fill_path) = stencil.op(&textured_frame, PathOp::Intersect){
+            canvas.draw_path(&fill_path, &fill_paint);
+          }
         }
       }else{
         canvas.draw_path(&path, paint);
@@ -390,10 +415,15 @@ impl Context2D{
     };
     clip.set_fill_type(rule);
 
-    self.state.clip = match &self.state.clip {
-      Some(old_clip) => old_clip.op(&clip, PathOp::Intersect),
-      None => Some(clip.clone())
-    };
+    // update the clip with the intersection of the new path, unless it's larger than
+    // the canvas itself in which case the whole clip is discarded
+    self.state.clip = self.state.clip.as_ref()
+      .unwrap_or(&Path::rect(self.bounds, None))
+      .op(&clip, PathOp::Intersect)
+      .and_then(|path| match path.conservatively_contains_rect(self.bounds){
+        true => None,
+        false => Some(path),
+      });
 
     self.with_recorder(|mut recorder|{
       recorder.set_clip(&self.state.clip);
@@ -430,7 +460,7 @@ impl Context2D{
   pub fn clear_rect(&mut self, rect:&Rect){
     match self.state.matrix.map_rect(rect).0.contains(self.bounds){
 
-      // if rect fully encloses canvas, erase existing content (but preserve CTM, path, etc.)
+      // if rect fully encloses canvas, erase existing content (but preserve CTM & clip path)
       true =>  self.with_recorder(|mut recorder|{
         recorder.set_bounds(self.bounds);
         recorder.set_matrix(self.state.matrix);
@@ -478,19 +508,23 @@ impl Context2D{
   }
 
   pub fn get_page(&self) -> Page {
-    self.recorder.lock().unwrap().get_page()
+    self.recorder.borrow_mut().get_page()
+  }
+
+  pub fn get_page_for_export(&self, opts:&ExportOptions, engine:&RenderingEngine) -> Page {
+    self.recorder.borrow_mut().get_page_for_export(opts, engine)
   }
 
   pub fn get_image(&self) -> Option<Image> {
-    self.recorder.lock().unwrap().get_image()
+    self.recorder.borrow_mut().get_image()
   }
 
   pub fn get_picture(&mut self) -> Option<Picture> {
-    self.recorder.lock().unwrap().get_page().get_picture(None)
+    self.recorder.borrow_mut().get_page().get_picture(None)
   }
 
-  pub fn get_pixels(&mut self, origin: impl Into<IPoint>, info:ImageInfo, engine:RenderingEngine) -> Result<Vec<u8>, String>{
-    self.recorder.lock().unwrap().get_pixels(origin, &info, engine)
+  pub fn get_pixels(&mut self, crop:IRect, opts:ExportOptions, engine:RenderingEngine) -> Result<Vec<u8>, String>{
+    self.recorder.borrow_mut().get_pixels(crop, opts, engine)
   }
 
   pub fn blit_pixels(&mut self, image_data:ImageData, src_rect:&Rect, dst_rect:&Rect){
@@ -512,8 +546,9 @@ impl Context2D{
   }
 
   pub fn set_font(&mut self, spec: FontSpec){
-    let mut library = FONT_LIBRARY.lock().unwrap();
-    if let Some(new_style) = library.update_style(&self.state.char_style, &spec){
+    if let Some(new_style) = FontLibrary::with_shared(|lib|
+      lib.update_style(&self.state.char_style, &spec)
+    ){
       self.state.font = spec.canonical;
       self.state.font_variant = spec.variant.to_string();
       self.state.font_width = spec.width;
@@ -539,20 +574,26 @@ impl Context2D{
 
   pub fn draw_text(&mut self, text: &str, x: f32, y: f32, width: Option<f32>, style:PaintStyle){
     let paint = self.paint_for_drawing(style);
-    let typesetter = Typesetter::new(&self.state, text, width);
-    self.render_to_canvas(&paint, |canvas, paint| {
-      let point = Point::new(x, y);
-      let (paragraph, offset) = typesetter.layout(paint);
-      paragraph.paint(canvas, point + offset);
-    });
+    let mut typesetter = Typesetter::new(&self.state, text, width);
+    let origin = Point::new(x, y);
+
+    if self.state.texture(style).is_some(){
+      // if dye is a texture, convert text to path first
+      self.draw_path(Some(typesetter.path(origin)), style, None);
+    }else{
+      self.render_to_canvas(&paint, |canvas, paint| {
+        let (paragraph, offset) = typesetter.layout(paint);
+        paragraph.paint(canvas, origin + offset);
+      });
+    }
   }
 
-  pub fn measure_text(&mut self, text: &str, width:Option<f32>) -> Vec<Vec<f32>>{
+  pub fn measure_text(&mut self, text: &str, width:Option<f32>) -> serde_json::Value{
     Typesetter::new(&self.state, text, width).metrics()
   }
 
   pub fn outline_text(&self, text:&str, width:Option<f32>) -> Path{
-    Typesetter::new(&self.state, text, width).path()
+    Typesetter::new(&self.state, text, width).path((0.0, 0.0))
   }
 
   pub fn paint_for_drawing(&mut self, style:PaintStyle) -> Paint{
@@ -661,10 +702,19 @@ impl Dye{
     }
   }
 
+  pub fn is_opaque(&self) -> bool{
+    match self {
+      Dye::Color(color) => Color4f::from(*color).is_opaque(),
+      Dye::Gradient(gradient) => gradient.is_opaque(),
+      Dye::Pattern(pattern) => pattern.is_opaque(),
+      Dye::Texture(_) => false,
+    }
+  }
+
   pub fn mix_into(&self, paint: &mut Paint, alpha: f32, image_filter: ImageFilter){
     match self {
       Dye::Color(color) => {
-        let mut color:Color4f = (*color).into();
+        let mut color = Color4f::from(*color);
         color.a *= alpha;
         paint.set_color(color.to_color());
       },

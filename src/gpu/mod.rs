@@ -1,7 +1,7 @@
 #![allow(clippy::upper_case_acronyms)]
-use skia_safe::{ImageInfo, Image, Rect, Matrix, Color, Surface, surfaces};
-use serde_json::Value;
-use crate::context::page::Page;
+use skia_safe::{gpu::DirectContext, ImageInfo, Image, Rect, Matrix, Color, Surface, surfaces};
+use serde_json::{json, Value};
+use crate::context::page::{Page, ExportOptions};
 
 #[cfg(feature = "metal")]
 mod metal;
@@ -23,17 +23,16 @@ struct Engine { }
 #[cfg(not(any(feature = "vulkan", feature = "metal")))]
 impl Engine {
     pub fn supported() -> bool { false }
-    pub fn with_surface<T, F>(_: &ImageInfo, _:Option<usize>, _:F)  -> Result<T, String>
-        where F:FnOnce(&mut Surface) -> Result<T, String>
-    {
-        Err("Compiled without GPU support".to_string())
-    }
     pub fn status() -> Value { serde_json::json!({
         "renderer": "CPU",
         "api": Value::Null,
         "device": "CPU-based renderer (compiled without GPU support)",
         "error": Value::Null,
     })}
+    // placeholders that match the GPU signatures (for the type-checker) but will never be called
+    // (see the RenderingEngine methods for their inline implementation when in CPU mode)
+    pub fn make_surface(_info: &ImageInfo, _opts:&ExportOptions) -> Result<Surface, String>{ panic!() }
+    pub fn with_direct_context(_f:impl FnOnce(Option<&mut DirectContext>)){ panic!() }
 }
 
 #[derive(Copy, Clone, Debug)]
@@ -57,14 +56,18 @@ impl RenderingEngine{
         }
     }
 
-    pub fn with_surface<T,F>(&self, image_info: &ImageInfo, msaa:Option<usize>, f:F) -> Result<T, String>
-        where F:FnOnce(&mut Surface) -> Result<T, String>
-    {
+    pub fn make_surface(&self, image_info: &ImageInfo, opts:&ExportOptions) -> Result<Surface, String>{
         match self {
-            Self::GPU => Engine::with_surface(image_info, msaa, f),
-            Self::CPU => surfaces::raster(image_info, None, None)
+            Self::GPU => Engine::make_surface(image_info, opts),
+            Self::CPU => surfaces::raster(image_info, None, Some(&opts.surface_props()))
                 .ok_or(format!("Could not allocate new {}×{} bitmap", image_info.width(), image_info.height()))
-                .and_then(|mut surface|f(&mut surface))
+        }
+    }
+
+    pub fn with_direct_context(&self, f:impl FnOnce(Option<&mut DirectContext>)){
+        match self {
+            Self::GPU => Engine::with_direct_context(f),
+            Self::CPU => f(None)
         }
     }
 
@@ -72,8 +75,8 @@ impl RenderingEngine{
         let mut status = Engine::status();
         if let Self::CPU = self{
             if Engine::supported(){
-                status["renderer"] = Value::String("CPU".to_string());
-                status["device"] = Value::String("CPU-based renderer (GPU manually disabled)".to_string())
+                status["renderer"] = json!("CPU");
+                status["device"] = json!("CPU-based renderer (GPU manually disabled)")
             }
         }
         status
@@ -93,6 +96,7 @@ impl RenderingEngine{
     }
 }
 
+#[allow(dead_code)]
 pub struct RenderCache {
     image: Option<Image>,
     content: Rect,
@@ -108,25 +112,22 @@ impl Default for RenderCache{
     }
 }
 
+#[allow(dead_code)]
 impl RenderCache{
     pub fn validate(&mut self, page:&Page, matte:Color, dpr:f32, clip:Rect) -> Option<(&Image, &Rect, Rect)>{
-        if self.state == RenderState::Dirty{
-            self.clear();
+        if
+            self.state == RenderState::Dirty ||
+            self.page.id != page.id ||
+            self.matte != matte ||
+            self.dpr != dpr
+        {
+            *self = Self::default();
         }
 
-        let is_valid =
-            self.page.id == page.id &&
-            self.page.rev == page.rev &&
-            self.matte == matte &&
-            self.dpr == dpr;
-
-        match is_valid{
-            true => self.image.as_ref().map(|img| {
-                let (dst, _) = Matrix::scale((dpr, dpr)).map_rect(clip);
-                (img, &self.content, dst)
-            }),
-            false => None
-        }
+        self.image.as_ref().map(|img| {
+            let (dst, _) = Matrix::scale((dpr, dpr)).map_rect(clip);
+            (img, &self.content, dst)
+        })
     }
 
     pub fn depth(&self) -> usize {
@@ -142,10 +143,6 @@ impl RenderCache{
             let (content, _) = skia_safe::Matrix::scale((dpr, dpr)).map_rect(content);
             *self = Self{image: Some(image), page:page.clone(), matte, dpr, content, state};
         }
-    }
-
-    pub fn clear(&mut self){
-        *self = Self::default();
     }
 }
 

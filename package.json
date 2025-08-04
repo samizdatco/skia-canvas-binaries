@@ -1,7 +1,7 @@
 {
   "name": "skia-canvas",
-  "version": "2.0.3-rc4",
-  "description": "A GPU-accelerated Canvas Graphics API for Node",
+  "version": "2.0.3-rc18",
+  "description": "A multi-threaded, GPU-accelerated, Canvas API for Node",
   "author": "Christian Swinehart <drafting@samizdat.co>",
   "license": "MIT",
   "homepage": "https://skia-canvas.org",
@@ -25,25 +25,26 @@
     "path": "path-browserify"
   },
   "scripts": {
-    "build": "cargo-cp-artifact -nc lib/v8/index.node -- cargo build --message-format=json-render-diagnostics",
-    "install": "node-pre-gyp install || npm run build -- --release",
-    "package": "node-pre-gyp package",
-    "upload": "gh release upload v$npm_package_version build/stage/v$npm_package_version/*",
+    "build": "cargo-cp-artifact -nc lib/skia.node -- cargo build --message-format=json-render-diagnostics",
+    "install": "node lib/prebuild.mjs download || make optimized",
+    "upload": "node lib/prebuild.mjs upload",
     "test": "jest"
   },
   "dependencies": {
-    "@mapbox/node-pre-gyp": "^1.0.11",
+    "@types/sharp": "^0.31.1",
     "cargo-cp-artifact": "^0.1",
     "cross-fetch": "^4.1.0",
-    "glob": "^11.0.2",
+    "detect-libc": "^2.0.4",
+    "glob": "^11.0.3",
+    "https-proxy-agent": "^7.0.6",
     "path-browserify": "^1.0.1",
     "string-split-by": "^1.0.0"
   },
   "devDependencies": {
     "@types/jest": "^29.5.14",
-    "@types/lodash": "^4.17.17",
-    "@types/node": "^22.10.1",
-    "express": "^4.21.2",
+    "@types/lodash": "^4.17.19",
+    "@types/node": "^24.0.7",
+    "express": "^5.1.0",
     "jest": "^29.7.0",
     "lodash": "^4.17.21",
     "nodemon": "^3.1.10",
@@ -52,13 +53,6 @@
   "files": [
     "lib"
   ],
-  "binary": {
-    "module_name": "index",
-    "module_path": "./lib/v8",
-    "remote_path": "./v{version}",
-    "package_name": "{platform}-{arch}-{libc}.tar.gz",
-    "host": "https://github.com/samizdatco/skia-canvas/releases/download"
-  },
   "keywords": [
     "canvas",
     "gpu",

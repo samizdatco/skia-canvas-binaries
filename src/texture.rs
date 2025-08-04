@@ -1,23 +1,18 @@
-#![allow(unused_variables)]
-#![allow(unused_mut)]
-#![allow(dead_code)]
-#![allow(unused_imports)]
 #![allow(non_snake_case)]
 use std::cell::RefCell;
-use std::sync::{Arc, Mutex};
+use std::rc::Rc;
 use std::f32::consts::PI;
 use neon::prelude::*;
-use skia_safe::{Path, Rect, Color, Color4f, Point, TileMode, Matrix, Paint, PaintStyle};
-use skia_safe::{PathEffect, line_2d_path_effect, path_2d_path_effect};
+use skia_safe::{Path, Color, Color4f, Matrix, Paint, PaintStyle, PaintCap, Point};
+use skia_safe::{line_2d_path_effect, path_2d_path_effect};
 
 use crate::utils::*;
-use crate::path::BoxedPath2D;
 
-#[derive(Debug)]
 struct Texture{
   path: Option<Path>,
   color: Color,
   line: f32,
+  cap: PaintCap,
   angle: f32,
   scale: (f32, f32),
   shift: (f32, f32),
@@ -28,19 +23,19 @@ impl Finalize for CanvasTexture {}
 
 impl Default for Texture {
   fn default() -> Self {
-    Texture{path:None, color:Color::BLACK, line:1.0, angle:0.0, scale:(1.0, 1.0), shift:(0.0, 0.0)}
+    Texture{path:None, color:Color::BLACK, line:1.0, cap:PaintCap::Butt, angle:0.0, scale:(1.0, 1.0), shift:(0.0, 0.0)}
   }
 }
 
 #[derive(Clone)]
 pub struct CanvasTexture{
-  texture:Arc<Mutex<Texture>>
+  texture:Rc<RefCell<Texture>>,
+  outline: bool,
 }
 
 impl CanvasTexture{
   pub fn mix_into(&self, paint: &mut Paint, alpha:f32){
-    let tile = Arc::clone(&self.texture);
-    let tile = tile.lock().unwrap();
+    let tile = self.texture.borrow();
 
     let mut matrix = Matrix::new_identity();
     matrix
@@ -62,7 +57,10 @@ impl CanvasTexture{
 
     if tile.line > 0.0{
       paint.set_stroke_width(tile.line);
+      paint.set_stroke_cap(tile.cap);
       paint.set_style(PaintStyle::Stroke);
+    }else{
+      paint.set_style(PaintStyle::Fill);
     }
 
     let mut color:Color4f = tile.color.into();
@@ -70,16 +68,17 @@ impl CanvasTexture{
     paint.set_color(color.to_color());
   }
 
-  pub fn spacing(&self) -> (f32, f32) {
-    let tile = Arc::clone(&self.texture);
-    let tile = tile.lock().unwrap();
-    tile.scale
+  pub fn use_clip(&self) -> bool{
+    !self.outline
+  }
+
+  pub fn spacing(&self) -> Point {
+    let tile = self.texture.borrow();
+    tile.scale.into()
   }
 
   pub fn to_color(&self, alpha:f32) -> Color {
-    let tile = Arc::clone(&self.texture);
-    let tile = tile.lock().unwrap();
-
+    let tile = self.texture.borrow();
     let mut color:Color4f = tile.color.into();
     color.a *= alpha;
     color.to_color()
@@ -92,22 +91,38 @@ impl CanvasTexture{
 //
 
 pub fn new(mut cx: FunctionContext) -> JsResult<BoxedCanvasTexture> {
-  let path = opt_path2d_arg(&mut cx, 1);
-  let color = color_arg(&mut cx, 2).unwrap_or(Color::BLACK);
-  let line = float_arg(&mut cx, 3, "line")?;
-  let nums = float_args(&mut cx, 4..9)?;
+  let path = opt_skpath_arg(&mut cx, 1);
+  let color = opt_color_arg(&mut cx, 2).unwrap_or(Color::BLACK);
 
-  let texture = match nums.as_slice(){
-    [angle, h, v, x, y] => {
-      let angle = *angle;
-      let scale = (*h, *v);
-      let shift = (*x, *y);
-      Texture{path, color, line, angle, scale, shift}
-    },
-    _ => Texture::default()
+  let line = match opt_float_arg(&mut cx, 3){
+    Some(weight) => weight,
+    None => cx.throw_type_error("Expected a number for `line`")?
   };
 
-  let canvas_texture = CanvasTexture{ texture:Arc::new(Mutex::new(texture)) };
+  let cap = match to_stroke_cap(&string_arg(&mut cx, 4, "cap")?){
+    Some(style) => style,
+    None => cx.throw_type_error("Expected \"butt\", \"square\", or \"round\" for `cap`")?
+  };
+
+  let angle = match opt_float_arg(&mut cx, 5){
+    Some(theta) => theta,
+    None => cx.throw_type_error("Expected a number for `angle`")?
+  };
+
+  let outline = bool_arg(&mut cx, 6, "outline")?;
+
+  let scale = match opt_float_args(&mut cx, 7..9).as_slice(){
+    [h, v] => (*h, *v),
+    _ => cx.throw_type_error("Expected a number or array with 2 numbers for `spacing`")?
+  };
+
+  let shift = match opt_float_args(&mut cx, 9..11).as_slice(){
+    [h, v] => (*h, *v),
+    _ => cx.throw_type_error("Expected a number or array with 2 numbers for `offset`")?
+  };
+
+  let texture = Texture{path, color, line, cap, angle, scale, shift};
+  let canvas_texture = CanvasTexture{ texture:Rc::new(RefCell::new(texture)), outline };
   let this = RefCell::new(canvas_texture);
   Ok(cx.boxed(this))
 }
@@ -116,9 +131,7 @@ pub fn repr(mut cx: FunctionContext) -> JsResult<JsString> {
   let this = cx.argument::<BoxedCanvasTexture>(0)?;
   let this = this.borrow();
 
-  let tile = Arc::clone(&this.texture);
-  let tile = tile.lock().unwrap();
-
+  let tile = this.texture.borrow();
   let style = if tile.path.is_some(){ "Path" }else{ "Lines" };
   Ok(cx.string(style))
 }

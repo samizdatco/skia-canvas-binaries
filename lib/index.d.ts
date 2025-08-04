@@ -1,3 +1,5 @@
+import {Sharp} from "sharp"
+
 //
 // Geometry
 //
@@ -117,9 +119,12 @@ declare var DOMRectReadOnly: {
 // Images
 //
 
-export function loadImage(src: string | Buffer, options?: RequestInit): Promise<Image>
-export function loadImageData(src: string | Buffer, width: number, height?:number): Promise<ImageData>
-export function loadImageData(src: string | Buffer, width: number, height:number, settings?:ImageDataSettings & RequestInit): Promise<ImageData>
+export function loadImage(src: string | Buffer | URL, options?: RequestInit): Promise<Image>
+export function loadImage(src: Sharp): Promise<Image>
+
+export function loadImageData(src: string | Buffer | URL, width: number, height?:number): Promise<ImageData>
+export function loadImageData(src: string | Buffer | URL, width: number, height:number, settings?:ImageDataSettings & RequestInit): Promise<ImageData>
+export function loadImageData(src: Sharp): Promise<ImageData>
 
 export type ColorSpace = "srgb" // add "display-p3" when skia_safe supports it
 export type ColorType = "Alpha8" | "Gray8" | "R8UNorm" | // 1 byte/px
@@ -134,6 +139,24 @@ interface ImageDataSettings {
   colorType?: ColorType
 }
 
+interface ImageDataExportSettings {
+  /** Background color to draw beneath transparent parts of the canvas */
+  matte?: string
+
+  /** Number of pixels per grid ‘point’ (defaults to 1) */
+  density?: number
+
+  /** Number of samples used for antialising each pixel */
+  msaa?: number | boolean
+
+  /** Color space (must be "srgb") */
+  colorSpace?: ColorSpace
+
+  /** Color type to use when exporting in "raw" format */
+  colorType?: ColorType
+}
+
+
 export class ImageData {
   prototype: ImageData
   constructor(sw: number, sh: number, settings?: ImageDataSettings)
@@ -146,12 +169,13 @@ export class ImageData {
   readonly data: Uint8ClampedArray
   readonly height: number
   readonly width: number
+  toSharp(): Sharp
 }
 
 export class Image extends EventEmitter {
   constructor()
   get src(): string
-  set src(src: string | Buffer)
+  set src(src: string | Buffer | URL)
   get width(): number
   get height(): number
   onload: ((this: Image, image: Image) => any) | null;
@@ -257,6 +281,7 @@ declare var DOMMatrix: {
 //
 
 export type ExportFormat = "png" | "jpg" | "jpeg" | "webp" | "raw" | "pdf" | "svg";
+export type FontOptions = "outline" | "device-independent"
 
 export interface RenderOptions {
   /** Page to export: Defaults to 1 (i.e., first page) */
@@ -268,20 +293,25 @@ export interface RenderOptions {
   /** Number of pixels per grid ‘point’ (defaults to 1) */
   density?: number
 
-  /** Quality for lossy encodings like JPEG (0.0–1.0) */
+  /** Number of samples used for antialising each pixel */
+  msaa?: number | boolean
+}
+
+export interface ExportOptions extends RenderOptions {
+  /** Quality for lossy encodings like JPEG & WEBP (0.0–1.0) */
   quality?: number
 
-  /** Convert text to paths for SVG exports */
+  /** Optionally convert text to bézier paths (SVG only) */
   outline?: boolean
 
-  /** Number of samples used for antialising each pixel */
-  msaa?: number | false
+  /** Optionally use 4:2:0 chroma subsampling (JPEG only) */
+  downsample?: boolean
 
   /** Color type to use when exporting in "raw" format */
   colorType?: ColorType
 }
 
-export interface SaveOptions extends RenderOptions {
+export interface SaveOptions extends ExportOptions {
   /** Image format to use */
   format?: ExportFormat
 }
@@ -293,6 +323,14 @@ export interface EngineDetails {
   driver?: string
   threads: number
   error?: string
+}
+
+export interface TextOptions{
+  /** Amount of additional contrast to add when rendering text (defaults to 0) */
+  textContrast?: number
+
+  /** Gamma value for blending the edges of letterforms (defaults to 1.4) */
+  textGamma?: number
 }
 
 /** [Skia Canvas Docs](https://skia-canvas.org/api/canvas) */
@@ -312,7 +350,7 @@ export class Canvas {
   width: number;
 
   /** [Skia Canvas Docs](https://skia-canvas.org/api/canvas#creating-new-canvas-objects) */
-  constructor(width?: number, height?: number)
+  constructor(width?: number, height?: number, options?: TextOptions)
 
   /**
    * Returns an object that provides methods and properties for drawing and manipulating images and graphics on a canvas element in a document. A context object includes information about colors, line widths, fonts, and other graphic parameters that can be drawn on a canvas.
@@ -328,13 +366,23 @@ export class Canvas {
   set gpu(enabled: boolean)
   readonly engine: EngineDetails
 
+  /** [Skia Canvas Docs](https://skia-canvas.org/api/canvas#saveas) */
   saveAs(filename: string, options?: SaveOptions): Promise<void>
-  toBuffer(format: ExportFormat, options?: RenderOptions): Promise<Buffer>
-  toDataURL(format: ExportFormat, options?: RenderOptions): Promise<string>
+  /** [Skia Canvas Docs](https://skia-canvas.org/api/canvas#tobuffer) */
+  toBuffer(format: ExportFormat, options?: ExportOptions): Promise<Buffer>
+  /** [Skia Canvas Docs](https://skia-canvas.org/api/canvas#todataurl) */
+  toDataURL(format: ExportFormat, options?: ExportOptions): Promise<string>
+  /** [Skia Canvas Docs](https://skia-canvas.org/api/canvas#tosharp) */
+  toSharp(options?: RenderOptions): Sharp
 
+  /** [Skia Canvas Docs](https://skia-canvas.org/api/canvas#saveas) */
   saveAsSync(filename: string, options?: SaveOptions): void
-  toBufferSync(format: ExportFormat, options?: RenderOptions): Buffer
-  toDataURLSync(format: ExportFormat, options?: RenderOptions): string
+  /** [Skia Canvas Docs](https://skia-canvas.org/api/canvas#tobuffer) */
+  toBufferSync(format: ExportFormat, options?: ExportOptions): Buffer
+  /** [Skia Canvas Docs](https://skia-canvas.org/api/canvas#todataurl) */
+  toDataURLSync(format: ExportFormat, options?: ExportOptions): string
+  /** [Skia Canvas Docs](https://skia-canvas.org/api/canvas#tosharp) */
+  toSharpSync(options?: RenderOptions): Sharp
 
   get pdf(): Promise<Buffer>
   get svg(): Promise<Buffer>
@@ -421,6 +469,9 @@ export interface CreateTextureOptions {
   /** The lineWidth with which to stroke the path (if omitted, the path will be filled instead) */
   line?: number
 
+  /** The lineCap style to use if stroking the path */
+  cap?: CanvasLineCap
+
   /** The color to use for stroking/filling the path */
   color?: string
 
@@ -429,6 +480,9 @@ export interface CreateTextureOptions {
 
   /** The amount by which to shift the pattern relative to the canvas origin */
   offset?: Offset
+
+  /** Whether to render the texture as a single path (rather than as a repeating pattern within a clipping mask) */
+  outline?: boolean
 }
 
 interface CanvasCompositing {
@@ -496,7 +550,7 @@ interface CanvasImageData {
   createImageData(imagedata: ImageData): ImageData;
 
   /** [MDN Reference](https://developer.mozilla.org/docs/Web/API/CanvasRenderingContext2D/getImageData) */
-  getImageData(x: number, y: number, width: number, height: number, settings?: ImageDataSettings): ImageData;
+  getImageData(x: number, y: number, width: number, height: number, settings?: ImageDataExportSettings): ImageData;
 
   /** [MDN Reference](https://developer.mozilla.org/docs/Web/API/CanvasRenderingContext2D/putImageData) */
   putImageData(imagedata: ImageData, dx: number, dy: number): void;
@@ -783,13 +837,57 @@ declare var TextMetrics: {
 };
 
 export interface TextMetricsLine {
+  /** Left edge of line bounding box */
   readonly x: number
+  /** Top edge of line bounding box */
   readonly y: number
+  /** Width of line bounding box */
   readonly width: number
+  /** Height of line bounding box */
   readonly height: number
+  /** Vertical position of currently selected textBaseline */
   readonly baseline: number
+  /** Vertical position of highest ascent for all fonts used in line */
+  readonly ascent: number
+  /** Vertical position of lowest descent for all fonts used in line */
+  readonly descent: number
+  /** Vertical position of hanging baseline (irrespective of current textBaseline setting) */
+  readonly hangingBaseline: number
+  /** Vertical position of alphabetic baseline (irrespective of current textBaseline setting) */
+  readonly alphabeticBaseline: number
+  /** Vertical position of ideographic baseline (irrespective of current textBaseline setting) */
+  readonly ideographicBaseline: number
+  /** Character index into source string of the beginning of this line */
   readonly startIndex: number
+  /** Character index into source string of the end of this line */
   readonly endIndex: number
+  /** Array of dimensions & metrics for each single-font subsection of the line */
+  readonly runs: TextMetricsRun[]
+}
+
+export interface TextMetricsRun {
+  /** Left edge of single-font run of characters */
+  readonly x: number
+  /** Top edge of single-font run of characters */
+  readonly y: number
+  /** Width of single-font run of characters */
+  readonly width: number
+  /** Height of single-font run of characters */
+  readonly height: number
+  /** Name of font family used in this run */
+  readonly family: string
+  /** Vertical position of this font's ascent metric */
+  readonly ascent: number
+  /** Vertical position of this font's descent metric */
+  readonly descent: number
+  /** Vertical position of this font's capital letters */
+  readonly capHeight: number
+  /** Vertical position of this font's ascender-less letters */
+  readonly xHeight: number
+  /** Vertical position of the stroke used for underlines */
+  readonly underline: number
+  /** Vertical position of the stroke used for strikethroughs */
+  readonly strikethrough: number
 }
 
 export interface FontFamily {
@@ -846,10 +944,11 @@ export type WindowOptions = {
   page?: number
   background?: string
   fullscreen?: boolean
+  borderless?: boolean
   visible?: boolean
   cursor?: CursorStyle
   canvas?: Canvas
-}
+} & TextOptions
 
 type MouseEventProps = {
   x: number;
@@ -929,7 +1028,7 @@ export class Window extends EventEmitter<{
 }
 
 export interface App extends EventEmitter<{
-  "idle": {type: "idle", target: App}
+  "idle": [{type: "idle", target: App}]
 }>{
   readonly windows: Window[]
   readonly running: boolean

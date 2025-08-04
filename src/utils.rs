@@ -1,13 +1,10 @@
-// #![allow(unused_variables)]
 #![allow(dead_code)]
-#![allow(unused_imports)]
 use std::cmp;
 use std::f32::consts::PI;
 use core::ops::Range;
 use neon::prelude::*;
 use css_color::Rgba;
 use skia_safe::{ Path, Matrix, Point, Color, RGB, Data };
-
 
 //
 // meta-helpers
@@ -52,7 +49,7 @@ pub fn to_radians(degrees: f32) -> f32{
 pub fn check_argc(cx: &mut FunctionContext, argc:usize) -> NeonResult<()>{
   match cx.len() >= argc {
     true => Ok(()),
-    false => cx.throw_type_error("Not enough arguments")
+    false => cx.throw_type_error("not enough arguments")
   }
 }
 
@@ -94,8 +91,7 @@ pub fn object_arg<'a>(cx: &mut FunctionContext<'a>, idx:usize, attr:&str) -> Neo
 }
 
 pub fn opt_object_for_key<'a>(cx: &mut FunctionContext<'a>, obj: &Handle<'a, JsObject>, attr:&str) -> Option<Handle<'a, JsObject>>{
-  let key = cx.string(attr);
-  if let Some(val) = obj.get::<JsValue, _, _>(cx, key).ok(){
+  if let Some(val) = obj.get::<JsValue, _, _>(cx, attr).ok(){
     return val.downcast::<JsObject, _>(cx).ok()
   }
   None
@@ -130,8 +126,7 @@ pub fn strings_at_key(cx: &mut FunctionContext, obj: &Handle<JsObject>, attr:&st
 }
 
 pub fn opt_string_for_key(cx: &mut FunctionContext, obj: &Handle<JsObject>, attr:&str) -> Option<String>{
-  let key = cx.string(attr);
-  obj.get(cx, key).ok()
+  obj.get(cx, attr).ok()
     .and_then(|val:Handle<JsValue>| val.downcast::<JsString, _>(cx).ok() )
     .map(|v| v.value(cx))
 }
@@ -167,8 +162,8 @@ pub fn string_arg(cx: &mut FunctionContext, idx: usize, attr:&str) -> NeonResult
   match opt_string_arg(cx, idx){
     Some(v) => Ok(v),
     None => cx.throw_type_error(
-      if exists { format!("{} must be a string", attr) }
-      else { format!("Missing argument: expected a string for {} ({} arg)", attr, arg_num(idx)) }
+      if exists { format!("Expected a string for `{}`", attr) }
+      else { format!("not enough arguments: expected a string for `{}` as {} arg", attr, arg_num(idx)) }
     )
   }
 }
@@ -180,18 +175,6 @@ pub fn strings_to_array<'a>(cx: &mut FunctionContext<'a>, strings: &[String]) ->
     array.set(cx, i as u32, num)?;
   }
   Ok(array)
-}
-
-/// Convert from byte-indices to char-indices for a given UTF-8 string
-pub fn string_idx_range(text: &str, start_idx: usize, end_idx: usize) -> Range<usize> {
-  let mut indices = text.char_indices();
-  let obtain_index = |(index, _char)| index;
-  let str_len = text.len();
-
-  Range{
-    start: indices.nth(start_idx).map_or(str_len, obtain_index),
-    end: indices.nth((end_idx - start_idx).max(1) - 1).map_or(str_len, obtain_index),
-  }
 }
 
 //
@@ -221,7 +204,7 @@ pub fn bool_arg(cx: &mut FunctionContext, idx: usize, attr:&str) -> NeonResult<b
     Some(v) => Ok(v),
     None => cx.throw_type_error(
       if exists { format!("{} must be a boolean", attr) }
-      else { format!("Missing argument: expected a boolean for {} (as {} arg)", attr, arg_num(idx)) }
+      else { format!("not enough arguments: expected a boolean for `{}` as {} arg", attr, arg_num(idx)) }
     )
   }
 }
@@ -240,11 +223,81 @@ pub fn bool_for_key(cx: &mut FunctionContext, obj: &Handle<JsObject>, attr:&str)
 //
 
 
+fn _as_double(cx: &mut FunctionContext, val:&Handle<JsValue>) -> Option<f64>{
+  // emulate (some of) javascript's wildly permissive type coercion <https://www.w3schools.com/js/js_type_conversion.asp>
+  val.downcast::<JsNumber, _>(cx).ok().map(|num|{
+    num.value(cx) as f64
+  }).or_else(||{
+    // strings
+    val.downcast::<JsString, _>(cx).ok().and_then(|txt|{
+      let s = txt.value(cx);
+      if let Some(s) = s.strip_prefix("0x"){
+        u64::from_str_radix(s, 16).map(|i| i as f64).ok()
+      }else if let Some(s) = s.strip_prefix("0o"){
+        u64::from_str_radix(s, 8).map(|i| i as f64).ok()
+      }else if let Some(s) = s.strip_prefix("0b"){
+        u64::from_str_radix(s, 2).map(|i| i as f64).ok()
+      }else if s.is_empty(){
+        Some(0.0)
+      }else{
+        s.parse::<f64>().ok()
+      }
+    })
+  }).or_else(||{
+    // booleans
+    val.downcast::<JsBoolean, _>(cx).ok().map(|b| match b.value(cx) {
+      true => 1.0,
+      false => 0.0
+    })
+  }).or_else(||{
+    // null
+    val.downcast::<JsNull, _>(cx).ok().map(|_| 0.0)
+  }).or_else(||{
+    // arrays
+    val.downcast::<JsArray, _>(cx).ok().and_then(|array|
+      match array.len(cx) {
+        0 => Some(0.0),
+        1 => array.to_vec(cx).ok().and_then(|nums| _as_double(cx, &nums[0])),
+        _ => None
+      })
+  }).and_then(|num| match num.is_finite(){
+    true => Some(num),
+    false => None
+  })
+}
+
+fn _as_float(cx: &mut FunctionContext, val:&Handle<JsValue>) -> Option<f32>{
+  _as_double(cx, val).map(|num| num as f32)
+}
+
+pub fn _float_args_at(cx: &mut FunctionContext, start:usize, names:&[&str], or_bail:bool) -> NeonResult<Vec<f32>>{
+  let argc = cx.len() - start; // args start after the `this` reference
+  if argc < names.len() {
+    return cx.throw_type_error(format!("not enough arguments (missing: {})", names[argc..].join(", ")));
+  }
+
+  // emoji indicates that it will only throw in strict mode
+  let prefix = if or_bail{ "⚠️" }else{ "" };
+
+  let mut args:Vec<f32> = Vec::new();
+  for (i, name) in names.iter().enumerate(){
+    match opt_float_arg(cx, i+start){
+      Some(v) => args.push(v),
+      None => return cx.throw_type_error(
+        format!("{}Expected a number for `{}` as {} arg", prefix, name, arg_num(i+start))
+      )
+    }
+  }
+
+  Ok(args)
+}
+
+pub fn opt_double_for_key(cx: &mut FunctionContext, obj: &Handle<JsObject>, attr:&str) -> Option<f64>{
+  obj.get(cx, attr).ok().and_then(|val| _as_double(cx, &val))
+}
+
 pub fn opt_float_for_key(cx: &mut FunctionContext, obj: &Handle<JsObject>, attr:&str) -> Option<f32>{
-  let key = cx.string(attr);
-  obj.get(cx, key).ok()
-    .and_then(|val:Handle<JsValue>| val.downcast::<JsNumber, _>(cx).ok() )
-    .map(|v| v.value(cx) as f32)
+  obj.get(cx, attr).ok().and_then(|val| _as_float(cx, &val))
 }
 
 pub fn float_for_key(cx: &mut FunctionContext, obj: &Handle<JsObject>, attr:&str) -> NeonResult<f32>{
@@ -255,27 +308,11 @@ pub fn float_for_key(cx: &mut FunctionContext, obj: &Handle<JsObject>, attr:&str
 }
 
 pub fn floats_in(cx: &mut FunctionContext, vals: &[Handle<JsValue>]) -> Vec<f32>{
-  let mut nums:Vec<f32> = Vec::new();
-  for val in vals.iter() {
-    if let Ok(num) = val.downcast::<JsNumber, _>(cx){
-      let val = num.value(cx) as f32;
-      if val.is_finite(){
-        nums.push(val);
-      }
-    }
-  }
-  nums
+  vals.iter().filter_map(|val| _as_float(cx, val)).collect::<Vec<f32>>()
 }
 
 pub fn opt_float_arg(cx: &mut FunctionContext, idx: usize) -> Option<f32>{
-  if let Some(arg) = cx.argument_opt(idx) {
-    if let Ok(num) = arg.downcast::<JsNumber, _>(cx){
-      if num.value(cx).is_finite(){
-        return Some(num.value(cx) as f32)
-      }
-    }
-  }
-  None
+  cx.argument_opt(idx).and_then(|val| _as_float(cx, &val))
 }
 
 pub fn float_arg_or(cx: &mut FunctionContext, idx: usize, default:f32) -> f32{
@@ -286,14 +323,14 @@ pub fn float_arg_or(cx: &mut FunctionContext, idx: usize, default:f32) -> f32{
 }
 
 pub fn float_arg(cx: &mut FunctionContext, idx: usize, attr:&str) -> NeonResult<f32>{
-  let exists = cx.len() > idx;
-  match opt_float_arg(cx, idx){
-    Some(v) => Ok(v),
-    None => cx.throw_type_error(
-      if exists { format!("{} must be a number", attr) }
-      else { format!("Missing argument: expected a number for {} as {} arg", attr, arg_num(idx)) }
-    )
-  }
+  _float_args_at(cx, idx, &[attr], false)
+    .map(|vec| vec.into_iter().nth(0).unwrap())
+}
+
+
+pub fn float_arg_or_bail(cx: &mut FunctionContext, idx: usize, attr:&str) -> NeonResult<f32>{
+  _float_args_at(cx, idx, &[attr], true)
+    .map(|vec| vec.into_iter().nth(0).unwrap())
 }
 
 pub fn floats_to_array<'a>(cx: &mut FunctionContext<'a>, nums: &[f32]) -> JsResult<'a, JsValue> {
@@ -315,26 +352,27 @@ pub fn opt_float_args(cx: &mut FunctionContext, rng: Range<usize>) -> Vec<f32>{
 
   let mut args:Vec<f32> = Vec::new();
   for i in rng.start..end{
-    if let Some(arg) = cx.argument_opt(i) {
-      if let Ok(num) = arg.downcast::<JsNumber, _>(cx){
-        let val = num.value(cx) as f32;
-        if val.is_finite(){
-          args.push(val);
-        }
-      }
+    if let Some(val) = opt_float_arg(cx, i){
+      args.push(val);
     }
   }
   args
 }
 
-pub fn float_args(cx: &mut FunctionContext, rng: Range<usize>) -> NeonResult<Vec<f32>>{
-  let need = rng.end - rng.start;
-  let list = opt_float_args(cx, rng);
-  let got = list.len();
-  match got == need{
-    true => Ok(list),
-    false => cx.throw_type_error(format!("Not enough arguments: expected {} numbers (got {})", need, got))
-  }
+pub fn float_args(cx: &mut FunctionContext, names:&[&str]) -> NeonResult<Vec<f32>>{
+  _float_args_at(cx, 1, names, false)
+}
+
+pub fn float_args_at(cx: &mut FunctionContext, start:usize, names:&[&str]) -> NeonResult<Vec<f32>>{
+  _float_args_at(cx, start, names, false)
+}
+
+pub fn float_args_or_bail(cx: &mut FunctionContext, names:&[&str]) -> NeonResult<Vec<f32>>{
+  _float_args_at(cx, 1, names, true)
+}
+
+pub fn float_args_or_bail_at(cx: &mut FunctionContext, start:usize, names:&[&str]) -> NeonResult<Vec<f32>>{
+  _float_args_at(cx, start, names, true)
 }
 
 //
@@ -357,26 +395,18 @@ pub fn color_in<'a>(cx: &mut FunctionContext<'a>, val: Handle<'a, JsValue>) -> O
   if val.is_a::<JsString, _>(cx) {
     let css = val.downcast::<JsString, _>(cx).unwrap().value(cx);
     return css_to_color(&css)
+  }else{
+    // for other objects, try calling their .toString() method (if it exists)
+    let obj = val.downcast::<JsObject, _>(cx).ok()?;
+    let attr = obj.get::<JsValue, _, _>(cx, "toString").ok()?;
+    let to_string = attr.downcast::<JsFunction, _>(cx).ok()?;
+    let result = to_string.call(cx, obj, vec![]).ok()?;
+    let css = result.downcast::<JsString, _>(cx).ok()?.value(cx);
+    css_to_color(&css)
   }
-
-  if let Ok(obj) = val.downcast::<JsObject, _>(cx){
-    if let Ok(attr) = obj.get::<JsValue, _, _>(cx, "toString"){
-      if let Ok(to_string) = attr.downcast::<JsFunction, _>(cx){
-        let args: Vec<Handle<JsValue>> = vec![];
-        if let Ok(result) = to_string.call(cx, obj, args){
-          if let Ok(clr) = result.downcast::<JsString, _>(cx){
-            let css = &clr.value(cx);
-            return css_to_color(css)
-          }
-        }
-      }
-    }
-  }
-
-  None
 }
 
-pub fn color_arg(cx: &mut FunctionContext, idx: usize) -> Option<Color> {
+pub fn opt_color_arg(cx: &mut FunctionContext, idx: usize) -> Option<Color> {
   match cx.argument_opt(idx) {
     Some(arg) => color_in(cx, arg),
     _ => None
@@ -384,8 +414,7 @@ pub fn color_arg(cx: &mut FunctionContext, idx: usize) -> Option<Color> {
 }
 
 pub fn opt_color_for_key(cx: &mut FunctionContext, obj: &Handle<JsObject>, attr:&str) -> Option<Color>{
-  let key = cx.string(attr);
-  obj.get(cx, key).ok()
+  obj.get(cx, attr).ok()
     .and_then(|val|
       color_in(cx, val)
     )
@@ -450,7 +479,7 @@ pub fn opt_matrix_arg(cx: &mut FunctionContext, idx: usize) -> Option<Matrix>{
 pub fn matrix_arg(cx: &mut FunctionContext, idx:usize) -> NeonResult<Matrix> {
   match opt_matrix_arg(cx, idx){
     Some(v) => Ok(v),
-    None => cx.throw_type_error("expected a DOMMatrix")
+    None => cx.throw_type_error("Expected a DOMMatrix")
   }
 }
 
@@ -485,12 +514,31 @@ pub fn points_arg(cx: &mut FunctionContext, idx: usize) -> NeonResult<Vec<Point>
 
 
 //
-// ImageData
+// Image & ImageData
 //
 
 use crate::image::ImageData;
 use neon::types::buffer::TypedArray;
-use skia_safe::{ColorType, ColorSpace};
+use skia_safe::{ColorType, ColorSpace, ImageInfo, AlphaType};
+
+pub fn opt_image_info_arg(cx: &mut FunctionContext, idx:usize) -> NeonResult<Option<ImageInfo>>{
+  if let Some(raw_info) = opt_object_arg(cx, idx){
+     Ok(Some(ImageInfo::new(
+        (
+          float_for_key(cx, &raw_info, "width")? as _,
+          float_for_key(cx, &raw_info, "height")? as _
+        ),
+        ColorType::RGBA8888,
+        match bool_for_key(cx, &raw_info, "premultiplied")?{
+          false => AlphaType::Unpremul,
+          true => AlphaType::Premul
+        },
+        ColorSpace::new_srgb(),
+      )))
+  }else{
+    Ok(None)
+  }
+}
 
 pub fn image_data_arg(cx: &mut FunctionContext, idx:usize) -> NeonResult<ImageData>{
   let obj = object_arg(cx, idx, "imageData")?;
@@ -514,6 +562,21 @@ pub fn image_data_settings_arg(cx: &mut FunctionContext, idx:usize) -> (ColorTyp
     None => (ColorType::RGBA8888, ColorSpace::new_srgb())
   }
 }
+
+pub fn image_data_export_arg(cx: &mut FunctionContext, idx:usize) -> (ColorType, ColorSpace, Option<Color>, f32, Option<usize>){
+  match opt_object_arg(cx, idx){
+    Some(obj) => {
+      let color_type = opt_string_for_key(cx, &obj, "colorType").unwrap_or("rgba".to_string());
+      let color_space = opt_string_for_key(cx, &obj, "colorSpace").unwrap_or("srgb".to_string());
+      let matte = opt_color_for_key(cx, &obj, "matte");
+      let density = opt_float_for_key(cx, &obj, "density").unwrap_or(1.0);
+      let msaa = opt_float_for_key(cx, &obj, "msaa").map(|n| n as usize);
+      (to_color_type(&color_type), to_color_space(&color_space), matte, density, msaa)
+    }
+    None => (ColorType::RGBA8888, ColorSpace::new_srgb(), None, 1.0, None)
+  }
+}
+
 
 pub fn to_color_space(mode_name:&str) -> ColorSpace{
   match mode_name{
@@ -595,14 +658,21 @@ pub fn export_options_arg(cx: &mut FunctionContext, idx: usize) -> NeonResult<Ex
   let format = string_for_key(cx, &opts, "format")?;
   let quality = float_for_key(cx, &opts, "quality")?;
   let density = float_for_key(cx, &opts, "density")?;
-  let outline = bool_for_key(cx, &opts, "outline")?;
+  let jpeg_downsample = bool_for_key(cx, &opts, "downsample")?;
   let matte = opt_color_for_key(cx, &opts, "matte");
   let msaa = opt_float_for_key(cx, &opts, "msaa")
     .map(|num| num.floor() as usize);
   let color_type = opt_string_for_key(cx, &opts, "colorType")
     .map(|mode| to_color_type(&mode)).unwrap_or(ColorType::RGBA8888);
+  let text_contrast = float_for_key(cx, &opts, "textContrast")?;
+  let text_gamma = float_for_key(cx, &opts, "textGamma")?;
+  let outline = bool_for_key(cx, &opts, "outline")?;
 
-  Ok(ExportOptions{ format, quality, density, outline, matte, msaa, color_type})
+  let color_space = ColorSpace::new_srgb();
+
+  Ok(ExportOptions{
+    format, quality, density, outline, matte, msaa, color_type, color_space, jpeg_downsample, text_contrast, text_gamma
+  })
 }
 
 //
@@ -611,7 +681,7 @@ pub fn export_options_arg(cx: &mut FunctionContext, idx: usize) -> NeonResult<Ex
 
 use crate::path::{BoxedPath2D};
 
-pub fn opt_path2d_arg(cx: &mut FunctionContext, idx:usize) -> Option<Path> {
+pub fn opt_skpath_arg(cx: &mut FunctionContext, idx:usize) -> Option<Path> {
   if let Some(arg) = cx.argument_opt(idx){
     if let Ok(arg) = arg.downcast::<BoxedPath2D, _>(cx){
       let arg = arg.borrow();
@@ -619,6 +689,17 @@ pub fn opt_path2d_arg(cx: &mut FunctionContext, idx:usize) -> Option<Path> {
     }
   }
   None
+}
+
+pub fn path2d_arg<'a>(cx: &mut FunctionContext<'a>, idx: usize) -> NeonResult<Handle<'a, BoxedPath2D>>{
+  if cx.len() <= idx {
+    return cx.throw_type_error(format!("not enough arguments (missing: Path2D as {} arg)", arg_num(idx)));
+  }
+
+  match cx.argument::<JsValue>(idx)?.downcast::<BoxedPath2D, _>(cx){
+    Ok(path_obj) => Ok(path_obj),
+    Err(_) => cx.throw_type_error(format!("Expected a Path2D for {} arg", arg_num(idx)))
+  }
 }
 
 //
@@ -677,6 +758,22 @@ pub fn from_filter_quality(mode:FilterQuality) -> String{
   }.to_string()
 }
 
+//
+// CanvasPattern
+//
+
+pub fn repetition_arg<'a>(cx: &mut FunctionContext<'a>, idx: usize) -> NeonResult<(TileMode, TileMode)>{
+  let repetition = if cx.len() > idx && cx.argument::<JsValue>(idx)?.is_a::<JsNull, _>(cx){
+    "".to_string() // null is a valid synonym for "repeat" (as is "")
+  }else{
+    string_arg(cx, idx, "repetition")?
+  };
+
+  match to_repeat_mode(&repetition){
+    Some(mode) => Ok(mode),
+    None => cx.throw_type_error("Expected `repetition` to be \"repeat\", \"repeat-x\", \"repeat-y\", or \"no-repeat\"")
+  }
+}
 
 //
 // Skia Enums
@@ -838,15 +935,23 @@ pub fn from_1d_style(mode:path_1d_path_effect::Style) -> String{
 use skia_safe::path::FillType;
 
 pub fn fill_rule_arg_or(cx: &mut FunctionContext, idx: usize, default: &str) -> NeonResult<FillType>{
-  let rule = match string_arg_or(cx, idx, default).as_str(){
-    "nonzero" => FillType::Winding,
-    "evenodd" => FillType::EvenOdd,
-    _ => {
-      let err_msg = format!("Argument {} ('fillRule') must be one of: \"nonzero\", \"evenodd\"", idx);
-      return cx.throw_type_error(err_msg)
-    }
-  };
-  Ok(rule)
+  let err_msg = format!("Expected `fillRule` to be \"nonzero\" or \"evenodd\" for {} arg", arg_num(idx));
+
+  // if arg is provided, verify that it's a string (if absent use default val)
+  let mode = match cx.argument_opt(idx) {
+    Some(arg) => match arg.downcast::<JsString, _>(cx) {
+      Ok(v) => Ok(v.value(cx)),
+      Err(_e) => cx.throw_type_error(&err_msg)
+    },
+    None => Ok(default.to_string())
+  }?;
+
+
+  match mode.as_str(){
+    "nonzero" => Ok(FillType::Winding),
+    "evenodd" => Ok(FillType::EvenOdd),
+    _ => cx.throw_type_error(&err_msg)
+  }
 }
 
 use crate::gpu::RenderingEngine;

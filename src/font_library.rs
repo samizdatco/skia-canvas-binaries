@@ -1,12 +1,9 @@
 //
 // Font collection management
 //
-#![allow(unused_variables)]
-#![allow(unused_mut)]
-#![allow(dead_code)]
-#![allow(unused_imports)]
 #![allow(non_snake_case)]
-use std::sync::Mutex;
+use std::sync::{OnceLock};
+use std::cell::RefCell;
 use std::fs;
 use std::path::Path;
 use std::collections::HashMap;
@@ -18,7 +15,6 @@ use skia_safe::font_arguments::{VariationPosition, variation_position::Coordinat
 use skia_safe::textlayout::{FontCollection, TypefaceFontProvider, TextStyle};
 use skia_safe::utils::OrderedFontMgr;
 
-use crate::FONT_LIBRARY;
 use crate::utils::*;
 use crate::typography::{FontSpec, from_width, from_slant, typeface_wght_range, typeface_details};
 
@@ -30,6 +26,8 @@ use allsorts::{
   woff::WoffFont,
   woff2::Woff2Font,
 };
+
+thread_local!( static LIBRARY: OnceLock<RefCell<FontLibrary>> = const{ OnceLock::new() }; );
 
 #[derive(PartialEq, Eq, Hash)]
 pub struct CollectionKey{ families:String, weight:i32, slant:Slant }
@@ -50,19 +48,23 @@ pub struct FontLibrary{
     pub generics: Vec<(Typeface, Option<String>)>,
     pub collection: Option<FontCollection>,
     collection_cache: HashMap<CollectionKey, FontCollection>,
+    collection_hinted: bool,
   }
 
-  unsafe impl Send for FontLibrary {
-    // famous last words: this ‘should’ be safe in practice because the singleton is behind a mutex
-  }
-
+// TODO: fix indentation...
   impl FontLibrary{
-    pub fn shared() -> Mutex<Self>{
-      Mutex::new(
-        FontLibrary{
-          mgr:FontMgr::default(), collection:None, collection_cache:HashMap::new(), fonts:vec![], generics:vec![]
-        }
-      )
+    pub fn with_shared<T, F>(f:F) -> T
+      where F:FnOnce(&mut FontLibrary) -> T
+    {
+      LIBRARY.with(|lib_lock|{
+        let shared_lib = lib_lock.get_or_init(||{
+          RefCell::new(FontLibrary{
+            mgr:FontMgr::default(), collection:None, collection_cache:HashMap::new(), collection_hinted:false, fonts:vec![], generics:vec![]
+          })
+        });
+
+        f(&mut shared_lib.borrow_mut())
+      })
     }
 
     fn font_collection(&mut self) -> FontCollection{
@@ -249,6 +251,16 @@ pub struct FontLibrary{
         })
     }
 
+    pub fn set_hinting(&mut self, hinting:bool) -> &mut Self{
+      // skia's rasterizer cache doesn't take hinting into account, so manually invalidate if changed
+      if hinting != self.collection_hinted{
+        self.collection_hinted = hinting;
+        self.collection_cache.iter_mut().for_each(|(_, fc)| fc.clear_caches());
+        self.font_collection().clear_caches();
+      }
+      self
+    }
+
     pub fn collect_fonts(&mut self, style: &TextStyle) -> FontCollection {
       let families = style.font_families();
       let families:Vec<&str> = families.iter().collect();
@@ -311,23 +323,24 @@ pub struct FontLibrary{
   //
 
   pub fn get_families(mut cx: FunctionContext) -> JsResult<JsArray> {
-    let library = FONT_LIBRARY.lock().unwrap();
-    let families = library.families();
-    let names = strings_to_array(&mut cx, &families)?;
-    Ok(names)
+    strings_to_array(&mut cx, &FontLibrary::with_shared(|lib|
+      lib.families()
+    ))
   }
 
   pub fn has(mut cx: FunctionContext) -> JsResult<JsBoolean> {
-    let library = FONT_LIBRARY.lock().unwrap();
     let family = string_arg(&mut cx, 1, "familyName")?;
-    let found = library.families().contains(&family);
+    let found = FontLibrary::with_shared(|lib|
+      lib.families().contains(&family)
+    );
     Ok(cx.boolean(found))
   }
 
   pub fn family(mut cx: FunctionContext) -> JsResult<JsValue> {
-    let library = FONT_LIBRARY.lock().unwrap();
     let family = string_arg(&mut cx, 1, "familyName")?;
-    let (weights, widths, styles) = library.family_details(&family);
+    let (weights, widths, styles) = FontLibrary::with_shared(|lib|
+      lib.family_details(&family)
+    );
 
     if weights.is_empty() {
       return Ok(cx.undefined().upcast())
@@ -381,7 +394,9 @@ pub struct FontLibrary{
             }
           }.unwrap_or(bytes);
 
-          FONT_LIBRARY.lock().unwrap().mgr.new_from_data(&bytes, None)
+          FontLibrary::with_shared(|lib|
+            lib.mgr.new_from_data(&bytes, None)
+          )
         }
       };
 
@@ -392,8 +407,9 @@ pub struct FontLibrary{
           results.set(&mut cx, i as u32, details)?;
 
           // register the typeface
-          let mut library = FONT_LIBRARY.lock().unwrap();
-          library.add_typeface(font, alias.clone());
+          FontLibrary::with_shared(|lib|
+            lib.add_typeface(font, alias.clone())
+          );
         },
         None => {
           return cx.throw_error(format!("Could not decode font data in {}", path.display()))
@@ -405,10 +421,11 @@ pub struct FontLibrary{
   }
 
   pub fn reset(mut cx: FunctionContext) -> JsResult<JsUndefined> {
-    let mut library = FONT_LIBRARY.lock().unwrap();
-    library.fonts.clear();
-    library.collection = None;
-    library.collection_cache.drain();
+    FontLibrary::with_shared(|lib|{
+      lib.fonts.clear();
+      lib.collection = None;
+      lib.collection_cache.drain();
+    });
 
     Ok(cx.undefined())
   }

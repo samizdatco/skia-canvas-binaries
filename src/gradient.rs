@@ -1,7 +1,6 @@
-#![allow(dead_code)]
 #![allow(non_snake_case)]
-use std::cell::RefCell;
-use std::sync::{Arc, Mutex};
+use std::cell::{RefCell};
+use std::rc::Rc;
 use neon::prelude::*;
 use skia_safe::{Shader, Color, Point, TileMode, Matrix};
 use skia_safe::{gradient_shader, gradient_shader::GradientShaderColors::Colors};
@@ -31,21 +30,47 @@ enum Gradient{
   }
 }
 
+impl Gradient{
+  fn get_stops(&self) -> &Vec<f32>{
+    match self{
+      Gradient::Linear{stops, ..} => stops,
+      Gradient::Radial{stops, ..} => stops,
+      Gradient::Conic{stops, ..} => stops,
+    }
+  }
+
+  fn get_colors(&self) -> &Vec<Color>{
+    match self{
+      Gradient::Linear{colors, ..} => colors,
+      Gradient::Radial{colors, ..} => colors,
+      Gradient::Conic{colors, ..} => colors,
+    }
+  }
+
+  fn add_stop(&mut self, offset: f32, color:Color){
+    let stops = self.get_stops();
+
+    // insert the new entries at the right index to keep the vectors sorted
+    let idx = stops.binary_search_by(|n| (n-f32::EPSILON).partial_cmp(&offset).unwrap()).unwrap_or_else(|x| x);
+    match self{
+      Gradient::Linear{colors, stops, ..} => { colors.insert(idx, color); stops.insert(idx, offset); },
+      Gradient::Radial{colors, stops, ..} => { colors.insert(idx, color); stops.insert(idx, offset); },
+      Gradient::Conic{colors, stops, ..} => { colors.insert(idx, color); stops.insert(idx, offset); },
+    };
+  }
+}
+
 pub type BoxedCanvasGradient = JsBox<RefCell<CanvasGradient>>;
 impl Finalize for CanvasGradient {}
 
 #[derive(Clone)]
 pub struct CanvasGradient{
-  gradient:Arc<Mutex<Gradient>>
+  gradient:Rc<RefCell<Gradient>>
 }
 
 impl CanvasGradient{
   pub fn shader(&self) -> Option<Shader>{
-
-    let gradient = Arc::clone(&self.gradient);
-    let gradient = gradient.lock().unwrap();
-
-    match &*gradient{
+    match &*self.gradient.borrow(){
       Gradient::Linear{start, end, stops, colors} => {
         gradient_shader::linear((*start, *end), Colors(colors), Some(stops.as_slice()), TileMode::Clamp, None, None)
       },
@@ -79,23 +104,13 @@ impl CanvasGradient{
   }
 
   pub fn add_color_stop(&mut self, offset: f32, color:Color){
-    // let gradient = &mut *self.gradient.borrow_mut();
-    let gradient = Arc::clone(&self.gradient);
-    let mut gradient = gradient.lock().unwrap();
+    self.gradient.borrow_mut().add_stop(offset, color);
+  }
 
-    let stops = match &*gradient{
-      Gradient::Linear{stops, ..} => stops,
-      Gradient::Radial{stops, ..} => stops,
-      Gradient::Conic{stops, ..} => stops,
-    };
-
-    // insert the new entries at the right index to keep the vectors sorted
-    let idx = stops.binary_search_by(|n| (n-f32::EPSILON).partial_cmp(&offset).unwrap()).unwrap_or_else(|x| x);
-    match &mut *gradient{
-      Gradient::Linear{colors, stops, ..} => { colors.insert(idx, color); stops.insert(idx, offset); },
-      Gradient::Radial{colors, stops, ..} => { colors.insert(idx, color); stops.insert(idx, offset); },
-      Gradient::Conic{colors, stops, ..} => { colors.insert(idx, color); stops.insert(idx, offset); },
-    };
+  pub fn is_opaque(&self) -> bool{
+    // true if all colors are 100% opaque
+    let gradient = self.gradient.borrow();
+    !gradient.get_colors().iter().any(|c| c.a() < 255)
   }
 }
 
@@ -104,55 +119,57 @@ impl CanvasGradient{
 //
 
 pub fn linear(mut cx: FunctionContext) -> JsResult<BoxedCanvasGradient> {
-  if let [x1, y1, x2, y2] = opt_float_args(&mut cx, 1..5).as_slice(){
-    let start = Point::new(*x1, *y1);
-    let end = Point::new(*x2, *y2);
-    let ramp = Gradient::Linear{ start, end, stops:vec![], colors:vec![] };
-    let canvas_gradient = CanvasGradient{ gradient:Arc::new(Mutex::new(ramp)) };
-    let this = RefCell::new(canvas_gradient);
-    Ok(cx.boxed(this))
-  }else{
-    let msg = format!("Expected 4 arguments (x1, y1, x2, y2), received {}", cx.len() - 1);
-    cx.throw_type_error(msg)
-  }
+  let nums = &float_args(&mut cx, &["x1", "y1", "x2", "y2"])?[..4];
+  let [x1, y1, x2, y2] = nums else{ panic!() };
+
+  let start = Point::new(*x1, *y1);
+  let end = Point::new(*x2, *y2);
+  let ramp = Gradient::Linear{ start, end, stops:vec![], colors:vec![] };
+  let canvas_gradient = CanvasGradient{ gradient:Rc::new(RefCell::new(ramp)) };
+  let this = RefCell::new(canvas_gradient);
+  Ok(cx.boxed(this))
 }
 
 pub fn radial(mut cx: FunctionContext) -> JsResult<BoxedCanvasGradient> {
-  if let [x1, y1, r1, x2, y2, r2] = opt_float_args(&mut cx, 1..7).as_slice(){
-    let start_point = Point::new(*x1, *y1);
-    let end_point = Point::new(*x2, *y2);
-    let bloom = Gradient::Radial{ start_point, start_radius:*r1, end_point, end_radius:*r2, stops:vec![], colors:vec![] };
-    let canvas_gradient = CanvasGradient{ gradient:Arc::new(Mutex::new(bloom)) };
-    let this = RefCell::new(canvas_gradient);
-    Ok(cx.boxed(this))
-  }else{
-    let msg = format!("Expected 6 arguments (x1, y1, r1, x2, y2, r2), received {}", cx.len() - 1);
-    cx.throw_type_error(msg)
-  }
+  let nums = &float_args(&mut cx, &["x1", "y1", "r1", "x2", "y2", "r2"])?[..6];
+  let [x1, y1, r1, x2, y2, r2] = nums else{ panic!() };
+
+  let start_point = Point::new(*x1, *y1);
+  let end_point = Point::new(*x2, *y2);
+  let bloom = Gradient::Radial{ start_point, start_radius:*r1, end_point, end_radius:*r2, stops:vec![], colors:vec![] };
+  let canvas_gradient = CanvasGradient{ gradient:Rc::new(RefCell::new(bloom)) };
+  let this = RefCell::new(canvas_gradient);
+  Ok(cx.boxed(this))
 }
 
 pub fn conic(mut cx: FunctionContext) -> JsResult<BoxedCanvasGradient> {
-  if let [theta, x, y] = opt_float_args(&mut cx, 1..4).as_slice(){
-    let center = Point::new(*x, *y);
-    let angle = to_degrees(*theta) - 90.0;
-    let sweep = Gradient::Conic{ center, angle, stops:vec![], colors:vec![] };
-    let canvas_gradient = CanvasGradient{ gradient:Arc::new(Mutex::new(sweep)) };
-    let this = RefCell::new(canvas_gradient);
-    Ok(cx.boxed(this))
-  }else{
-    let msg = format!("Expected 3 arguments (startAngle, x, y), received {}", cx.len() - 1);
-    cx.throw_type_error(msg)
-  }
+  let nums = &float_args(&mut cx, &["theta", "x", "y"])?[..3];
+  let [theta, x, y] = nums else{ panic!() };
+
+  let center = Point::new(*x, *y);
+  let angle = to_degrees(*theta);
+  let sweep = Gradient::Conic{ center, angle, stops:vec![], colors:vec![] };
+  let canvas_gradient = CanvasGradient{ gradient:Rc::new(RefCell::new(sweep)) };
+  let this = RefCell::new(canvas_gradient);
+  Ok(cx.boxed(this))
 }
 
 pub fn addColorStop(mut cx: FunctionContext) -> JsResult<JsUndefined> {
   let this = cx.argument::<BoxedCanvasGradient>(0)?;
-  let offset = float_arg(&mut cx, 1, "offset")?;
-  let color = color_arg(&mut cx, 2);
-
   let mut this = this.borrow_mut();
-  if let Some(color) = color {
+
+  let offset = float_arg(&mut cx, 1, "offset")?;
+  if offset < 0.0 || offset > 1.0{
+    return cx.throw_range_error("Color stop offsets must be between 0.0 and 1.0");
+  }
+
+  if let Some(color) = opt_color_arg(&mut cx, 2) {
     this.add_color_stop(offset, color);
+  }else{
+    return cx.throw_type_error(match cx.len(){
+      3 => "Could not be parsed as a color",
+      _ => "not enough arguments"
+    })
   }
 
   Ok(cx.undefined())
@@ -161,10 +178,9 @@ pub fn addColorStop(mut cx: FunctionContext) -> JsResult<JsUndefined> {
 pub fn repr(mut cx: FunctionContext) -> JsResult<JsString> {
   let this = cx.argument::<BoxedCanvasGradient>(0)?;
   let this = this.borrow();
-  let gradient = Arc::clone(&this.gradient);
-  let gradient = gradient.lock().unwrap();
+  let gradient = Rc::clone(&this.gradient);
 
-  let style = match &*gradient{
+  let style = match &*gradient.borrow(){
     Gradient::Linear{..} => "Linear",
     Gradient::Radial{..} => "Radial",
     Gradient::Conic{..} => "Conic",

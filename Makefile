@@ -2,33 +2,38 @@ NAPI_VERSION := 8
 NPM := $(CURDIR)/node_modules
 NODEMON := $(CURDIR)/node_modules/.bin/nodemon
 JEST := $(CURDIR)/node_modules/.bin/jest
-LIBDIR := $(CURDIR)/lib/v$(NAPI_VERSION)
-LIB := $(LIBDIR)/index.node
+LIB := $(CURDIR)/lib/skia.node
 LIB_SRC := Cargo.toml $(wildcard src/*.rs) $(wildcard src/*/*.rs) $(wildcard src/*/*/*.rs)
 GIT_TAG = $(shell git describe)
 PACKAGE_VERSION = $(shell npm run env | grep npm_package_version | cut -d '=' -f 2)
 NPM_VERSION = $(shell npm view skia-canvas version)
-.PHONY: optimized test debug visual check clean distclean release skia-version with-local-skia run preview
+.PHONY: optimized dev test debug visual check clean distclean release skia-version with-local-skia
 .DEFAULT_GOAL := $(LIB)
 
 # platform-specific features to be passed to cargo
 OS=$(shell sh -c 'uname -s 2>/dev/null')
 ifeq ($(OS),Darwin)
 	FEATURES = metal,window
-else # Linux & Windows
+else ifeq ($(OS),Linux)
 	FEATURES = vulkan,window,freetype
+else # Windows
+	FEATURES = vulkan,window
 endif
 
 $(NPM):
 	npm ci --ignore-scripts
 
 $(LIB): $(NPM) $(LIB_SRC)
-	@npm run build
+	@npm run build -- --features $(FEATURES)
 	@touch $(LIB)
 
 optimized: $(NPM)
 	@rm -f $(LIB)
 	@npm run build -- --release --features $(FEATURES)
+
+dev: $(NPM) $(LIB_SRC)
+	@npm run build
+	@touch $(LIB)
 
 test: $(LIB)
 	@$(JEST) --verbose
@@ -43,13 +48,12 @@ check:
 	cargo check
 
 clean:
-	rm -rf $(LIBDIR)
-	rm -rf $(CURDIR)/target/debug
-	rm -rf $(CURDIR)/target/release
+	rm -rf $(LIB)
 
 distclean: clean
 	rm -rf $(NPM)
-	rm -rf $(CURDIR)/build
+	rm -rf $(CURDIR)/target/debug
+	rm -rf $(CURDIR)/target/release
 	cargo clean
 
 release:
@@ -76,10 +80,3 @@ with-local-skia:
 	echo '[patch.crates-io]' >> Cargo.toml
 	echo 'skia-safe = { path = "../rust-skia/skia-safe" }' >> Cargo.toml
 	echo 'skia-bindings = { path = "../rust-skia/skia-bindings" }' >> Cargo.toml
-
-# debugging
-run: $(LIB)
-	@node check.js
-
-preview: run
-	@less out.png || true

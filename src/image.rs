@@ -1,6 +1,4 @@
-#![allow(unused_mut)]
 #![allow(unused_imports)]
-#![allow(unused_variables)]
 #![allow(dead_code)]
 use std::cell::RefCell;
 use neon::{prelude::*, types::buffer::TypedArray};
@@ -8,11 +6,10 @@ use skia_safe::{
   Image as SkImage, ImageInfo, ISize, ColorType, ColorSpace, AlphaType, Data, Size,
   FontMgr, Picture, PictureRecorder, Rect, image::images,
   svg::{self, Length, LengthUnit},
-  // wrapper::PointerWrapper // for SVG Dom access, temporary until next skia-safe update
 };
 use crate::utils::*;
 use crate::context::Context2D;
-use crate::FONT_LIBRARY;
+use crate::font_library::FontLibrary;
 
 pub type BoxedImage = JsBox<RefCell<Image>>;
 impl Finalize for Image {}
@@ -175,17 +172,24 @@ pub fn set_src(mut cx: FunctionContext) -> JsResult<JsUndefined> {
   Ok(cx.undefined())
 }
 
-pub fn set_data(mut cx: FunctionContext) -> JsResult<JsBoolean> {
+pub fn set_data<'a>(mut cx: FunctionContext<'a>) -> NeonResult<Handle<'a, JsBoolean>> {
   let this = cx.argument::<BoxedImage>(0)?;
   let mut this = this.borrow_mut();
   let buffer = cx.argument::<JsBuffer>(1)?;
   let data = Data::new_copy(buffer.as_slice(&cx));
 
-  // First try decoding the data as a bitmap, if invalid try parsing as SVG
-  if let Some(image) = images::deferred_from_encoded_data(&data, None){
+  if let Some(raw_info) = opt_image_info_arg(&mut cx, 2)?{
+    // First, check for an optional dims argument and interpret the buffer as raw rgba if present
+    this.content = match images::raster_from_data(&raw_info, data, raw_info.min_row_bytes()){
+      Some(image) => Content::Bitmap(image),
+      None => Content::Broken
+    }
+  }else if let Some(image) = images::deferred_from_encoded_data(&data, None){
+    // Next, try interpreting the data as an encoded bitmap
     this.content = Content::Bitmap(image);
-  }else if let Ok(mut dom) = svg::Dom::from_bytes(&data, FONT_LIBRARY.lock().unwrap().font_mgr()){
-    let mut root = dom.root();
+  }else if let Ok(mut dom) = svg::Dom::from_bytes(&data, FontLibrary::with_shared(|lib| lib.font_mgr())){
+    // Finally, try parsing as SVG
+    let root = dom.root();
 
     let mut size = root.intrinsic_size();
     if size.is_empty(){
@@ -245,7 +249,7 @@ pub fn get_complete(mut cx: FunctionContext) -> JsResult<JsBoolean> {
 
 pub fn pixels(mut cx: FunctionContext) -> JsResult<JsValue> {
   let this = cx.argument::<BoxedImage>(0)?;
-  let mut this = this.borrow_mut();
+  let this = this.borrow_mut();
   let (color_type, color_space) = image_data_settings_arg(&mut cx, 1);
 
   let info = ImageInfo::new(this.content.size().to_floor(), color_type, AlphaType::Unpremul, color_space);

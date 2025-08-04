@@ -16,6 +16,8 @@ use skia_safe::{
     ColorSpace, ISize, ImageInfo, Surface,
 };
 
+use crate::context::page::ExportOptions;
+
 thread_local!( static VK_CONTEXT: RefCell<Option<VulkanContext>> = const { RefCell::new(None) }; );
 static VK_STATUS: OnceLock<Value> = OnceLock::new();
 static VK_CONTEXT_LIFESPAN:Duration = Duration::from_secs(5);
@@ -99,8 +101,8 @@ impl VulkanEngine {
         });
     }
 
-    pub fn with_surface<T, F>(image_info: &ImageInfo, msaa:Option<usize>, f:F) -> Result<T, String>
-        where F:FnOnce(&mut Surface) -> Result<T, String>
+    pub fn with_context<T, F>(f:F) -> Result<T, String>
+        where F:FnOnce(&mut VulkanContext) -> Result<T, String>
     {
         match VulkanEngine::supported() {
             false => Err("Vulkan API not supported".to_string()),
@@ -111,22 +113,27 @@ impl VulkanEngine {
                     .or_else(|| VulkanContext::new().ok() )
                     .ok_or("Vulkan initialization failed".to_string())
                     .and_then(|ctx|{
-                        let ctx = local_ctx.insert(ctx);
-                        // ...then create the surface with it...
-                        ctx.surface(image_info, msaa)
+                        f(local_ctx.insert(ctx))
                     })
-                    .and_then(|mut surface|
-                        // ... finally let the callback use it
-                        f(&mut surface)
-                    )
             })
         }
+    }
+
+    pub fn with_direct_context<F>(f:F)
+        where F:FnOnce(Option<&mut DirectContext>)
+    {
+        Self::with_context(|ctx| Ok(f(Some(&mut ctx.context))) ).ok();
+    }
+
+
+    pub fn make_surface(image_info: &ImageInfo, opts:&ExportOptions) -> Result<Surface, String>{
+        Self::with_context(|ctx| ctx.surface(image_info, opts) )
     }
 }
 
 
 #[allow(dead_code)]
-struct VulkanContext{
+pub struct VulkanContext{
     context: DirectContext,
     library: Arc<VulkanLibrary>,
     instance: Arc<Instance>,
@@ -249,26 +256,18 @@ impl VulkanContext{
         self.surface(&ImageInfo::new_n32_premul(
             ISize::new(100, 100),
             Some(ColorSpace::new_srgb()),
-        ), None).is_ok()
+        ), &ExportOptions::default()).is_ok()
     }
 
-    pub fn surface(&mut self, image_info: &ImageInfo, msaa:Option<usize>) -> Result<Surface, String> {
-        let samples = msaa.unwrap_or_else(||
-            if self.msaa.contains(&4){ 4 } // 4x is a good default if available
-            else{ *self.msaa.last().unwrap() }
-        );
-        if !self.msaa.contains(&samples){
-            return Err(format!("{}x MSAA not supported by GPU (options: {:?})", samples, self.msaa));
-        }
-
+    pub fn surface(&mut self, image_info: &ImageInfo, opts:&ExportOptions) -> Result<Surface, String> {
         self.last_use = Instant::now();
         surfaces::render_target(
             &mut self.context,
             Budgeted::Yes,
             image_info,
-            Some(samples),
+            Some(opts.msaa_from(&self.msaa)?),
             SurfaceOrigin::BottomLeft,
-            None,
+            Some(&opts.surface_props()),
             false,
             None,
         ).ok_or(
