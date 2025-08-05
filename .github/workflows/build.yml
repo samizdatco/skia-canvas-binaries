@@ -71,6 +71,7 @@ jobs:
         export TAG=$(make -sC skia-canvas skia-version)
         git clone --depth 1 --branch $TAG --recurse-submodules -j8 https://github.com/rust-skia/rust-skia.git
         patch -d rust-skia -p1 < ./skia-canvas/arch/glibc/static-deps.patch
+        perl -pi.bak -e 's/"skia-safe\/embed-freetype"\, //' skia-canvas/Cargo.toml
         make -sC skia-canvas with-local-skia
 
     - name: Build module
