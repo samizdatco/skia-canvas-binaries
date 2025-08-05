@@ -86,7 +86,7 @@ function register_clang_version {
 
 }
 
-# install the toolchain
+# install requested version
 wget https://apt.llvm.org/llvm.sh
 bash ./llvm.sh $1
 

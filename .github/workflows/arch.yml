@@ -10,7 +10,7 @@ jobs:
     strategy:
       matrix:
         # libc: [glibc, musl]
-        libc: [musl]
+        libc: [glibc]
 
     steps:
     - name: Checkout
