@@ -16,7 +16,7 @@ jobs:
 
     container:
       image: ${{ format('ghcr.io/{0}-{1}:latest', github.repository, matrix.libc) }}
-      options: --user github
+      # options: --user github
 
     steps:
     # - name: Use Rust
@@ -39,11 +39,12 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        libc: [glibc, musl]
+        # libc: [glibc, musl]
+        libc: [glibc]
 
     container:
       image: ${{ format('ghcr.io/{0}-{1}:latest', github.repository, matrix.libc) }}
-      options: --user github
+      # options: --user github
 
     steps:
     - name: Prepare workspace
