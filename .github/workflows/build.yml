@@ -64,7 +64,7 @@ jobs:
         REPO: ${{ github.repository }}
         REF: ${{ github.ref_name }}
       run: |
-        git clone --depth 1 --branch $REF ${SERVER}/${REPO} .
+        git clone --depth 1 --branch $REF ${SERVER}/${REPO} skia-canvas
 
     - name: Checkout rust-skia and apply static deps patch
       run: |
@@ -75,5 +75,4 @@ jobs:
 
     - name: Build module
       run: |
-        make optimized
-        npm test
+        cd skia-canvas && make optimized && npm test
