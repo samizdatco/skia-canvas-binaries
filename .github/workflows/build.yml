@@ -64,8 +64,7 @@ jobs:
       fail-fast: false
       matrix:
         arch: [x64, arm64]
-        # libc: [glibc, musl]
-        libc: [glibc]
+        libc: [glibc, musl]
     container:
       image: ${{ format('ghcr.io/{0}-{1}:latest', github.repository, matrix.libc) }}
       options: --user github
