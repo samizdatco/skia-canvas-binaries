@@ -28,9 +28,12 @@ jobs:
       uses: actions/checkout@v4
 
     - name: Build module
+      # run: |
+      #   mkdir -p $CARGO_HOME/registry
+      #   chown -R github $CARGO_HOME/registry
+      #   make optimized
+      #   npm test
       run: |
-        mkdir -p $CARGO_HOME/registry
-        chown -R github $CARGO_HOME/registry
         make optimized
         npm test
 
