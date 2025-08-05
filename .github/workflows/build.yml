@@ -76,4 +76,4 @@ jobs:
 
     - name: Build module
       run: |
-        cd skia-canvas && make optimized && npm test && ldd skia-canvas/lib/skia.node
+        cd skia-canvas && make optimized && npm test && ldd lib/skia.node
