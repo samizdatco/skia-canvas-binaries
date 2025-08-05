@@ -19,10 +19,10 @@ jobs:
       # options: --user github
 
     steps:
-    # - name: Use Rust
-    #   uses: dtolnay/rust-toolchain@stable
-    #   with:
-    #     toolchain: stable
+    - name: Use Rust
+      uses: dtolnay/rust-toolchain@stable
+      with:
+        toolchain: stable
 
     - name: Checkout skia-canvas
       uses: actions/checkout@v4
@@ -55,11 +55,11 @@ jobs:
         rm -rf "$GITHUB_WORKSPACE"
         mkdir -p "$GITHUB_WORKSPACE"
 
-    # - name: Install rust
-    #   run: |
-    #     curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --profile minimal
-    #     echo "$HOME/.cargo/bin" >> $GITHUB_PATH
-    #     echo CARGO_TERM_COLOR=always >> $GITHUB_ENV
+    - name: Install rust
+      run: |
+        curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --profile minimal
+        echo "$HOME/.cargo/bin" >> $GITHUB_PATH
+        echo CARGO_TERM_COLOR=always >> $GITHUB_ENV
 
     - name: Checkout skia-canvas
       env:
