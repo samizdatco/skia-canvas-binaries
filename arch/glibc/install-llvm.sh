@@ -89,6 +89,7 @@ function register_clang_version {
 # install requested version
 wget https://apt.llvm.org/llvm.sh
 bash ./llvm.sh $1
+rm llvm.sh
 
 # add generic links to versioned command names (with priority=100)
 register_clang_version $1 100

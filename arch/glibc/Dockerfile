@@ -29,13 +29,11 @@ RUN apt-get update && \
         wget curl perl build-essential software-properties-common \
         libssl-dev libfontconfig-dev ninja-build
 
-# install rust
-RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --profile minimal
-ENV PATH="/root/.cargo/bin:$PATH"
-
 WORKDIR /opt
 
 # install clang v18
 ARG LLVM_VERSION=18
 COPY install-llvm.sh .
 RUN bash install-llvm.sh $LLVM_VERSION
+
+RUN useradd -u 1001 -M github
