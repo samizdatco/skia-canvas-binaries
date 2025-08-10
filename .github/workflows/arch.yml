@@ -9,8 +9,7 @@ jobs:
     permissions: write-all
     strategy:
       matrix:
-        # libc: [glibc, musl]
-        libc: [glibc]
+        libc: [glibc, musl]
 
     steps:
     - name: Checkout
@@ -33,7 +32,8 @@ jobs:
       uses: docker/build-push-action@v6
       with:
         tags: ghcr.io/${{ github.repository }}-${{ matrix.libc }}:latest
-        context: arch/${{ matrix.libc }}
+        context: arch
+        file: "{context}/Dockerfile.${{ matrix.libc }}"
         platforms: linux/amd64,linux/arm64
         cache-from: type=gha
         cache-to: type=gha,mode=max

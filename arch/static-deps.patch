@@ -1,0 +1,126 @@
+diff --git i/skia-bindings/build_support/binaries_config.rs w/skia-bindings/build_support/binaries_config.rs
+index 3c156b8..d48552a 100644
+--- i/skia-bindings/build_support/binaries_config.rs
++++ w/skia-bindings/build_support/binaries_config.rs
+@@ -115,20 +115,27 @@ impl BinariesConfiguration {
+     /// Inform cargo that the library files of the given configuration are available and
+     /// can be used as dependencies.
+     pub fn commit_to_cargo(&self) {
+         cargo::add_link_search(self.output_directory.to_str().unwrap());
+ 
+         // On Linux, the order is significant, first the static libraries we built, and then
+         // the system libraries.
+ 
+         let target = cargo::target();
+ 
++        // add the directory containing the .a files to the search path then link them
++        cargo::add_link_search("/opt/skia-static-libs");
++        cargo::add_static_link_libs(&target, &[
++          "freetype2",
++          "fontconfig",
++        ]);
++
+         cargo::add_static_link_libs(&target, self.built_libraries(true));
+         cargo::add_link_libs(&self.link_libraries);
+     }
+ 
+     /// Import library and additional files from `from_dir` to the output directory.
+     pub fn import(&self, from_dir: &Path, import_bindings: bool) -> io::Result<()> {
+         let output_directory = &self.output_directory;
+         self.copy_libs_and_additional_files(from_dir, output_directory, import_bindings)
+     }
+ 
+diff --git i/skia-bindings/build_support/platform/alpine.rs w/skia-bindings/build_support/platform/alpine.rs
+index b837850..428f24c 100644
+--- i/skia-bindings/build_support/platform/alpine.rs
++++ w/skia-bindings/build_support/platform/alpine.rs
+@@ -41,13 +41,14 @@ fn get_stdlib_version() -> Option<String> {
+ fn flags(target: &Target) -> Vec<String> {
+     let arch = &target.architecture;
+     match get_stdlib_version() {
+         None => {
+             cargo::warning("unable to determine g++ stdlib version");
+             vec![]
+         }
+         Some(cpp) => vec![
+             format!("-I/usr/include/c++/{cpp}"),
+             format!("-I/usr/include/c++/{cpp}/{arch}-alpine-linux-musl"),
++            format!("-I/usr/local/include/freetype2"), // needed so SKFontHost_Freetype_* can include <ft2build.h>
+         ],
+     }
+ }
+diff --git i/skia-bindings/build_support/platform/linux.rs w/skia-bindings/build_support/platform/linux.rs
+index 0678295..2ecbd21 100644
+--- i/skia-bindings/build_support/platform/linux.rs
++++ w/skia-bindings/build_support/platform/linux.rs
+@@ -24,23 +24,22 @@ impl PlatformDetails for Linux {
+     }
+ }
+ 
+ pub fn gn_args(config: &BuildConfiguration, builder: &mut GnArgsBuilder) {
+     generic::gn_args(config, builder);
+ }
+ 
+ pub fn link_libraries(features: &Features) -> Vec<String> {
+     let mut libs = vec!["stdc++".to_string()];
+ 
+-    // Use pkg-config for system libraries when available
+-    add_pkg_config_libs(&mut libs, "freetype2", &["freetype"]);
+-    add_pkg_config_libs(&mut libs, "fontconfig", &["fontconfig"]);
++    // don't add freetype & fontconfig to the list of shared libraries to be linked
++    // since we'll be adding static versions in binaries_config.rs
+ 
+     if features[feature::GL] {
+         if features[feature::EGL] {
+             add_pkg_config_libs(&mut libs, "egl", &["EGL"]);
+         }
+ 
+         if features[feature::X11] {
+             add_pkg_config_libs(&mut libs, "gl", &["GL"]);
+         }
+ 
+@@ -96,13 +95,16 @@ fn flags(target: &Target) -> Vec<String> {
+     // TODO: Resolve the C++ version. This is specific to Ubuntu 18.
+     if *target != cargo::host() {
+         let cpp = "7";
+         let target_path_component = target.include_path_component();
+         [
+             format!("-I/usr/{target_path_component}/include/c++/{cpp}/{target_path_component}"),
+             format!("-I/usr/{target_path_component}/include"),
+         ]
+         .into()
+     } else {
+-        Vec::new()
++        [
++          format!("-I/usr/local/include"),
++          format!("-I/usr/local/include/freetype2"), // needed so SKFontHost_Freetype_* can include <ft2build.h>
++        ].into()
+     }
+ }
+diff --git i/skia-bindings/build_support/skia/config.rs w/skia-bindings/build_support/skia/config.rs
+index 3dd4acd..18f8705 100644
+--- i/skia-bindings/build_support/skia/config.rs
++++ w/skia-bindings/build_support/skia/config.rs
+@@ -110,21 +110,21 @@ impl FinalBuildConfiguration {
+ 
+         // `SDKROOT` is the environment variable used on macOS to specify the sysroot.
+         // `SDKTARGETSYSROOT` is the environment variable set in Yocto Linux SDKs when
+         // cross-compiling.
+         let sysroot = cargo::env_var("SDKTARGETSYSROOT").or_else(|| cargo::env_var("SDKROOT"));
+ 
+         let mut builder = GnArgsBuilder::new(&build.target);
+ 
+         let gn_args = {
+             builder
+-                .arg("is_official_build", yes_if(!build.skia_debug))
++                .arg("is_official_build", no()) // disabled to make skia build static libs for its dependencies, even for release builds
+                 .arg("is_debug", yes_if(build.skia_debug))
+                 .arg("skia_enable_svg", yes_if(features[feature::SVG]))
+                 .arg("skia_enable_gpu", yes_if(features.gpu()))
+                 .arg("skia_enable_skottie", no())
+                 .arg("skia_enable_pdf", yes_if(features[feature::PDF]))
+                 .arg("skia_use_gl", yes_if(features[feature::GL]))
+                 .arg("skia_use_egl", yes_if(features[feature::EGL]))
+                 .arg("skia_use_x11", yes_if(features[feature::X11]))
+                 .arg("skia_use_system_libpng", yes_if(use_system_libraries))
+                 .arg(
