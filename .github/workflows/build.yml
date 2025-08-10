@@ -63,19 +63,14 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        arch: [x64, arm64]
+        arch: [arm64, x64]
         libc: [glibc, musl]
     container:
       image: ${{ format('ghcr.io/{0}-{1}:latest', github.repository, matrix.libc) }}
-      options: --user github
+      # options: --user github
     runs-on: ${{ matrix.arch == 'x64' && 'ubuntu-latest' || 'ubuntu-24.04-arm' }}
 
     steps:
-    - name: Prepare workspace
-      run: |
-        rm -rf "$GITHUB_WORKSPACE"
-        mkdir -p "$GITHUB_WORKSPACE"
-
     - name: Install rust
       run: |
         curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --profile minimal
@@ -83,19 +78,16 @@ jobs:
         echo CARGO_TERM_COLOR=always >> $GITHUB_ENV
 
     - name: Checkout skia-canvas
-      env:
-        SERVER: ${{ github.server_url }}
-        REPO: ${{ github.repository }}
-        REF: ${{ github.ref_name }}
-      run: |
-        git clone --depth 1 --branch $REF ${SERVER}/${REPO} skia-canvas
+      uses: actions/checkout@v4
+      with:
+        path: skia-canvas
 
     - name: Checkout rust-skia and apply static deps patch
       run: |
         export TAG=$(make -sC skia-canvas skia-version)
         git clone --depth 1 --branch $TAG --recurse-submodules -j8 https://github.com/rust-skia/rust-skia.git
-        patch -d rust-skia -p1 < ./skia-canvas/arch/glibc/static-deps.patch
-        perl -pi.bak -e 's/"skia-safe\/embed-freetype"\, //' skia-canvas/Cargo.toml
+        patch -d rust-skia -p1 -F10 < ./skia-canvas/arch/static-deps.patch
+        perl -pi.bak -e 's/vulkan,window,freetype/vulkan,window/' skia-canvas/Makefile
         make -sC skia-canvas with-local-skia
 
     - name: Build module

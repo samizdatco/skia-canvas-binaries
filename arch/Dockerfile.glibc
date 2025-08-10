@@ -11,8 +11,8 @@ COPY install-llvm.sh .
 RUN bash install-llvm.sh $LLVM_VERSION
 
 # manually build harfbuzz, freetype, & fontconfig and install them in /usr/local
-COPY ./build-fontlibs.sh /opt
-RUN bash /opt/build-fontlibs.sh
+COPY ./install-fontlibs.sh /opt
+RUN bash /opt/install-fontlibs.sh
 
 # move the static libs to a common location consistent across glibc & musl builds
 # (renaming freetype lib so it matches the internal copy built by skia)
