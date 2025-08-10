@@ -3,12 +3,20 @@ FROM node:bullseye-slim AS dependencies
 RUN apt-get update && apt-get install -y -q \
     git perl curl wget gpg software-properties-common \
     build-essential ninja-build cmake python3-venv lsb-release \
-    libexpat1-dev libpng-dev libbrotli-dev libicu-dev libglib2.0-dev libbz2-dev
+    libexpat1-dev libpng-dev libbrotli-dev libicu-dev libglib2.0-dev libbz2-dev \
+    libssl-dev libcurl4-gnutls-dev gettext
 
 # install clang v18
 ARG LLVM_VERSION=18
 COPY install-llvm.sh .
 RUN bash install-llvm.sh $LLVM_VERSION
+
+# upgrade git to a version that can handle skia's submodules correctly
+ARG GIT_VERSION=2.50.1
+ARG GIT_URL=https://github.com/git/git/archive/refs/tags/v$GIT_VERSION.tar.gz
+RUN curl -sL $GIT_URL | tar xz -C /opt && \
+    cd /opt/git-$GIT_VERSION && \
+    NO_TCLTK=1 make -j 12 prefix=/usr/local install
 
 # manually build harfbuzz, freetype, & fontconfig and install them in /usr/local
 COPY ./install-fontlibs.sh /opt
@@ -43,8 +51,5 @@ RUN curl -sL $GH_URL | tar xz --strip-components=2 -C /usr/local/bin
 COPY --from=dependencies /usr/local /usr/local
 COPY --from=dependencies /opt/skia-static-libs /opt/skia-static-libs
 
-# RUN useradd -u 1001 -M github
-
 WORKDIR /opt
-
 CMD ["bash"]
