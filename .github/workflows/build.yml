@@ -65,10 +65,9 @@ jobs:
       matrix:
         arch: [arm64, x64]
         libc: [glibc, musl]
+    runs-on: ${{ matrix.arch == 'x64' && 'ubuntu-latest' || 'ubuntu-24.04-arm' }}
     container:
       image: ${{ format('ghcr.io/{0}-{1}:latest', github.repository, matrix.libc) }}
-      # options: --user github
-    runs-on: ${{ matrix.arch == 'x64' && 'ubuntu-latest' || 'ubuntu-24.04-arm' }}
 
     steps:
     - name: Install rust
@@ -86,15 +85,12 @@ jobs:
         git clone --depth 1 --branch $REF ${SERVER}/${REPO} skia-canvas
 
     - name: Checkout rust-skia and apply static deps patch
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       run: |
         export TAG=$(make -sC skia-canvas skia-version)
-        gh repo clone rust-skia/rust-skia -- --branch=$TAG --depth=1 --recurse-submodules -j8
+        git clone --depth 1 --branch $TAG --recurse-submodules -j8 https://github.com/rust-skia/rust-skia.git
         patch -d rust-skia -p1 -F10 < ./skia-canvas/arch/static-deps.patch
-        perl -pi.bak -e 's/vulkan,window,freetype/vulkan,window/' skia-canvas/Makefile
-        make -sC skia-canvas with-local-skia
 
     - name: Build module
       run: |
+        make -sC skia-canvas with-local-skia
         cd skia-canvas && make optimized && npm test && ldd lib/skia.node
