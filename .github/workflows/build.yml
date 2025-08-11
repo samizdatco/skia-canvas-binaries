@@ -99,7 +99,10 @@ jobs:
         LAYER_DIR: $GITHUB_WORKSPACE/layer
         LAYER_ZIP: $GITHUB_WORKSPACE/aws-lambda-${{ matrix.arch }}.zip
       run: |
+        pwd
         export SRC_DIST="$SRC_DIR/$(cd $SRC_DIR; npm pack)"
+        echo $SRC_DIST
+        ls -l
         mkdir -p $LAYER_DIR/node
         cd $LAYER_DIR/node
         npm install --ignore-scripts $SRC_DIST
