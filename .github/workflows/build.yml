@@ -95,7 +95,6 @@ jobs:
 
     - name: Build AWS layer
       if: ${{ matrix.libc == 'glibc' }}
-      env:
       run: |
         export SRC_DIR="$GITHUB_WORKSPACE/skia-canvas"
         export SRC_DIST="$SRC_DIR/$(cd $SRC_DIR; npm pack)"
