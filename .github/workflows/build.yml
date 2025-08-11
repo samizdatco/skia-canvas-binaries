@@ -71,11 +71,11 @@ jobs:
       image: ${{ format('ghcr.io/{0}-{1}:latest', github.repository, matrix.libc) }}
 
     steps:
-    - name: Install rust
-      run: |
-        curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --profile minimal
-        echo "$HOME/.cargo/bin" >> $GITHUB_PATH
-        echo CARGO_TERM_COLOR=always >> $GITHUB_ENV
+    # - name: Install rust
+    #   run: |
+    #     curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --profile minimal
+    #     echo "$HOME/.cargo/bin" >> $GITHUB_PATH
+    #     echo CARGO_TERM_COLOR=always >> $GITHUB_ENV
 
     - name: Checkout skia-canvas
       run: |
@@ -96,14 +96,17 @@ jobs:
     - name: Build AWS layer
       if: ${{ matrix.libc == 'glibc' }}
       env:
-        SRC_DIR: $GITHUB_WORKSPACE/skia-canvas
-        LAYER_DIR: $GITHUB_WORKSPACE/layer
-        LAYER_ZIP: $GITHUB_WORKSPACE/aws-lambda-${{ matrix.arch }}.zip
+        SRC_DIR: ${{ "$GITHUB_WORKSPACE/skia-canvas" }}
+        LAYER_DIR: ${{ "$GITHUB_WORKSPACE/layer" }}
+        LAYER_ZIP: ${{ format("$GITHUB_WORKSPACE/aws-lambda-{}.zip", matrix.arch) }}
       run: |
         echo 'github.workspace === ${{ github.workspace }}'
         echo "GITHUB_WORKSPACE === $GITHUB_WORKSPACE"
         echo 'runner.workspace === ${{ runner.workspace }}'
         echo "RUNNER_WORKSPACE === $RUNNER_WORKSPACE"
+        echo "SRC_DIR == $SRC_DIR"
+        echo "LAYER_DIR == $LAYER_DIR"
+        echo "LAYER_ZIP == $LAYER_ZIP"
         echo "pwd" $(pwd)
 
         export SRC_DIST="$SRC_DIR/$(cd $SRC_DIR; npm pack)"
