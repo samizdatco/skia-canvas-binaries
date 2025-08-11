@@ -96,21 +96,17 @@ jobs:
     - name: Build AWS layer
       if: ${{ matrix.libc == 'glibc' }}
       env:
-        SRC_DIR: ${{ "$GITHUB_WORKSPACE/skia-canvas" }}
-        LAYER_DIR: ${{ "$GITHUB_WORKSPACE/layer" }}
-        LAYER_ZIP: ${{ format("$GITHUB_WORKSPACE/aws-lambda-{}.zip", matrix.arch) }}
       run: |
-        echo 'github.workspace === ${{ github.workspace }}'
-        echo "GITHUB_WORKSPACE === $GITHUB_WORKSPACE"
-        echo 'runner.workspace === ${{ runner.workspace }}'
-        echo "RUNNER_WORKSPACE === $RUNNER_WORKSPACE"
-        echo "SRC_DIR == $SRC_DIR"
-        echo "LAYER_DIR == $LAYER_DIR"
-        echo "LAYER_ZIP == $LAYER_ZIP"
-        echo "pwd" $(pwd)
-
+        export SRC_DIR="$GITHUB_WORKSPACE/skia-canvas"
         export SRC_DIST="$SRC_DIR/$(cd $SRC_DIR; npm pack)"
-        ls -l
+        export LAYER_DIR="$GITHUB_WORKSPACE/layer"
+        export LAYER_ZIP="$GITHUB_WORKSPACE/aws-lambda-${{ matrix.arch }}.zip"
+        echo "SRC_DIR = $SRC_DIR"
+        echo "SRC_DIST = $SRC_DIST"
+        echo "LAYER_DIR = $LAYER_DIR"
+        echo "LAYER_ZIP = $LAYER_ZIP"
+
+
         mkdir -p $LAYER_DIR/node
         cd $LAYER_DIR/node
         npm install --ignore-scripts $SRC_DIST
