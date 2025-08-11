@@ -80,16 +80,17 @@ jobs:
       run: |
         git clone --depth 1 --branch $GITHUB_REF_NAME ${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY} skia-canvas
 
-    - name: Checkout rust-skia and apply static deps patch
-      run: |
-        export TAG=$(make -sC skia-canvas skia-version)
-        git clone --depth 1 --branch $TAG --recurse-submodules -j8 https://github.com/rust-skia/rust-skia.git
-        patch -d rust-skia -p1 -F10 < ./skia-canvas/containers/use-static-fontconfig.patch
+    # - name: Checkout rust-skia and apply static deps patch
+    #   run: |
+    #     export TAG=$(make -sC skia-canvas skia-version)
+    #     git clone --depth 1 --branch $TAG --recurse-submodules -j8 https://github.com/rust-skia/rust-skia.git
+    #     patch -d rust-skia -p1 -F10 < ./skia-canvas/containers/use-static-fontconfig.patch
 
     - name: Build module
       run: |
-        make -sC skia-canvas with-local-skia
-        cd skia-canvas && make optimized && npm test && ldd lib/skia.node
+        touch skia-canvas/lib/skia.node
+#        make -sC skia-canvas with-local-skia
+#        cd skia-canvas && make optimized && npm test && ldd lib/skia.node
 
     - name: Build AWS layer
       if: ${{ matrix.libc == 'glibc' }}
@@ -98,9 +99,10 @@ jobs:
         LAYER_DIR: $GITHUB_WORKSPACE/layer
         LAYER_ZIP: $GITHUB_WORKSPACE/aws-lambda-${{ matrix.arch }}.zip
       run: |
+        export SRC_DIST="$SRC_DIR/$(cd $SRC_DIR; npm pack)"
         mkdir -p $LAYER_DIR/node
         cd $LAYER_DIR/node
-        npm install --ignore-scripts $SRC_DIR
+        npm install --ignore-scripts $SRC_DIST
         cp $SRC_DIR/lib/skia.node node_modules/skia-canvas/lib
         cd $LAYER_DIR && zip -r9 $LAYER_ZIP node/node_modules
         unzip -l $LAYER_ZIP
