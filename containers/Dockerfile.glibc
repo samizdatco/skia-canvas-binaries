@@ -20,6 +20,7 @@ RUN curl -sL $GIT_URL | tar xz -C /opt && \
 
 # manually build harfbuzz, freetype, & fontconfig and install them in /usr/local
 COPY ./install-fontlibs.sh /opt
+COPY ./freetype.cfg /opt
 RUN bash /opt/install-fontlibs.sh
 
 # move the static libs to a common location consistent across glibc & musl builds
