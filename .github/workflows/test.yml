@@ -12,13 +12,13 @@ jobs:
         os:
           - macos-latest
           - windows-latest
-          - ubuntu-latest
+          - ubuntu-22.04
         node:
           - 16
           - 22
 
     steps:
-    - name: Enable long paths
+    - name: Enable long paths (Windows only)
       if: ${{ matrix.os == 'windows-latest' }}
       run: git config --system core.longpaths true
 
@@ -45,4 +45,3 @@ jobs:
     - name: Run tests
       run: |
         npm test --verbose
-
