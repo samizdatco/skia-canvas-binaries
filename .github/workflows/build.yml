@@ -96,7 +96,7 @@ jobs:
     - name: Build AWS layer
       if: ${{ matrix.libc == 'glibc' }}
       env:
-        SRC_DIR: ${{ $GITHUB_WORKSPACE/skia-canvas }}
+        SRC_DIR: $GITHUB_WORKSPACE/skia-canvas
         LAYER_DIR: $GITHUB_WORKSPACE/layer
         LAYER_ZIP: $GITHUB_WORKSPACE/aws-lambda-${{ matrix.arch }}.zip
       run: |
