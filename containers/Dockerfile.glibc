@@ -41,7 +41,7 @@ FROM node:bullseye-slim AS skia-build-env
 ARG TARGETARCH
 
 RUN apt-get update && apt-get install -y -q \
-  curl wget zip perl software-properties-common lsb-release build-essential ninja-build
+  curl wget perl software-properties-common lsb-release build-essential ninja-build
 
 # install clang v18
 ARG LLVM_VERSION=18
@@ -58,6 +58,7 @@ COPY --from=git /usr/local /usr/local
 COPY --from=dependencies /usr/local /usr/local
 COPY --from=dependencies /opt/skia-static-libs /opt/skia-static-libs
 
+RUN apt-get install -y -q zip unzip
 WORKDIR /opt
 
 CMD ["bash"]
