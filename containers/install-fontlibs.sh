@@ -12,9 +12,10 @@ pip install meson
 # compile dummy freetype lib (meant to mirror the api surface of skia's embedded copy via the custom modules.cfg)
 FREETYPE=freetype-2.13.3
 FREETYPE_URL=https://download.savannah.gnu.org/releases/freetype/${FREETYPE}.tar.xz
+FREETYPE_CFG=/opt/freetype.cfg
 curl -sL $FREETYPE_URL | tar xJf - -C /opt
-cp /opt/freetype.cfg /opt/${FREETYPE}/modules.cfg
 cd /opt/${FREETYPE} && \
+   cp $FREETYPE_CFG modules.cfg && \
    make && make install
 
 # compile fontconfig (look for config in system dirs but install to /usr/local so we can extract the static lib)

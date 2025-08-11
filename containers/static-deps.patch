@@ -1,8 +1,8 @@
 diff --git i/skia-bindings/build_support/binaries_config.rs w/skia-bindings/build_support/binaries_config.rs
-index 3c156b8..69c1299 100644
+index 3c156b8..76bfcce 100644
 --- i/skia-bindings/build_support/binaries_config.rs
 +++ w/skia-bindings/build_support/binaries_config.rs
-@@ -115,20 +115,29 @@ impl BinariesConfiguration {
+@@ -115,20 +115,24 @@ impl BinariesConfiguration {
      /// Inform cargo that the library files of the given configuration are available and
      /// can be used as dependencies.
      pub fn commit_to_cargo(&self) {
@@ -13,14 +13,9 @@ index 3c156b8..69c1299 100644
  
          let target = cargo::target();
  
-+        // copy the static fontconfig libs into the output directory, and add both it and the
-+        // skia-generated freetype lib to the static-links list
-+        let lib_path = std::path::Path::new("/opt/skia-static-libs/libfontconfig.a");
-+        let to_path = self.output_directory.join(&lib_path.file_name().unwrap());
-+        fs::copy(&lib_path, &to_path).inspect_err(|e|{
-+          panic!("COPY OPERATION FAILED: from '{lib_path:?}' to '{to_path:?}': {e}");
-+        }).ok();
-+        cargo::add_static_link_libs(&target, ["fontconfig", "freetype2"]);
++        // link the static fontconfig library
++        cargo::add_link_search("/opt/skia-static-libs");
++        cargo::add_static_link_libs(&target, ["fontconfig"]);
 +
          cargo::add_static_link_libs(&target, self.built_libraries(true));
          cargo::add_link_libs(&self.link_libraries);
