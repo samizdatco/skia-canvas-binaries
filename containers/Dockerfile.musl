@@ -30,7 +30,7 @@ ARG GH_VERSION=2.76.2
 ARG GH_URL=https://github.com/cli/cli/releases/download/v$GH_VERSION/gh_${GH_VERSION}_linux_$TARGETARCH.tar.gz
 RUN curl -sL $GH_URL | tar xz --strip-components=2 -C /usr/local/bin
 
-RUN apk zip unzip
+RUN apk add zip unzip
 
 WORKDIR /opt
 CMD ["bash"]
