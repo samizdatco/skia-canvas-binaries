@@ -5,7 +5,6 @@ on:
 jobs:
   build-container:
     runs-on: ubuntu-latest
-    # runs-on: [self-hosted, linux, X64]
     permissions: write-all
     strategy:
       matrix:
@@ -32,8 +31,8 @@ jobs:
       uses: docker/build-push-action@v6
       with:
         tags: ghcr.io/${{ github.repository }}-${{ matrix.libc }}:latest
-        context: arch
-        file: arch/Dockerfile.${{ matrix.libc }}
+        context: containers
+        file: containers/Dockerfile.${{ matrix.libc }}
         platforms: linux/amd64,linux/arm64
         cache-from: type=gha
         cache-to: type=gha,mode=max
