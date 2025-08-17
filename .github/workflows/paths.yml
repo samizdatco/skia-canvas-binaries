@@ -1,0 +1,29 @@
+name: Test Windows Paths
+on:
+  workflow_dispatch:
+
+
+jobs:
+  run-tests:
+    name: Test paths
+    runs-on: windows-latest
+    strategy:
+
+    steps:
+    - name: Enable long paths (Windows only)
+      if: ${{ matrix.os == 'windows-latest' }}
+      run: git config --system core.longpaths true
+
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Use Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: 22
+        cache: 'npm'
+
+    - name: Run test
+      run: |
+        npm ci --ignore-scripts
+        node testpaths.js
