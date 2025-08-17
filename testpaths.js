@@ -1,4 +1,6 @@
-let {globSync, convertPathToPattern} = require('fast-glob')
+let {globSync, convertPathToPattern} = require('fast-glob'),
+    path = require('path')
+
 
 const ASSETS_DIR = path.join(__dirname, 'test/assets'),
       FONTS_DIR = path.join(ASSETS_DIR, 'fonts')
