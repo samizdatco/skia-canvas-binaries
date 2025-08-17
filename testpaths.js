@@ -17,7 +17,7 @@ const ROOT_DIR = __dirname.replace()
         .replace(DOS_DEVICE_PATH_RE, '//$1')
     		.replaceAll(WINDOWS_BACKSLASHES_RE, '/')
 
-const ASSETS_DIR = path.join(__dirname, 'test/assets'),
+const ASSETS_DIR = path.join(ROOT_DIR, 'test/assets'),
       FONTS_DIR = path.join(ASSETS_DIR, 'fonts')
 
 function glob(pat){
