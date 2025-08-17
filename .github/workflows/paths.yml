@@ -2,12 +2,10 @@ name: Test Windows Paths
 on:
   workflow_dispatch:
 
-
 jobs:
   run-tests:
     name: Test paths
     runs-on: windows-latest
-    strategy:
 
     steps:
     - name: Enable long paths (Windows only)
