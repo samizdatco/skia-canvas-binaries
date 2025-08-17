@@ -13,18 +13,19 @@ const DOS_DEVICE_PATH_RE = /^\\\\(?<path>[.?])/;
  */
 const WINDOWS_BACKSLASHES_RE = /\\(?![!()+@[\]{}])/g;
 
-const ROOT_DIR = __dirname.replace()
+// const ROOT_DIR = __dirname
+const ROOT_DIR = 'D:\\a\\skia-canvas-binaries\\skia-canvas-binaries'.replace()
         .replace(DOS_DEVICE_PATH_RE, '//$1')
     		.replaceAll(WINDOWS_BACKSLASHES_RE, '/')
-
-const ASSETS_DIR = path.join(ROOT_DIR, 'test/assets'),
+console.log({ROOT_DIR})
+const ASSETS_DIR = path.join(__dirname, 'test/assets'),
       FONTS_DIR = path.join(ASSETS_DIR, 'fonts')
 
 function glob(pat){
   console.log('pattern:', pat)
   console.log(globSync(pat))
 }
-glob(`${FONTS_DIR}/montserrat*/montserrat-v30-latin-italic.woff2`)
-glob(`${FONTS_DIR}/montserrat-latin/*700*.woff2`)
-glob(`${ASSETS_DIR}/**/montserrat-v30-latin-italic.woff2`)
-glob(`${ASSETS_DIR}/**/montserrat*italic.*`)
+glob(path.join(FONTS_DIR,`montserrat*`,`montserrat-v30-latin-italic.woff2`))
+glob(path.join(FONTS_DIR,`montserrat-latin`,`*700*.woff2`))
+glob(path.join(ASSETS_DIR,`**`,`montserrat-v30-latin-italic.woff2`))
+glob(path.join(ASSETS_DIR,`**`,`montserrat*italic.*`))
